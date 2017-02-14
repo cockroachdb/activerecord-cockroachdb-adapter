@@ -1,6 +1,5 @@
 require 'active_record/connection_adapters/postgresql_adapter'
 
-
 module ActiveRecord
   module ConnectionHandling
     def cockroachdb_connection(config)
@@ -36,7 +35,7 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
       MSG
     end
 
-    table = Utils.extract_schema_qualified_name(table_name.to_s)
+    table = extract_schema_qualified_name(table_name.to_s)
 
     result = query(<<-SQL, "SCHEMA")
       SELECT distinct i.relname, d.indisunique, d.indkey, pg_get_indexdef(d.indexrelid), t.oid,
@@ -86,5 +85,43 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
 
       IndexDefinition.new(table_name, index_name, unique, columns, [], orders, where, nil, using.to_sym, comment.presence)
     end.compact
+  end
+
+
+  def primary_keys(table_name)
+      # No longer necessary once Rails releases 5.1.0.
+      name = extract_schema_qualified_name(table_name.to_s)
+      select_values(<<-SQL.strip_heredoc, "SCHEMA")
+      SELECT column_name
+          FROM information_schema.key_column_usage kcu
+          JOIN information_schema.table_constraints tc
+          ON kcu.table_name = tc.table_name
+          AND kcu.table_schema = tc.table_schema
+          AND kcu.constraint_name = tc.constraint_name
+          WHERE constraint_type = 'PRIMARY KEY'
+          AND kcu.table_name = #{quote(name.identifier)}
+          AND kcu.table_schema = #{name.schema ? quote(name.schema) : "ANY (current_schemas(false))"}
+          ORDER BY kcu.ordinal_position
+      SQL
+  end
+
+  def column_definitions(table_name)
+      # No longer necessary once Rails releases 5.1.0.
+      query(<<-end_sql, "SCHEMA")
+          SELECT a.attname, format_type(a.atttypid, a.atttypmod),
+                  pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod,
+                  c.collname, col_description(a.attrelid, a.attnum) AS comment
+          FROM pg_attribute a
+          LEFT JOIN pg_attrdef d ON a.attrelid = d.adrelid AND a.attnum = d.adnum
+          LEFT JOIN pg_type t ON a.atttypid = t.oid
+          LEFT JOIN pg_collation c ON a.attcollation = c.oid AND a.attcollation <> t.typcollation
+          WHERE a.attrelid = #{quote(quote_table_name(table_name))}::regclass
+              AND a.attnum > 0 AND NOT a.attisdropped
+          ORDER BY a.attnum
+      end_sql
+  end
+
+  private def extract_schema_qualified_name(*args)
+    ActiveRecord::ConnectionAdapters::PostgreSQL::Utils.extract_schema_qualified_name(*args)
   end
 end
