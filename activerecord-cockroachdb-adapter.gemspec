@@ -3,14 +3,14 @@ lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
-  spec.name          = "activerecord-cockroachdb"
+  spec.name          = "activerecord-cockroachdb-adapter"
   spec.version       = "0.1.0"
   spec.authors       = ["Cockroach Labs"]
   spec.email         = ["cockroach-db@googlegroups.com"]
 
   spec.summary       = "CockroachDB adapter for ActiveRecord."
   spec.description   = "Allows the use of CockroachDB as a backend for ActiveRecord and Rails apps."
-  spec.homepage      = "https://github.com/cockroachdb/activerecord-cockroachdb"
+  spec.homepage      = "https://github.com/cockroachdb/activerecord-cockroachdb-adapter"
 
   spec.add_dependency "activerecord", "~> 5.0.1"
 

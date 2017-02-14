@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in activerecord-cockroachdb.gemspec
+# Specify your gem's dependencies in activerecord-cockroachdb-adapter.gemspec
 gemspec
