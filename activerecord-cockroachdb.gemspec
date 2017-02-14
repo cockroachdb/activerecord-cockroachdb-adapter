@@ -1,17 +1,18 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'activerecord/cockroachdb/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "activerecord-cockroachdb"
-  spec.version       = Activerecord::Cockroachdb::VERSION
-  spec.authors       = ["Jordan Lewis"]
-  spec.email         = ["jordanthelewis@gmail.com"]
+  spec.version       = "0.1.0"
+  spec.authors       = ["Cockroach Labs"]
+  spec.email         = ["cockroach-db@googlegroups.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = "CockroachDB adapter for ActiveRecord."
+  spec.description   = "Allows the use of CockroachDB as a backend for ActiveRecord and Rails apps."
+  spec.homepage      = "https://github.com/cockroachdb/activerecord-cockroachdb"
+
+  spec.add_dependency "activerecord", "~> 5.0.1"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
   # to allow pushing to a single host or delete this section to allow pushing to any host.
