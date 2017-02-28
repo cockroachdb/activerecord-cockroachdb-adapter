@@ -27,8 +27,10 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
   ADAPTER_NAME = "CockroachDB".freeze
   def indexes(table_name, name = nil) # :nodoc:
     # The PostgreSQL adapter uses a correlated subquery in the following query,
-    # which CockroachDB does not yet support. The query is modified to use a
-    # GROUP BY and CROSS JOIN instead.
+    # which CockroachDB does not yet support. That portion of the query fetches
+    # any non-standard opclasses that each index uses. CockroachDB also doesn't
+    # support opclasses at this time, so the query is modified to just remove
+    # the section about opclasses entirely.
     if name
       ActiveSupport::Deprecation.warn(<<-MSG.squish)
         Passing name to #indexes is deprecated without replacement.
@@ -39,20 +41,15 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
 
     result = query(<<-SQL, "SCHEMA")
       SELECT distinct i.relname, d.indisunique, d.indkey, pg_get_indexdef(d.indexrelid), t.oid,
-                      pg_catalog.obj_description(i.oid, 'pg_class') AS comment,
-                      count(opcdefault) AS opclass
+                      pg_catalog.obj_description(i.oid, 'pg_class') AS comment
       FROM pg_class t
       INNER JOIN pg_index d ON t.oid = d.indrelid
       INNER JOIN pg_class i ON d.indexrelid = i.oid
       LEFT JOIN pg_namespace n ON n.oid = i.relnamespace
-      CROSS JOIN unnest(d.indclass) classoid
-      LEFT JOIN pg_opclass ON classoid = pg_opclass.oid
-      AND pg_opclass.opcdefault = 'f'
       WHERE i.relkind = 'i'
         AND d.indisprimary = 'f'
         AND t.relname = '#{table.identifier}'
         AND n.nspname = #{table.schema ? "'#{table.schema}'" : 'ANY (current_schemas(false))'}
-      GROUP BY i.relname, indisunique, indkey, pg_get_indexdef, t.oid, comment
       ORDER BY i.relname
     SQL
 
@@ -63,11 +60,10 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
       inddef = row[3]
       oid = row[4]
       comment = row[5]
-      opclass = row[6]
 
-      using, expressions, where = inddef.scan(/ USING (\w+?) \((.+?)\)(?: WHERE (.+))?\z/).flatten
+      expressions, where = inddef.scan(/\((.+?)\)(?: WHERE (.+))?\z/).flatten
 
-      if indkey.include?(0) || opclass > 0
+      if indkey.include?(0)
         columns = expressions
       else
         columns = Hash[query(<<-SQL.strip_heredoc, "SCHEMA")].values_at(*indkey).compact
@@ -83,7 +79,7 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
         ]
       end
 
-      IndexDefinition.new(table_name, index_name, unique, columns, [], orders, where, nil, using.to_sym, comment.presence)
+      ActiveRecord::ConnectionAdapters::IndexDefinition.new(table_name, index_name, unique, columns, [], orders, where, nil, nil, comment.presence)
     end.compact
   end
 
