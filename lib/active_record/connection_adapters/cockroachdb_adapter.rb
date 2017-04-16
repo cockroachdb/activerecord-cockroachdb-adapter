@@ -25,6 +25,12 @@ end
 
 class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
   ADAPTER_NAME = "CockroachDB".freeze
+
+  # disable ddl transactions in migrations due to https://github.com/cockroachdb/cockroach/pull/14368
+  def supports_ddl_transactions?
+    false
+  end
+
   def indexes(table_name, name = nil) # :nodoc:
     # The PostgreSQL adapter uses a correlated subquery in the following query,
     # which CockroachDB does not yet support. That portion of the query fetches
