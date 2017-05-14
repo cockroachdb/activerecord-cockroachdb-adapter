@@ -25,6 +25,13 @@ end
 
 class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
   ADAPTER_NAME = "CockroachDB".freeze
+
+  # Note that in the migration from ActiveRecord 5.0 to 5.1, the
+  # `extract_schema_qualified_name` method was aliased in the PostgreSQLAdapter.
+  # To ensure backward compatibility with both <5.1 and 5.1, we rename it here
+  # to use the same original `Utils` module.
+  Utils = ActiveRecord::ConnectionAdapters::PostgreSQL::Utils
+
   def indexes(table_name, name = nil) # :nodoc:
     # The PostgreSQL adapter uses a correlated subquery in the following query,
     # which CockroachDB does not yet support. That portion of the query fetches
@@ -37,7 +44,7 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
       MSG
     end
 
-    table = extract_schema_qualified_name(table_name.to_s)
+    table = Utils.extract_schema_qualified_name(table_name.to_s)
 
     result = query(<<-SQL, "SCHEMA")
       SELECT distinct i.relname, d.indisunique, d.indkey, pg_get_indexdef(d.indexrelid), t.oid,
@@ -86,7 +93,7 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
 
   def primary_keys(table_name)
       # No longer necessary once Rails releases 5.1.0.
-      name = extract_schema_qualified_name(table_name.to_s)
+      name = Utils.extract_schema_qualified_name(table_name.to_s)
       select_values(<<-SQL.strip_heredoc, "SCHEMA")
       SELECT column_name
           FROM information_schema.key_column_usage kcu
@@ -117,7 +124,17 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
       end_sql
   end
 
-  private def extract_schema_qualified_name(*args)
-    ActiveRecord::ConnectionAdapters::PostgreSQL::Utils.extract_schema_qualified_name(*args)
+  # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
+  # migration from PostgreSQL to Cockroachdb. In practice, this limitation
+  # is arbitrary since CockroachDB supports index name lengths and table alias
+  # lengths far greater than this value. For the time being though, we match
+  # the original behavior for PostgreSQL to simplify migrations.
+  #
+  # Note that in the migration to ActiveRecord 5.1, this was changed in
+  # PostgreSQLAdapter to use `SHOW max_identifier_length` (which does not
+  # exist in CockroachDB). Therefore, we have to redefine this here.
+  def table_alias_length
+    63
   end
+  alias index_name_length table_alias_length
 end
