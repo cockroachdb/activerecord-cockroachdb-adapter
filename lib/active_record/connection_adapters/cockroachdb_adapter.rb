@@ -92,7 +92,6 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
 
 
   def primary_keys(table_name)
-      # No longer necessary once Rails releases 5.1.0.
       name = Utils.extract_schema_qualified_name(table_name.to_s)
       select_values(<<-SQL.strip_heredoc, "SCHEMA")
       SELECT column_name
@@ -106,22 +105,6 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
           AND kcu.table_schema = #{name.schema ? quote(name.schema) : "ANY (current_schemas(false))"}
           ORDER BY kcu.ordinal_position
       SQL
-  end
-
-  def column_definitions(table_name)
-      # No longer necessary once Rails releases 5.1.0.
-      query(<<-end_sql, "SCHEMA")
-          SELECT a.attname, format_type(a.atttypid, a.atttypmod),
-                  pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod,
-                  c.collname, col_description(a.attrelid, a.attnum) AS comment
-          FROM pg_attribute a
-          LEFT JOIN pg_attrdef d ON a.attrelid = d.adrelid AND a.attnum = d.adnum
-          LEFT JOIN pg_type t ON a.atttypid = t.oid
-          LEFT JOIN pg_collation c ON a.attcollation = c.oid AND a.attcollation <> t.typcollation
-          WHERE a.attrelid = #{quote(quote_table_name(table_name))}::regclass
-              AND a.attnum > 0 AND NOT a.attisdropped
-          ORDER BY a.attnum
-      end_sql
   end
 
   # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
