@@ -7,7 +7,7 @@ CockroachDB adapter for ActiveRecord 5. This is a lightweight extension of the P
 Add this line to your project's Gemfile:
 
 ```ruby
-gem 'activerecord-cockroachdb-adapter', '~> 0.2.1'
+gem 'activerecord-cockroachdb-adapter', '~> 0.2.2'
 ```
 
 In `database.yml`, use the following adapter setting:
