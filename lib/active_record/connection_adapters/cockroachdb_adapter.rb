@@ -32,6 +32,30 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
   # to use the same original `Utils` module.
   Utils = ActiveRecord::ConnectionAdapters::PostgreSQL::Utils
 
+  def supports_json?
+      false
+  end
+
+  def supports_ddl_transactions?
+      false
+  end
+
+  def supports_extensions?
+      false
+  end
+
+  def supports_ranges?
+      false
+  end
+
+  def supports_materialized_views?
+      false
+  end
+
+  def supports_pg_crypto_uuid?
+      false
+  end
+
   def indexes(table_name, name = nil) # :nodoc:
     # The PostgreSQL adapter uses a correlated subquery in the following query,
     # which CockroachDB does not yet support. That portion of the query fetches
