@@ -37,6 +37,10 @@ module ActiveRecord
           super
         end
       end
+
+      class TableDefinition < ActiveRecord::ConnectionAdapters::TableDefinition
+        include ColumnMethods
+      end
     end
   end
 end
