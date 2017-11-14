@@ -87,8 +87,8 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
 
     result.map do |row|
       index_name = row[0]
-      unique = row[1]
       indkey = row[2].split(" ").map(&:to_i)
+      unique = row[1].downcase == "t"
       inddef = row[3]
       oid = row[4]
       comment = row[5]
