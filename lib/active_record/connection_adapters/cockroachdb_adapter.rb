@@ -111,7 +111,7 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
         ]
       end
 
-      ActiveRecord::ConnectionAdapters::IndexDefinition.new(table_name, index_name, unique, columns, [], orders, where, nil, nil, comment.presence)
+      ActiveRecord::ConnectionAdapters::IndexDefinition.new(table_name, index_name, unique, columns, [], orders, where, nil, nil)
     end.compact
   end
 
