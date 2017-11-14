@@ -145,4 +145,29 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
     63
   end
   alias index_name_length table_alias_length
+
+
+  private
+
+    # Extracts the value from a PostgreSQL column default definition.
+    # Some of postgresql's default regexps are not going to work with cockroachdb,
+    # leaving the default values out of the schema.rb file.
+    def extract_value_from_default(oid, default) # :nodoc:
+      ret = super
+      if ret.nil?
+        puts "CIAO #{default} of #{oid}"
+        ret = case default
+          # Numeric types are identified in a different way by cockroachdb
+          # postgresql adapter only looks for ::bigint, while cockroach
+          # has INT and DECIMAL.
+          when /\A\(?(-?\d+(\.\d*)?)\)?(:::(INT(4,8,16,32,64)?|DECIMAL))?\z/
+            $1
+          else
+            # Anything else is blank, some user type, or some function
+            # and we can't know the value of that, so return nil.
+            nil
+          end
+      end
+      ret
+    end
 end
