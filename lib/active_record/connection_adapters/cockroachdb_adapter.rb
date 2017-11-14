@@ -87,15 +87,15 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
 
     result.map do |row|
       index_name = row[0]
-      unique = row[1]
-      indkey = row[2].split(" ").map(&:to_i)
+      unique = row[1].downcase == "t"
+      indkey = row[2].split(" ")
       inddef = row[3]
       oid = row[4]
       comment = row[5]
 
       expressions, where = inddef.scan(/\((.+?)\)(?: WHERE (.+))?\z/).flatten
 
-      if indkey.include?(0)
+      if indkey.include?(0) || indkey.include?("0")
         columns = expressions
       else
         columns = Hash[query(<<-SQL.strip_heredoc, "SCHEMA")].values_at(*indkey).compact
@@ -111,7 +111,7 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
         ]
       end
 
-      ActiveRecord::ConnectionAdapters::IndexDefinition.new(table_name, index_name, unique, columns, [], orders, where, nil, nil, comment.presence)
+      ActiveRecord::ConnectionAdapters::IndexDefinition.new(table_name, index_name, unique, columns, [], orders, where, nil, nil)
     end.compact
   end
 
