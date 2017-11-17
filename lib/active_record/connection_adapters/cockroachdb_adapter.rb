@@ -33,6 +33,17 @@ class ActiveRecord::ConnectionAdapters::CockroachDBAdapter < ActiveRecord::Conne
   # to use the same original `Utils` module.
   Utils = ActiveRecord::ConnectionAdapters::PostgreSQL::Utils
 
+  # Savepoints support is currently limited with cockroachdb
+  def supports_savepoints?
+    false
+  end
+
+  # Supporting referential integrity requires TRIGGER support, which is
+  # not yet part of cockroach.
+  def supports_disable_referential_integrity?
+    false
+  end
+
   def supports_json?
       false
   end
