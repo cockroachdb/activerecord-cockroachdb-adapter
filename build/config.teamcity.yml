@@ -1,0 +1,28 @@
+default_connection: cockroachdb
+
+with_manual_interventions: false
+
+connections:
+  cockroachdb:
+    arunit:
+      database: activerecord_unittest
+      host: localhost
+      port: 26257
+      user: root
+      requiressl: disable
+      min_messages: warning
+    arunit_without_prepared_statements:
+      database: activerecord_unittest
+      host: localhost
+      port: 26257
+      user: root
+      requiressl: disable
+      min_messages: warning
+      prepared_statements: false
+    arunit2:
+      database: activerecord_unittest2
+      host: localhost
+      port: 26257
+      user: root
+      requiressl: disable
+      min_messages: warning
