@@ -21,3 +21,9 @@ development:
   host: <hostname>
   user: <username>
 ```
+
+
+## Modifying the adapter?
+
+See [CONTRIBUTING.md](/CONTRIBUTING.md) for more details on setting up
+the environment and making modifications.
