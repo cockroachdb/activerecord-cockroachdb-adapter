@@ -3,7 +3,7 @@
 
 ## ActiveRecord adapters and you
 
-There are two repositories for the ActiveRecord adapter. The one you in
+There are two repositories for the ActiveRecord adapter. The one you're in
 currently, [activerecord-cockroachdb-adapter], is the CockroachDB specific
 ActiveRecord code. Users install this alongside ActiveRecord then use
 CockroachDBAdapter to initialize ActiveRecord for their projects.
@@ -14,7 +14,7 @@ override and monkey-patch functionality.
 The other repository is a fork of [Rails]. The tests have been modified
 for the purposes of testing our CockroachDB adapter.
 
-[activerecord-cockroachdb-adapter]: https://github.com/lego/activerecord-cockroachdb-adapter/
+[activerecord-cockroachdb-adapter]: https://github.com/cockroachdb/activerecord-cockroachdb-adapter/
 [Rails]: https://github.com/lego/ruby-on-rails
 
 
@@ -102,7 +102,7 @@ This executes the CockroachDB tests.
 
 ## Support past Rails versions
 
-Currently, only an beta version of Rails is tested. This means that the
+Currently, only a beta version of Rails is tested. This means that the
 adapter has been modified in to accomodate unreleased changes. In order
 to run the tests for Rails 5.1 or 4.2, the test changes will need to be
 cherry-picked back. Conflicts are mostly only expected for tests that
