@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "activerecord-cockroachdb-adapter"
-  spec.version       = "0.2.2"
+  spec.version       = "0.2.3"
   spec.licenses      = ["Apache-2.0"]
   spec.authors       = ["Cockroach Labs"]
   spec.email         = ["cockroach-db@googlegroups.com"]
@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.description   = "Allows the use of CockroachDB as a backend for ActiveRecord and Rails apps."
   spec.homepage      = "https://github.com/cockroachdb/activerecord-cockroachdb-adapter"
 
-  spec.add_dependency "activerecord", "~> 5.2.0.beta2"
+  spec.add_dependency "activerecord", "~> 5.2"
   spec.add_dependency "pg", ">= 0.20", "< 0.22"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
