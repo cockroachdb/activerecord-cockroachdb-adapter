@@ -9,3 +9,5 @@ if defined?(Rails)
     end
   end
 end
+
+load "active_record/connection_adapters/cockroachdb/database_tasks.rb" if defined?(Jets)
