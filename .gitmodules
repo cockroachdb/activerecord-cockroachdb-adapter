@@ -1,3 +1,0 @@
-[submodule "rails"]
-	path = rails
-	url = https://github.com/lego/ruby-on-rails.git
