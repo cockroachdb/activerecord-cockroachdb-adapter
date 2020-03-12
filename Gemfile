@@ -2,6 +2,8 @@ require 'openssl'
 source 'https://rubygems.org'
 gemspec
 
+gem 'bcrypt' # used by the ActiveRecord test suite
+
 if ENV['RAILS_SOURCE']
   gemspec path: ENV['RAILS_SOURCE']
 else
@@ -29,4 +31,9 @@ else
   # Get Rails from source beacause the gem doesn't include tests
   version = ENV['RAILS_VERSION'] || get_version_from_gemspec
   gem 'rails', git: "https://github.com/rails/rails.git", tag: "v#{version}"
+end
+
+group :development do
+  gem "byebug"
+  gem "mocha" # used by the ActiveRecord test suite
 end
