@@ -11,14 +11,18 @@ CockroachDBAdapter to initialize ActiveRecord for their projects.
 This adapter extends the PostgreSQL ActiveRecord adapter in order to
 override and monkey-patch functionality.
 
-The other repository is a fork of [Rails]. The tests have been modified
-for the purposes of testing our CockroachDB adapter.
-
 [activerecord-cockroachdb-adapter]: https://github.com/cockroachdb/activerecord-cockroachdb-adapter/
-[Rails]: https://github.com/lego/ruby-on-rails
-
 
 ## Setup and running tests
+
+In CockroachDB, create two databases to be used by the ActiveRecord test suite:
+activerecord_unittest and activerecord_unittest2.
+
+```sql
+CREATE DATABASE activerecord_unittest;
+
+CREATE DATABASE activerecord_unittest2;
+```
 
 It is best to have a Ruby environment manager installed, such as
 [rvm](https://rvm.io/), as Rails has varying Ruby version requirements.
@@ -37,65 +41,30 @@ rvm use 2.2.5
 ```
 
 Using [bundler](http://bundler.io/), install the dependancies of Rails.
-Additionally, make sure the Rails git submodule is loaded.
 
 ```bash
-# Ensure the rails fork is fetched.
-git submodule update
-# Install rails dependancies.
-(cd rails && bundle install)
+bundle install
 ```
 
-Then, to run the test with an active CockroachDB instance:
+Then, to run the full ActiveRecord test suite with an active CockroachDB instance:
 
 ```bash
-cp build/config.teamcity.yml rails/activerecord/test/config.yml
-(cd rails/activerecord && BUNDLE_GEMFILE=../Gemfile bundle exec rake db:cockroachdb:rebuild)
-(cd rails/activerecord && BUNDLE_GEMFILE=../Gemfile bundle exec rake test:cockroachdb)
+bundle exec rake test
 ```
 
-### Test commands in detail
+To run specific tests, set environemnt variable `TEST_FILES_AR`. For example, to run ActiveRecord tests `test/cases/associations_test.rb` and `test/cases/ar_schema_test.rb.rb`
 
 ```bash
-cp build/config.teamcity.yml rails/activerecord/test/config.yml
+TEST_FILES_AR="test/cases/associations_test.rb,test/cases/ar_schema_test.rb" bundle exec rake test
 ```
 
-This copies the TeamCity ActiveRecord configuration for the application.
-This configuration specifies:
+By default, tests will be run from the bundled version of Rails. To run against a local copy, set environemnt variable `RAILS_SOURCE`.
 
-- CockroachDB port and host the test suite uses.
-- Database names used for the different test connections. (ActiveRecord
-  uses two separate connections for some tests.)
-
-```
-(cd rails/activerecord && BUNDLE_GEMFILE=../Gemfile bundle exec rake db:cockroachdb:rebuild)
+```bash
+RAILS_SOURCE="path/to/local_copy" bundle exec rake test
 ```
 
-This prepares CockroachDB for running tests. It only drops and
-re-creates all of the databases needed.
-
-- This command needs to be run from activerecord folder in order to use
-  the ActiveRecord `Rakefile`. The `Rakefile` defines scripts (called
-  tasks) such as executing tests.
-- `BUNDLE_GEMFILE=../Gemfile` tells `bundle` to use the dependancies for
-  Rails that were previously installed.
-- `bundle exec rake` uses `bundle` to execute the Ruby package `rake`.
-- `rake db:cockroachdb:rebuild` runs the specified Rake task. All tasks
-  can be found in `rails/activerecord/Rakefile`.
-
-
-```
-(cd rails/activerecord && BUNDLE_GEMFILE=../Gemfile bundle exec rake test:cockroachdb)
-```
-
-This executes the CockroachDB tests.
-
-- Like the previous command, this one uses the Activerecord Rakefile and
-  the Rails Gemfile. The task code can be found in the Rakefile.
-- Running specific test files can be done by appending
-  `TESTFILES=test/cases/attribute_methods.rb` to the command. Globs are
-  used. Multiple individual files cannot be specified.
-
+`test/config.yml` assumes CockroachDB will be running at localhost:26257 with a root user. Make changes to `test/config.yml` as needed.
 
 # Improvements
 
@@ -142,15 +111,6 @@ no.
 A possible way to approach this would be to add a shim to cause any
 tests that use it to fail, and grep the tests that pass and then skip
 them.
-
-# Cleanup
-
-One of the earlier commits to the Rails repo did a big grep of
-`PostgreSQLAdapter` -> `CockroachDBAdapter`. In order to better support
-changes upstream, this modification should be changed to instead only
-add `CockroachDBAdapter` alongside any `PostgreSQLAdapter`. The later
-test cleanup commit will conflict on any further changes (like adding
-back PostgreSQL, or removing CockroachDB for PostgreSQL).
 
 ## Publishing to Rubygems
 
