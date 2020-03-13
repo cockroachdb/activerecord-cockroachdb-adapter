@@ -5,6 +5,17 @@ module ActiveRecord
     module CockroachDB
       module SchemaStatements
         include ActiveRecord::ConnectionAdapters::PostgreSQL::SchemaStatements
+
+        def add_index(table_name, column_name, options = {})
+          super
+        rescue ActiveRecord::StatementInvalid => error
+          if debugging? && error.cause.class == PG::FeatureNotSupported
+            warn "#{error}\n\nThis error will be ignored and the index will not be created.\n\n"
+          else
+            raise error
+          end
+        end
+
         # NOTE(joey): This was ripped from PostgresSQL::SchemaStatements, with a
         # slight modification to change setval(string, int, bool) to just
         # setval(string, int) for CockroachDB compatbility.
