@@ -40,6 +40,10 @@ module ActiveRecord
         !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
       end
 
+      def max_transaction_retries
+        @max_transaction_retries ||= @config.fetch(:max_transaction_retries, 3)
+      end
+
       # Note that in the migration from ActiveRecord 5.0 to 5.1, the
       # `extract_schema_qualified_name` method was aliased in the PostgreSQLAdapter.
       # To ensure backward compatibility with both <5.1 and 5.1, we rename it here
@@ -106,11 +110,6 @@ module ActiveRecord
         false
       end
 
-      def supports_savepoints?
-        # See cockroachdb/cockroach#10735.
-        false
-      end
-
       def transaction_isolation_levels
         {
           # Explicitly prevent READ UNCOMMITTED from being used. This
@@ -121,16 +120,6 @@ module ActiveRecord
           serializable:     "SERIALIZABLE"
         }
       end
-
-
-      # Sadly, we can only do savepoints at the beginning of
-      # transactions. This means that we cannot use them for most cases
-      # of transaction, so we just pretend they're usable.
-      def create_savepoint(name = "COCKROACH_RESTART"); end
-
-      def exec_rollback_to_savepoint(name = "COCKROACH_RESTART"); end
-
-      def release_savepoint(name = "COCKROACH_RESTART"); end
 
       def primary_keys(table_name)
           name = Utils.extract_schema_qualified_name(table_name.to_s)
