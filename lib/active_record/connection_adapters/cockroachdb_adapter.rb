@@ -3,6 +3,7 @@ require "active_record/connection_adapters/postgresql/schema_statements"
 require "active_record/connection_adapters/cockroachdb/schema_statements"
 require "active_record/connection_adapters/cockroachdb/referential_integrity"
 require "active_record/connection_adapters/cockroachdb/transaction_manager"
+require "active_record/connection_adapters/cockroachdb/database_statements"
 
 module ActiveRecord
   module ConnectionHandling
@@ -35,6 +36,7 @@ module ActiveRecord
 
       include CockroachDB::SchemaStatements
       include CockroachDB::ReferentialIntegrity
+      include CockroachDB::DatabaseStatements
 
       def debugging?
         !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
@@ -108,17 +110,6 @@ module ActiveRecord
       def supports_virtual_columns?
         # See cockroachdb/cockroach#20882.
         false
-      end
-
-      def transaction_isolation_levels
-        {
-          # Explicitly prevent READ UNCOMMITTED from being used. This
-          # was due to the READ UNCOMMITTED test failing.
-          # read_uncommitted: "READ UNCOMMITTED",
-          read_committed:   "READ COMMITTED",
-          repeatable_read:  "REPEATABLE READ",
-          serializable:     "SERIALIZABLE"
-        }
       end
 
       def primary_keys(table_name)
