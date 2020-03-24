@@ -1,3 +1,5 @@
+COCKROACHDB_HELPER = 'test/cases/helper_cockroachdb'
+
 def env_ar_test_files
   return unless ENV['TEST_FILES_AR'] && !ENV['TEST_FILES_AR'].empty?
 
@@ -16,5 +18,5 @@ def ar_cases
 end
 
 def test_files
-  env_ar_test_files || ar_cases
+  (env_ar_test_files || ar_cases).prepend(COCKROACHDB_HELPER)
 end
