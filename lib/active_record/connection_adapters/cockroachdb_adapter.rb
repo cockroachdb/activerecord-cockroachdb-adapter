@@ -36,6 +36,9 @@ module ActiveRecord
       include CockroachDB::SchemaStatements
       include CockroachDB::ReferentialIntegrity
 
+      def debugging?
+        !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
+      end
 
       # Note that in the migration from ActiveRecord 5.0 to 5.1, the
       # `extract_schema_qualified_name` method was aliased in the PostgreSQLAdapter.
