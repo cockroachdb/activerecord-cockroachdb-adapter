@@ -1,51 +1,36 @@
 # frozen_string_literal: true
-# NOTE(joey): This is cradled from connection_adapters/postgresql/referential_integrity.rb
-# It is commonly used for setting up fixtures during tests.
+
+# The PostgresSQL Adapter's ReferentialIntegrity module can disable and
+# re-enable foreign key constraints by disabling all table triggers. Since
+# triggers are not available in CockroachDB, we have to remove foreign keys and
+# re-add them via the ActiveRecord API.
+#
+# This module is commonly used to load test fixture data without having to worry
+# about the order in which that data is loaded.
 module ActiveRecord
   module ConnectionAdapters
     module CockroachDB
-      module ReferentialIntegrity # :nodoc:
-        def disable_referential_integrity # :nodoc:
-          original_exception = nil
-          fkeys = nil
+      module ReferentialIntegrity
+        def disable_referential_integrity
+          foreign_keys = tables.map { |table| foreign_keys(table) }.flatten
 
-          begin
-            transaction do
-              tables.each do |table_name|
-                fkeys = foreign_keys(table_name)
-                fkeys.each do |fkey|
-                  remove_foreign_key table_name, name: fkey.options[:name]
-                end
-              end
-            end
-          rescue ActiveRecord::ActiveRecordError => e
-            original_exception = e
+          foreign_keys.each do |foreign_key|
+            remove_foreign_key(foreign_key.from_table, name: foreign_key.options[:name])
           end
 
-          begin
-            yield
-          rescue ActiveRecord::InvalidForeignKey => e
-            warn <<-WARNING
-WARNING: Rails was not able to disable referential integrity.
+          yield
 
-Please go to https://github.com/cockroachdb/activerecord-cockroachdb-adapter
-and report this issue.
-
-    cause: #{original_exception.try(:message)}
-
-              WARNING
-            raise e
-          end
-
-          begin
-            transaction do
-              if !fkeys.nil?
-                 fkeys.each do |fkey|
-                  add_foreign_key fkey.from_table, fkey.to_table, fkey.options
-                end
+          foreign_keys.each do |foreign_key|
+            begin
+              add_foreign_key(foreign_key.from_table, foreign_key.to_table, foreign_key.options)
+            rescue ActiveRecord::StatementInvalid => error
+              if error.cause.class == PG::DuplicateObject
+                # This error is safe to ignore because the yielded caller
+                # already re-added the foreign key constraint.
+              else
+                raise error
               end
             end
-          rescue ActiveRecord::ActiveRecordError
           end
         end
       end
