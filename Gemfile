@@ -57,4 +57,5 @@ end
 group :development do
   gem "byebug"
   gem "mocha" # used by the ActiveRecord test suite
+  gem "minitest-excludes"
 end
