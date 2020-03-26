@@ -3,6 +3,7 @@ require "active_record/connection_adapters/postgresql/schema_statements"
 require "active_record/connection_adapters/cockroachdb/schema_statements"
 require "active_record/connection_adapters/cockroachdb/referential_integrity"
 require "active_record/connection_adapters/cockroachdb/transaction_manager"
+require "active_record/connection_adapters/cockroachdb/column"
 
 module ActiveRecord
   module ConnectionHandling
