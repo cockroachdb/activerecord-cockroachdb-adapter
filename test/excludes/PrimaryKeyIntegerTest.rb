@@ -1,0 +1,1 @@
+exclude "test_primary_key_column_type_with_serial/integer", "The last assertion in the test fails because CockroachDB's INT type translates to PostgreSQL's bigint type. See https://www.cockroachlabs.com/docs/v19.2/int.html#names-and-aliases and https://www.postgresql.org/docs/current/datatype-numeric.htmli."

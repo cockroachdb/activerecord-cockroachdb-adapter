@@ -27,4 +27,33 @@ module CockroachDB
       assert_predicate column, :serial?
     end
   end
+
+  class PrimaryKeyIntegerTest < ActiveRecord::TestCase
+    self.use_transactional_tests = false
+
+    class Widget < ActiveRecord::Base
+    end
+
+    setup do
+      @connection = ActiveRecord::Base.connection
+      @pk_type = :serial
+    end
+
+    teardown do
+      @connection.drop_table :widgets, if_exists: true
+    end
+
+    # This replaces the same test that's been excluded from
+    # PrimaryKeyIntegerTest. In PostgreSQL, serial columns are backed by integer
+    # columns. They're also backed by integer columns in CockroachDB, but
+    # integer columns are the same size as PostgreSQL's bigints. Therefore, we
+    # change the final assertion to verify the serial column is a bigint.
+    # See test/excludes/PrimaryKeyIntegerTest.rb
+    test "primary key column type with serial/integer" do
+      @connection.create_table(:widgets, id: @pk_type, force: true)
+      column = @connection.columns(:widgets).find { |c| c.name == "id" }
+      assert_equal :integer, column.type
+      assert_predicate column, :bigint?
+    end
+  end
 end
