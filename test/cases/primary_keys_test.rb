@@ -72,4 +72,30 @@ module CockroachDB
       assert_match %r{create_table "widgets", }, schema
     end
   end
+
+  class PrimaryKeyIntegerNilDefaultTest < ActiveRecord::TestCase
+    include SchemaDumpingHelper
+
+    self.use_transactional_tests = false
+
+    def setup
+      @connection = ActiveRecord::Base.connection
+    end
+
+    def teardown
+      @connection.drop_table :int_defaults, if_exists: true
+    end
+
+    # This replaces the same test that's been excluded from
+    # PrimaryKeyIntegerNilDefaultTest. int_defaults is created with an integer
+    # primary key, and integer columns are bigints in CockroachDB. Therefore,
+    # the schema dump will include the primary key as :bigint.
+    # See test/excludes/PrimaryKeyIntegerNilDefaultTest.rb
+    def test_schema_dump_primary_key_integer_with_default_nil
+      skip if current_adapter?(:SQLite3Adapter)
+      @connection.create_table(:int_defaults, id: :integer, default: nil, force: true)
+      schema = dump_table_schema "int_defaults"
+      assert_match %r{create_table "int_defaults", id: :bigint, default: nil}, schema
+    end
+  end
 end
