@@ -15,7 +15,7 @@ module ActiveRecord
           raise if attempts >= @connection.max_transaction_retries
 
           attempts += 1
-          sleep_seconds = (((2 ** attempts) * 100) + rand( 100 - 1 ) + 1) / 1000.0
+          sleep_seconds = (2 ** attempts + rand) / 10
           sleep(sleep_seconds)
           within_new_transaction(options.merge(attempts: attempts)) { yield }
         end
