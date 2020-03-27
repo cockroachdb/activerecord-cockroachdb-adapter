@@ -2,6 +2,7 @@ require "cases/helper_cockroachdb"
 
 # Load dependencies from ActiveRecord test suite
 require "cases/helper"
+require "support/schema_dumping_helper"
 require "models/topic"
 require "models/mixed_case_monkey"
 
@@ -29,6 +30,8 @@ module CockroachDB
   end
 
   class PrimaryKeyIntegerTest < ActiveRecord::TestCase
+    include SchemaDumpingHelper
+
     self.use_transactional_tests = false
 
     class Widget < ActiveRecord::Base
@@ -54,6 +57,19 @@ module CockroachDB
       column = @connection.columns(:widgets).find { |c| c.name == "id" }
       assert_equal :integer, column.type
       assert_predicate column, :bigint?
+    end
+
+    # This replaces the same test that's been excluded from
+    # PrimaryKeyIntegerTest. Although the widgets table is created with a serial
+    # primary key, that info will not be included in the schema dump.
+    # CockroachDB serial and bigserial columns are really bigserial columns, and
+    # ActiveRecord defaults to bigserial primary keys. Therefore, nothing about
+    # the id primary key will be in the widgets schema dump.
+    # See test/excludes/PrimaryKeyIntegerTest.rb
+    test "schema dump primary key with serial/integer" do
+      @connection.create_table(:widgets, id: @pk_type, force: true)
+      schema = dump_table_schema "widgets"
+      assert_match %r{create_table "widgets", }, schema
     end
   end
 end
