@@ -3,6 +3,7 @@ require "active_record/connection_adapters/cockroachdb/schema_statements"
 require "active_record/connection_adapters/cockroachdb/referential_integrity"
 require "active_record/connection_adapters/cockroachdb/transaction_manager"
 require "active_record/connection_adapters/cockroachdb/column"
+require "active_record/connection_adapters/cockroachdb/database_statements"
 
 module ActiveRecord
   module ConnectionHandling
@@ -35,11 +36,15 @@ module ActiveRecord
 
       include CockroachDB::SchemaStatements
       include CockroachDB::ReferentialIntegrity
+      include CockroachDB::DatabaseStatements
 
       def debugging?
         !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
       end
 
+      def max_transaction_retries
+        @max_transaction_retries ||= @config.fetch(:max_transaction_retries, 3)
+      end
 
       def supports_json?
         # FIXME(joey): Add a version check.
@@ -60,10 +65,6 @@ module ActiveRecord
       end
 
       def supports_materialized_views?
-        false
-      end
-
-      def supports_pg_crypto_uuid?
         false
       end
 
@@ -100,32 +101,6 @@ module ActiveRecord
         # See cockroachdb/cockroach#20882.
         false
       end
-
-      def supports_savepoints?
-        # See cockroachdb/cockroach#10735.
-        false
-      end
-
-      def transaction_isolation_levels
-        {
-          # Explicitly prevent READ UNCOMMITTED from being used. This
-          # was due to the READ UNCOMMITTED test failing.
-          # read_uncommitted: "READ UNCOMMITTED",
-          read_committed:   "READ COMMITTED",
-          repeatable_read:  "REPEATABLE READ",
-          serializable:     "SERIALIZABLE"
-        }
-      end
-
-
-      # Sadly, we can only do savepoints at the beginning of
-      # transactions. This means that we cannot use them for most cases
-      # of transaction, so we just pretend they're usable.
-      def create_savepoint(name = "COCKROACH_RESTART"); end
-
-      def exec_rollback_to_savepoint(name = "COCKROACH_RESTART"); end
-
-      def release_savepoint(name = "COCKROACH_RESTART"); end
 
       # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
       # migration from PostgreSQL to CockroachDB. In practice, this limitation
