@@ -74,10 +74,6 @@ module ActiveRecord
         false
       end
 
-      def supports_pg_crypto_uuid?
-        false
-      end
-
       def supports_partial_index?
         # See cockroachdb/cockroach#9683
         false
