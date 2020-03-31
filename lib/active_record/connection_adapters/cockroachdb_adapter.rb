@@ -46,6 +46,11 @@ module ActiveRecord
         @max_transaction_retries ||= @config.fetch(:max_transaction_retries, 3)
       end
 
+      # CockroachDB 20.1 can run queries that work against PostgreSQL 10+.
+      def postgresql_version
+        100000
+      end
+
       # Note that in the migration from ActiveRecord 5.0 to 5.1, the
       # `extract_schema_qualified_name` method was aliased in the PostgreSQLAdapter.
       # To ensure backward compatibility with both <5.1 and 5.1, we rename it here
