@@ -1,0 +1,2 @@
+exclude :test_serial_with_quoted_sequence_name, "The serial? predicate assertion is valid, but the default_function is different in CockroachDB. See https://www.cockroachlabs.com/docs/v19.2/serial.html#modes-of-operation."
+exclude :test_serial_with_unquoted_sequence_name, "The serial? predicate assertion is valid, but the default_function is different in CockroachDB. See https://www.cockroachlabs.com/docs/v19.2/serial.html#modes-of-operation."

@@ -1,8 +1,8 @@
 require 'active_record/connection_adapters/postgresql_adapter'
-require "active_record/connection_adapters/postgresql/schema_statements"
 require "active_record/connection_adapters/cockroachdb/schema_statements"
 require "active_record/connection_adapters/cockroachdb/referential_integrity"
 require "active_record/connection_adapters/cockroachdb/transaction_manager"
+require "active_record/connection_adapters/cockroachdb/column"
 require "active_record/connection_adapters/cockroachdb/database_statements"
 
 module ActiveRecord
@@ -50,12 +50,6 @@ module ActiveRecord
       def postgresql_version
         100000
       end
-
-      # Note that in the migration from ActiveRecord 5.0 to 5.1, the
-      # `extract_schema_qualified_name` method was aliased in the PostgreSQLAdapter.
-      # To ensure backward compatibility with both <5.1 and 5.1, we rename it here
-      # to use the same original `Utils` module.
-      Utils = PostgreSQL::Utils
 
       def supports_json?
         # FIXME(joey): Add a version check.
@@ -111,22 +105,6 @@ module ActiveRecord
       def supports_virtual_columns?
         # See cockroachdb/cockroach#20882.
         false
-      end
-
-      def primary_keys(table_name)
-          name = Utils.extract_schema_qualified_name(table_name.to_s)
-          select_values(<<-SQL.strip_heredoc, "SCHEMA")
-          SELECT column_name
-              FROM information_schema.key_column_usage kcu
-              JOIN information_schema.table_constraints tc
-              ON kcu.table_name = tc.table_name
-              AND kcu.table_schema = tc.table_schema
-              AND kcu.constraint_name = tc.constraint_name
-              WHERE constraint_type = 'PRIMARY KEY'
-              AND kcu.table_name = #{quote(name.identifier)}
-              AND kcu.table_schema = #{name.schema ? quote(name.schema) : "ANY (current_schemas(false))"}
-              ORDER BY kcu.ordinal_position
-          SQL
       end
 
       # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
