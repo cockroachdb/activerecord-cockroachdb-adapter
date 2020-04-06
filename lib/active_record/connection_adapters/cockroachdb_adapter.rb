@@ -46,6 +46,11 @@ module ActiveRecord
         @max_transaction_retries ||= @config.fetch(:max_transaction_retries, 3)
       end
 
+      # CockroachDB 20.1 can run queries that work against PostgreSQL 10+.
+      def postgresql_version
+        100000
+      end
+
       def supports_json?
         # FIXME(joey): Add a version check.
         true
