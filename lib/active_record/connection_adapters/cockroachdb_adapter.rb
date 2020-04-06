@@ -4,6 +4,7 @@ require "active_record/connection_adapters/cockroachdb/referential_integrity"
 require "active_record/connection_adapters/cockroachdb/transaction_manager"
 require "active_record/connection_adapters/cockroachdb/column"
 require "active_record/connection_adapters/cockroachdb/database_statements"
+require "active_record/connection_adapters/cockroachdb/quoting"
 
 module ActiveRecord
   module ConnectionHandling
@@ -37,6 +38,7 @@ module ActiveRecord
       include CockroachDB::SchemaStatements
       include CockroachDB::ReferentialIntegrity
       include CockroachDB::DatabaseStatements
+      include CockroachDB::Quoting
 
       def debugging?
         !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
