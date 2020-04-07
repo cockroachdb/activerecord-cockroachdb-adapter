@@ -1,5 +1,5 @@
-# This test has been copied to fix an ActiveRecord bug in the test setup. It can
-# be removed once the bug has been fixed.
+# This test has been copied to fix a bug in the test setup. It can be removed
+# once the bug has been fixed and released in Rails.
 # See test/excludes/EagerLoadPolyAssocsTest.rb
 
 require "cases/helper_cockroachdb"
@@ -25,20 +25,10 @@ module CockroachDB
     end
 
     module ClassMethods
-      # The ActiveRecord test setup bug is fixed here. @@remembered was being
-      # shared by every class that included the Remembered module. We can give
-      # it a unique name to prevent different classes from writing to the same
-      # collection.
-      def remembered
-        collection_name = "@@#{name.demodulize.underscore}_remembered"
-
-        if class_variable_defined?(collection_name)
-          class_variable_get(collection_name)
-        else
-          class_variable_set(collection_name, [])
-        end
-      end
-
+      # The test setup bug is fixed here. @@remembered was being shared by every
+      # class that included the Remembered module. Instead, we can use
+      # @remembered which will be unique to each included class.
+      def remembered; @remembered ||= []; end
       def sample; remembered.sample; end
     end
   end
