@@ -5,6 +5,7 @@ require "active_record/connection_adapters/cockroachdb/transaction_manager"
 require "active_record/connection_adapters/cockroachdb/column"
 require "active_record/connection_adapters/cockroachdb/database_statements"
 require "active_record/connection_adapters/cockroachdb/quoting"
+require "active_record/connection_adapters/cockroachdb/type"
 
 module ActiveRecord
   module ConnectionHandling
