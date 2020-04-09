@@ -1,7 +1,6 @@
 require "cases/helper_cockroachdb"
 
 # Load dependencies from ActiveRecord test suite
-require "cases/helper"
 require "support/schema_dumping_helper"
 require "models/topic"
 require "models/mixed_case_monkey"
