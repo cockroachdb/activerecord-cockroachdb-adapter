@@ -1,0 +1,1 @@
+exclude :test_include_query, "The test setup doesn't properly handle random unique primary keys. This is a bug in ActiveRecord, so exclude the test until it's fixed there. See https://github.com/rails/rails/pull/38883. Note: any bug fix is unlikely to be backported to older versions of Rails."
