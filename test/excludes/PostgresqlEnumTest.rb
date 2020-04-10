@@ -1,0 +1,7 @@
+exclude :test_column, "Enum types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/24873."
+exclude :test_enum_defaults, "Enum types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/24873."
+exclude :test_enum_mapping, "Enum types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/24873."
+exclude :test_invalid_enum_update, "Enum types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/24873."
+exclude :test_no_oid_warning, "Enum types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/24873."
+exclude :test_enum_type_cast, "Enum types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/24873."
+exclude :test_assigning_enum_to_nil, "Enum types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/24873."
