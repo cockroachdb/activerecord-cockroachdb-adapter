@@ -1,0 +1,1 @@
+exclude :test_schema_dump_with_collided_sequence_name, "Serial columns are dumped as a bigserials against CockroachDB. This happens because serial columns are backed by integers, and integers are really bigints in CockroachDB. See https://www.cockroachlabs.com/docs/v19.2/serial.html#generated-values-for-mode-sql_sequence."

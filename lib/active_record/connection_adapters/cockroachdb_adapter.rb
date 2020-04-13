@@ -6,6 +6,7 @@ require "active_record/connection_adapters/cockroachdb/column"
 require "active_record/connection_adapters/cockroachdb/database_statements"
 require "active_record/connection_adapters/cockroachdb/quoting"
 require "active_record/connection_adapters/cockroachdb/type"
+require "active_record/connection_adapters/cockroachdb/attribute_methods"
 
 module ActiveRecord
   module ConnectionHandling
@@ -35,6 +36,7 @@ module ActiveRecord
   module ConnectionAdapters
     class CockroachDBAdapter < PostgreSQLAdapter
       ADAPTER_NAME = "CockroachDB".freeze
+      DEFAULT_PRIMARY_KEY = "rowid"
 
       include CockroachDB::SchemaStatements
       include CockroachDB::ReferentialIntegrity

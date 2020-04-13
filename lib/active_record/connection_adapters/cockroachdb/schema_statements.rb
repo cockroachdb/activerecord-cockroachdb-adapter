@@ -4,8 +4,6 @@ module ActiveRecord
       module SchemaStatements
         include ActiveRecord::ConnectionAdapters::PostgreSQL::SchemaStatements
 
-        DEFAULT_PRIMARY_KEY = "rowid"
-
         def add_index(table_name, column_name, options = {})
           super
         rescue ActiveRecord::StatementInvalid => error
@@ -27,7 +25,7 @@ module ActiveRecord
         def primary_key(table_name)
           pk = super
 
-          if pk == DEFAULT_PRIMARY_KEY
+          if pk == CockroachDBAdapter::DEFAULT_PRIMARY_KEY
             nil
           else
             pk
