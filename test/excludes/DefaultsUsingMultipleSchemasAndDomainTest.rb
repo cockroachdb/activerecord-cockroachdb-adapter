@@ -1,0 +1,6 @@
+exclude :test_text_defaults_in_new_schema_when_overriding_domain, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
+exclude :test_string_defaults_in_new_schema_when_overriding_domain, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
+exclude :test_decimal_defaults_in_new_schema_when_overriding_domain, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
+exclude :test_bpchar_defaults_in_new_schema_when_overriding_domain, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
+exclude :test_text_defaults_after_updating_column_default, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
+exclude :test_default_containing_quote_and_colons, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
