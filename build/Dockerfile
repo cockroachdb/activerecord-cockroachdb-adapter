@@ -1,7 +1,7 @@
 # This Dockerfile extends the Examples-ORM testing image in order to
 # install specific dependencies required for ActiveRecord tests.
 
-FROM cockroachdb/postgres-test:20170308-1644
+FROM cockroachdb/example-orms-builder:20200413-1918
 
 # Native dependencies for libxml-ruby and sqlite3.
 RUN apt-get update -y && apt-get install -y \
