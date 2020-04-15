@@ -31,6 +31,13 @@ module ActiveRecord
             pk
           end
         end
+
+        # CockroachDB uses unique_rowid() for primary keys, not sequences. It's
+        # possible to force a table to use sequences, but since it's not the
+        # default behavior we'll always return nil for default_sequence_name.
+        def default_sequence_name(table_name, pk = "id")
+          nil
+        end
       end
     end
   end

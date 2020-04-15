@@ -1,0 +1,1 @@
+exclude :test_schema_dump_includes_default_expression, "The test fails because CockroachDB uses different functions than PostgreSQL for current date/timestamps. See https://www.cockroachlabs.com/docs/v19.2/functions-and-operators.html#date-and-time-functions."
