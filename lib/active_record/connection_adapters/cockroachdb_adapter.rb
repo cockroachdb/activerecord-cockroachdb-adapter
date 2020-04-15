@@ -191,8 +191,29 @@ module ActiveRecord
           end
         end
 
-        # We have to override extract_value_from_default so we can get the
-        # correct time and date defaults for a couple of reasons.
+        # Override extract_value_from_default because the upstream definition
+        # doesn't handle the variations in CockroachDB's behavior.
+        def extract_value_from_default(default)
+          super ||
+            extract_escaped_string_from_default(default) ||
+            extract_time_from_default(default)
+        end
+
+        # Both PostgreSQL and CockroachDB use C-style string escapes under the
+        # covers. PostgreSQL obscures this for us and unescapes the strings, but
+        # CockroachDB does not. Here we'll use Ruby to unescape the string.
+        # See https://github.com/cockroachdb/cockroach/issues/47497 and
+        # https://www.postgresql.org/docs/9.2/sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-ESCAPE.
+        def extract_escaped_string_from_default(default)
+          # Escaped strings start with an e followed by the string in quotes (e'…')
+          return unless default =~ /\A[\(B]?e'(.*)'.*::"?([\w. ]+)"?(?:\[\])?\z/m
+
+          # String#undump doesn't account for escaped single quote characters
+          "\"#{$1}\"".undump.gsub("\\'".freeze, "'".freeze)
+        end
+
+        # This method exists to extract the correct time and date defaults for a
+        # couple of reasons.
         # 1) There's a bug in CockroachDB where the date type is missing from
         # the column info query.
         # https://github.com/cockroachdb/cockroach/issues/47285
@@ -200,10 +221,6 @@ module ActiveRecord
         # TIMESTAMP type. TIMESTAMP includes a UTC time zone while timestamp
         # without time zone doesn't.
         # https://www.cockroachlabs.com/docs/v19.2/timestamp.html#variants
-        def extract_value_from_default(default)
-          super || extract_time_from_default(default)
-        end
-
         def extract_time_from_default(default)
           return unless default =~ /\A'(.*)'\z/
 
