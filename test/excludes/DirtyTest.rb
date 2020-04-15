@@ -1,0 +1,1 @@
+exclude :test_field_named_field, "Rails transactional tests are being used while making schema changes. See https://www.cockroachlabs.com/docs/stable/online-schema-changes.html#limited-support-for-schema-changes-within-transactions."
