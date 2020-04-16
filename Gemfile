@@ -2,8 +2,6 @@ require 'openssl'
 source 'https://rubygems.org'
 gemspec
 
-gem 'bcrypt' # used by the ActiveRecord test suite
-
 if ENV['RAILS_SOURCE']
   gemspec path: ENV['RAILS_SOURCE']
 else
@@ -56,6 +54,10 @@ end
 
 group :development do
   gem "byebug"
-  gem "mocha" # used by the ActiveRecord test suite
   gem "minitest-excludes"
+
+  # Gems used by the ActiveRecord test suite
+  gem "bcrypt"
+  gem "mocha"
+  gem "sqlite3"
 end
