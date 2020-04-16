@@ -1,8 +1,5 @@
 require "cases/helper_cockroachdb"
 
-# Load dependencies from ActiveRecord test suite
-require "cases/helper"
-
 module CockroachDB
   class PostgresqlActiveSchemaTest < ActiveRecord::PostgreSQLTestCase
     def setup
