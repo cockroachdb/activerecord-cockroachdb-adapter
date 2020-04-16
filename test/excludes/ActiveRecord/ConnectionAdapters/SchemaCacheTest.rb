@@ -1,0 +1,1 @@
+exclude :test_yaml_loads_5_1_dump, "The test errors because it doesn't properly reference the path to the schema dump. This is a bug in ActiveRecord, and any fix is unlikely to be backported to earlier versions of Rails. See https://github.com/rails/rails/pull/38945."
