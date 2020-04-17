@@ -46,19 +46,31 @@ Using [bundler](http://bundler.io/), install the dependancies of Rails.
 bundle install
 ```
 
-Then, to run the full ActiveRecord test suite with an active CockroachDB instance:
+Then, to run the full test suite with an active CockroachDB instance:
 
 ```bash
 bundle exec rake test
 ```
 
-To run specific tests, set environemnt variable `TEST_FILES_AR`. For example, to run ActiveRecord tests `test/cases/associations_test.rb` and `test/cases/ar_schema_test.rb.rb`
+To run specific ActiveRecord tests, set environemnt variable `TEST_FILES_AR`. For example, to run ActiveRecord tests `test/cases/associations_test.rb` and `test/cases/ar_schema_test.rb.rb`
 
 ```bash
 TEST_FILES_AR="test/cases/associations_test.rb,test/cases/ar_schema_test.rb" bundle exec rake test
 ```
 
-By default, tests will be run from the bundled version of Rails. To run against a local copy, set environemnt variable `RAILS_SOURCE`.
+To run specific CockroachDB Adapter tests, set environemnt variable `TEST_FILES`. For example, to run CockroachDB Adpater tests `test/cases/adapter_test.rb` and `test/cases/associations/left_outer_join_association_test.rb`
+
+```bash
+TEST_FILES="test/cases/adapter_test.rb,test/cases/associations/left_outer_join_association_test.rb" bundle exec rake test
+```
+
+To run a specific test case, use minitest's `-n` option to run tests that match a given pattern. All minitest options are set via the `TESTOPTS` environemnt variable. For example, to run `test_indexes` from CockroachDB's `test/cases/adapter_test.rb` file
+
+```bash
+TEST_FILES="test/cases/adapter_test.rb" TESTOPTS=`-n=/test_indexes/` bundle exec rake test
+```
+
+By default, tests will be run from the bundled version of Rails. To run against a local copy, set environemnt variable `RAILS_SOURCE`. Running against a local copy of Rails can be helpful when try to debug issues.
 
 ```bash
 RAILS_SOURCE="path/to/local_copy" bundle exec rake test
