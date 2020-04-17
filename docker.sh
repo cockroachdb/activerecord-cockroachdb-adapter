@@ -2,7 +2,7 @@
 #
 # This file is largely cargo-culted from cockroachdb/cockroach/build/builder.sh.
 
-set -euo pipefail
+set -euox pipefail
 
 DOCKER_IMAGE_TAG=activerecord_test_container
 
