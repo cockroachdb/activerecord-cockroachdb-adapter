@@ -103,8 +103,7 @@ module ActiveRecord
       end
 
       def supports_advisory_locks?
-        # FIXME(joey): We may want to make this false.
-        true
+        false
       end
 
       def supports_virtual_columns?
