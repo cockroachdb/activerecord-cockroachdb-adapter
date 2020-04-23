@@ -86,10 +86,9 @@ module CockroachDB
           t.index [:name, :age]
         end
       end
-    end
+  end
 
   private
-
     def with_bulk_change_table
       # Reset columns/indexes cache as we're changing the table
       @columns = @indexes = nil
@@ -114,4 +113,4 @@ module CockroachDB
     def indexes
       @indexes ||= Person.connection.indexes("delete_me")
     end
-  end
+end

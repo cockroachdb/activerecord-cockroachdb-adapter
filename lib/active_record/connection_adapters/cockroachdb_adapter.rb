@@ -56,6 +56,10 @@ module ActiveRecord
         100000
       end
 
+      def supports_bulk_alter?
+        false
+      end
+
       def supports_json?
         # FIXME(joey): Add a version check.
         true
