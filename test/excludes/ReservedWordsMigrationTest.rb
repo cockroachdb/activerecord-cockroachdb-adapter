@@ -1,0 +1,1 @@
+exclude :test_drop_index_from_table_named_values, "This isn't supported by CockroachDB; see https://www.cockroachlabs.com/docs/stable/online-schema-changes.html#examples-of-statements-that-fail for more information"
