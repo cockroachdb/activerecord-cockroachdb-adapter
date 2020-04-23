@@ -1,6 +1,74 @@
 require "cases/helper_cockroachdb"
 
 module CockroachDB
+  class MigrationTest < ActiveRecord::TestCase
+    self.use_transactional_tests = false
+
+    fixtures :people
+
+    def setup
+      super
+      %w(reminders people_reminders prefix_reminders_suffix p_things_s).each do |table|
+        Reminder.connection.drop_table(table) rescue nil
+      end
+      Reminder.reset_column_information
+      @verbose_was, ActiveRecord::Migration.verbose = ActiveRecord::Migration.verbose, false
+      ActiveRecord::Base.connection.schema_cache.clear!
+    end
+
+    teardown do
+      ActiveRecord::Base.table_name_prefix = ""
+      ActiveRecord::Base.table_name_suffix = ""
+
+      ActiveRecord::SchemaMigration.create_table
+      ActiveRecord::SchemaMigration.delete_all
+
+      %w(things awesome_things prefix_things_suffix p_awesome_things_s).each do |table|
+        Thing.connection.drop_table(table) rescue nil
+      end
+      Thing.reset_column_information
+
+      %w(reminders people_reminders prefix_reminders_suffix).each do |table|
+        Reminder.connection.drop_table(table) rescue nil
+      end
+      Reminder.reset_table_name
+      Reminder.reset_column_information
+
+      %w(last_name key bio age height wealth birthday favorite_day
+       moment_of_truth male administrator funny).each do |column|
+        Person.connection.remove_column("people", column) rescue nil
+      end
+      Person.connection.remove_column("people", "first_name") rescue nil
+      Person.connection.remove_column("people", "middle_name") rescue nil
+      Person.connection.add_column("people", "first_name", :string)
+      Person.reset_column_information
+
+      ActiveRecord::Migration.verbose = @verbose_was
+    end
+
+    def test_create_table_with_query
+      Person.connection.create_table :table_from_query_testings, as: "SELECT id FROM people WHERE id = 1"
+
+      columns = Person.connection.columns(:table_from_query_testings)
+      assert_equal [1], Person.connection.select_values("SELECT * FROM table_from_query_testings")
+      assert_equal 2, columns.length # columns.length equals 1 in PG since this query does not create a primary key
+      assert_equal "id", columns.first.name
+    ensure
+      Person.connection.drop_table :table_from_query_testings rescue nil
+    end
+
+    def test_create_table_with_query_from_relation
+      Person.connection.create_table :table_from_query_testings, as: Person.select(:id).where(id: 1)
+
+      columns = Person.connection.columns(:table_from_query_testings)
+      assert_equal [1], Person.connection.select_values("SELECT * FROM table_from_query_testings")
+      assert_equal 2, columns.length # columns.length equals 1 in PG since this query does not create a primary key
+      assert_equal "id", columns.first.name
+    ensure
+      Person.connection.drop_table :table_from_query_testings rescue nil
+    end
+  end
+
   class BulkAlterTableMigrationsTest < ActiveRecord::TestCase
     def setup
       @connection = Person.connection
