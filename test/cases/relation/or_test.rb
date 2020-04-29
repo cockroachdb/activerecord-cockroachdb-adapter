@@ -10,8 +10,8 @@ require "models/post"
 require "models/author"
 require "models/categorization"
 
-module CockroachDB
-  module ActiveRecord
+module ActiveRecord
+  module CockroachDB
     class OrTest < ActiveRecord::TestCase
       fixtures :posts
       fixtures :authors, :author_addresses
