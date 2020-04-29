@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -euox pipefail
 
 # Download CockroachDB
-VERSION=v20.1.0-rc.1
+VERSION=v20.1.0-rc.2
 wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
 readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
 
@@ -21,7 +21,7 @@ run_cockroach() {
   cockroach quit --insecure || true
   rm -rf cockroach-data
   # Start CockroachDB.
-  cockroach start-single-node --insecure --host=localhost --listening-url-file="$urlfile" >/dev/null 2>&1 &
+  cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --listening-url-file="$urlfile" >/dev/null 2>&1 &
   # Ensure CockroachDB is stopped on script exit.
   trap "echo 'Exit routine: Killing CockroachDB.' && kill -9 $! &> /dev/null" EXIT
   # Wait until CockroachDB has started.
@@ -33,6 +33,8 @@ run_cockroach() {
   done
   cockroach sql --insecure -e 'CREATE DATABASE activerecord_unittest;'
   cockroach sql --insecure -e 'CREATE DATABASE activerecord_unittest2;'
+  cockroach sql --insecure -e 'SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false;'
+  cockroach sql --insecure -e 'SET CLUSTER SETTING sql.stats.histogram_collection.enabled = false;'
 }
 
 # Install ruby dependencies.
@@ -41,7 +43,7 @@ bundle install
 
 run_cockroach
 
-if ! (bundle exec rake test); then
+if ! (RUBYOPT="-W0" TESTOPTS="-v" bundle exec rake test); then
     echo "Tests failed"
     HAS_FAILED=1
 else
