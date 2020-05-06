@@ -35,6 +35,7 @@ run_cockroach() {
   cockroach sql --insecure -e 'CREATE DATABASE activerecord_unittest2;'
   cockroach sql --insecure -e 'SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false;'
   cockroach sql --insecure -e 'SET CLUSTER SETTING sql.stats.histogram_collection.enabled = false;'
+  cockroach sql --insecure -e "SET CLUSTER SETTING jobs.retention_time = '180s';"
 }
 
 # Install ruby dependencies.
