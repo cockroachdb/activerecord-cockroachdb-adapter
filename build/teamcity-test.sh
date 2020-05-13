@@ -4,8 +4,14 @@ set -euox pipefail
 
 # Download CockroachDB
 VERSION=v20.1.0-rc.2
-wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
-readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
+#wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
+#wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
+#readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
+
+mkdir -p ./cockroach
+wget -q -O cockroach/cockroach https://edge-binaries.cockroachdb.com/cockroach/cockroach.linux-gnu-amd64.c902bd9bf3cc83d69adce7ed340f30020dfb3b65
+chmod +x ./cockroach/cockroach
+export PATH=./cockroach/:$PATH
 
 # Make sure cockroach can be found on the path. This is required for the
 # ActiveRecord Rakefile that rebuilds the test database.
