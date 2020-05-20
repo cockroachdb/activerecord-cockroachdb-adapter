@@ -30,7 +30,7 @@ module ActiveRecord
         def test_create_join_table_set_not_null_by_default
           connection.create_join_table :artists, :musics
 
-          assert_equal [false, false], connection.columns(:artists_musics).map(&:null)
+          assert_equal [false, false, false], connection.columns(:artists_musics).map(&:null)
         end
 
         def test_create_join_table_with_strings
@@ -48,7 +48,7 @@ module ActiveRecord
         def test_create_join_table_with_the_proper_order
           connection.create_join_table :videos, :musics
 
-          assert_equal %w(music_id video_id rowid), connection.columns(:musics_videos).map(&:name).sort
+          assert_equal %w(music_id rowid video_id), connection.columns(:musics_videos).map(&:name).sort
         end
 
         def test_create_join_table_with_the_table_name
@@ -97,7 +97,7 @@ module ActiveRecord
 
         def test_create_join_table_with_uuid
           connection.create_join_table :artists, :musics, column_options: { type: :uuid }
-          assert_equal [:uuid, :uuid], connection.columns(:artists_musics).map(&:type)
+          assert_equal [:uuid, :uuid, :integer], connection.columns(:artists_musics).map(&:type)
         end
 
         private

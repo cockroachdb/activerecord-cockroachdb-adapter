@@ -126,6 +126,14 @@ module ActiveRecord
           assert_equal "integer", four.sql_type
           assert_equal "bigint", eight.sql_type
         end
+
+        private
+          def testing_table_with_only_foo_attribute
+            connection.create_table :testings, id: false do |t|
+              t.column :foo, :string
+            end
+            yield
+          end
       end
     end
   end
