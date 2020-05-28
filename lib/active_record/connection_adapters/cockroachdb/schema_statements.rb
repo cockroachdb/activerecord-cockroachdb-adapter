@@ -38,6 +38,29 @@ module ActiveRecord
         def default_sequence_name(table_name, pk = "id")
           nil
         end
+
+        # CockroachDB will use INT8 if the SQL type is INTEGER, so we make it use
+        # INT4 explicitly when needed.
+        def type_to_sql(type, limit: nil, precision: nil, scale: nil, array: nil, **) # :nodoc:
+          sql = \
+            case type.to_s
+            when "integer"
+              case limit
+              when nil; "int"
+              when 1, 2; "int2"
+              when 3, 4; "int4"
+              when 5..8; "int8"
+              else super
+              end
+            else
+              super
+            end
+          # The call to super might have appeneded [] already.
+          if array && type != :primary_key && !sql.end_with?("[]")
+            sql = "#{sql}[]" 
+          end
+          sql
+        end
       end
     end
   end

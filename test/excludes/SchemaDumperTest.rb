@@ -1,0 +1,7 @@
+exclude :test_schema_dump_allows_array_of_decimal_defaults, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_schema_dump_expression_indices, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_foreign_keys_are_dumped_at_the_bottom_to_circumvent_dependency_issues, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_schema_dump_interval_type, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_do_not_dump_foreign_keys_for_ignored_tables, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_schema_dump_includes_bigint_default, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_schema_dump_keeps_large_precision_integer_columns_as_decimal, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"

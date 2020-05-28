@@ -1,0 +1,7 @@
+exclude :test_creates_index_by_default_even_if_index_option_is_not_passed, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_creates_index_for_existing_table_even_if_index_option_is_not_passed, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_creates_index_with_options, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_creates_polymorphic_index_for_existing_table, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_creates_index_for_existing_table, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_creates_polymorphic_index, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_creates_index, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"

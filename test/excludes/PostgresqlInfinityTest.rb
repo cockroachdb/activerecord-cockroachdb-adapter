@@ -1,0 +1,5 @@
+exclude :test_type_casting_infinity_on_a_float_column, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_type_casting_infinity_on_a_datetime_column, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_update_all_with_infinity_on_a_float_column, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude "test_assigning_'infinity'_on_a_datetime_column_with_TZ_aware_attributes", "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_update_all_with_infinity_on_a_datetime_column, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"

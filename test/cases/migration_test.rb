@@ -84,7 +84,7 @@ module CockroachDB
     def test_adding_multiple_columns
       classname = ActiveRecord::Base.connection.class.name[/[^:]*$/]
       expected_query_count = {
-        "CockroachDBAdapter" => 2, # one for bulk change, one for comment
+        "CockroachDBAdapter" => 8, # 5 new explicit columns, 2 for created_at/updated_at, 1 comment
       }.fetch(classname) {
           raise "need an expected query count for #{classname}"
         }
@@ -105,80 +105,52 @@ module CockroachDB
         assert_equal "This is a comment", column(:birthdate).comment
     end
 
-    def test_changing_columns
+    def test_adding_indexes
       with_bulk_change_table do |t|
+        t.string :username
         t.string :name
-        t.date :birthdate
+        t.integer :age
       end
-
-      assert ! column(:name).default
-      assert_equal :date, column(:birthdate).type
 
       classname = ActiveRecord::Base.connection.class.name[/[^:]*$/]
       expected_query_count = {
-        "CockroachDBAdapter" => 3, # one query for columns, one for bulk change, one for comment
+        "CockroachDBAdapter" => 2,
       }.fetch(classname) {
           raise "need an expected query count for #{classname}"
         }
 
-        assert_queries(expected_query_count, ignore_none: true) do
+        assert_queries(expected_query_count) do
           with_bulk_change_table do |t|
-            t.change :name, :string, default: "NONAME"
-            t.change :birthdate, :datetime, comment: "This is a comment"
+            t.index :username, unique: true, name: :awesome_username_index
+            t.index [:name, :age]
           end
         end
-
-        assert_equal "NONAME", column(:name).default
-        assert_equal :datetime, column(:birthdate).type
-        assert_equal "This is a comment", column(:birthdate).comment
-    end
-  end
-
-  def test_adding_indexes
-    with_bulk_change_table do |t|
-      t.string :username
-      t.string :name
-      t.integer :age
     end
 
-    classname = ActiveRecord::Base.connection.class.name[/[^:]*$/]
-    expected_query_count = {
-      "CockroachDBAdapter" => 2,
-    }.fetch(classname) {
-        raise "need an expected query count for #{classname}"
-      }
+    private
+      def with_bulk_change_table
+        # Reset columns/indexes cache as we're changing the table
+        @columns = @indexes = nil
 
-      assert_queries(expected_query_count) do
-        with_bulk_change_table do |t|
-          t.index :username, unique: true, name: :awesome_username_index
-          t.index [:name, :age]
+        Person.connection.change_table(:delete_me, bulk: true) do |t|
+          yield t
         end
       end
-  end
 
-  private
-    def with_bulk_change_table
-      # Reset columns/indexes cache as we're changing the table
-      @columns = @indexes = nil
-
-      Person.connection.change_table(:delete_me, bulk: true) do |t|
-        yield t
+      def column(name)
+        columns.detect { |c| c.name == name.to_s }
       end
-    end
 
-    def column(name)
-      columns.detect { |c| c.name == name.to_s }
-    end
+      def columns
+        @columns ||= Person.connection.columns("delete_me")
+      end
 
-    def columns
-      @columns ||= Person.connection.columns("delete_me")
-    end
+      def index(name)
+        indexes.detect { |i| i.name == name.to_s }
+      end
 
-    def index(name)
-      indexes.detect { |i| i.name == name.to_s }
-    end
-
-    def indexes
-      @indexes ||= Person.connection.indexes("delete_me")
-    end
+      def indexes
+        @indexes ||= Person.connection.indexes("delete_me")
+      end
+  end
 end

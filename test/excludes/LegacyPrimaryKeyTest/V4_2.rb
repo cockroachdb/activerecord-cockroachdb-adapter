@@ -1,0 +1,6 @@
+exclude :test_legacy_primary_key_in_create_table_should_be_integer, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_legacy_primary_key_should_be_auto_incremented, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_legacy_integer_primary_key_should_not_be_auto_incremented, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_add_column_with_legacy_primary_key_should_be_integer, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_legacy_join_table_foreign_keys_should_be_integer, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_legacy_primary_key_in_change_table_should_be_integer, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
