@@ -83,8 +83,7 @@ module ActiveRecord
       end
 
       def supports_partial_index?
-        # See cockroachdb/cockroach#9683
-        false
+        @crdb_version >= 202
       end
 
       def supports_expression_index?
@@ -130,6 +129,25 @@ module ActiveRecord
       alias index_name_length max_identifier_length
       alias table_alias_length max_identifier_length
 
+      def initialize(connection, logger, conn_params, config)
+        super(connection, logger, conn_params, config)
+        crdb_version_string = query_value("SHOW crdb_version")
+        if crdb_version_string.include? "v1."
+          version_num = 1
+        elsif crdb_version_string.include? "v2."
+          version_num 2
+        elsif crdb_version_string.include? "v19.1."
+          version_num = 191
+        elsif crdb_version_string.include? "v19.2."
+          version_num = 192
+        elsif crdb_version_string.include? "v20.1."
+          version_num = 201
+        else
+          version_num = 202
+        end
+        @crdb_version = version_num
+      end
+        
       private
 
         def initialize_type_map(m = type_map)
