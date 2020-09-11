@@ -24,10 +24,14 @@ module ActiveRecord
       valid_conn_param_keys = PG::Connection.conndefaults_hash.keys + [:sslmode, :application_name]
       conn_params.slice!(*valid_conn_param_keys)
 
-      # The postgres drivers don't allow the creation of an unconnected
-      # PG::Connection object, so just pass a nil connection object for the
-      # time being.
-      ConnectionAdapters::CockroachDBAdapter.new(nil, logger, conn_params, config)
+      conn = PG.connect(conn_params)
+      ConnectionAdapters::CockroachDBAdapter.new(conn, logger, conn_params, config)
+    rescue ::PG::Error => error
+      if error.message.include?("does not exist")
+        raise ActiveRecord::NoDatabaseError
+      else
+        raise
+      end
     end
   end
 end
