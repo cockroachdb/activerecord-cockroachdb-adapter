@@ -1,0 +1,2 @@
+exclude :test_gracefully_handles_temporary_tables
+exclude :test_unlogged_in_test_environment_when_unlogged_setting_enabled
