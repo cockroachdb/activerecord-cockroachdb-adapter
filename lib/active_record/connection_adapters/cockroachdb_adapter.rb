@@ -114,6 +114,10 @@ module ActiveRecord
         false
       end
 
+      def supports_string_to_array_coercion?
+        @crdb_version >= 202
+      end
+
       # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
       # migration from PostgreSQL to CockroachDB. In practice, this limitation
       # is arbitrary since CockroachDB supports index name lengths and table alias
@@ -220,7 +224,8 @@ module ActiveRecord
         def extract_value_from_default(default)
           super ||
             extract_escaped_string_from_default(default) ||
-            extract_time_from_default(default)
+            extract_time_from_default(default) ||
+            extract_empty_array_from_default(default)
         end
 
         # Both PostgreSQL and CockroachDB use C-style string escapes under the
@@ -260,6 +265,15 @@ module ActiveRecord
           Time.parse(time).to_s
         rescue
           nil
+        end
+
+        # CockroachDB stores default values for arrays in the `ARRAY[...]` format.
+        # In general, it is hard to parse that, but it is easy to handle the common
+        # case of an empty array.
+        def extract_empty_array_from_default(default)
+          return unless supports_string_to_array_coercion? 
+          return unless default =~ /\AARRAY\[\]\z/
+          return "{}"
         end
 
       # end private
