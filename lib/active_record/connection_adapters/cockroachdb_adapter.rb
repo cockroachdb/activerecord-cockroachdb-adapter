@@ -80,11 +80,6 @@ module ActiveRecord
         false
       end
 
-      def supports_ranges?
-        # See cockroachdb/cockroach#17022
-        false
-      end
-
       def supports_materialized_views?
         false
       end
