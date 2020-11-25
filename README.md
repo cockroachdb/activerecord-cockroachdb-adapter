@@ -7,7 +7,7 @@ CockroachDB adapter for ActiveRecord 4 and 5. This is a lightweight extension of
 Add this line to your project's Gemfile:
 
 ```ruby
-gem 'activerecord-cockroachdb-adapter', '~> 0.2'
+gem 'activerecord-cockroachdb-adapter', '~> 5.2.0'
 ```
 
 If you're using Rails 4.x, use the `0.1.x` versions of this gem.
