@@ -4,14 +4,19 @@ require "cases/helper_cockroachdb"
 require "cases/helper"
 require "support/connection_helper"
 require "models/account"
+require "models/binary"
+require "models/category"
 require "models/company"
+require "models/computer"
 require "models/course"
+require "models/developer"
+require "models/joke"
 require "models/parrot"
 require "models/pirate"
+require "models/task"
+require "models/topic"
+require "models/traffic_light"
 require "models/treasure"
-
-require 'pry'
-require 'readline'
 
 module CockroachDB
   class FixturesTest < ActiveRecord::TestCase
