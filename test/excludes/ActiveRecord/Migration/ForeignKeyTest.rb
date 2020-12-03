@@ -25,3 +25,4 @@ exclude :test_add_foreign_key_with_prefix, "This test fails due to the transacti
 exclude :test_add_foreign_key_with_suffix, "This test fails due to the transactional nature of the test. Disabling transactions will make the test pass."
 exclude :test_foreign_keys, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_schema_dumping_with_options, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_remove_foreign_key_by_the_select_one_on_the_same_table, "This test fails due to the transactional nature of the test. Disabling transactions will make the test pass."
