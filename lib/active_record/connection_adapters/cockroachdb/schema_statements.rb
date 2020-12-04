@@ -62,6 +62,7 @@ module ActiveRecord
           sql
         end
 
+        # This overrides the method from PostegreSQL adapter
         # Resets the sequence of a table's primary key to the maximum value.
         def reset_pk_sequence!(table, pk = nil, sequence = nil)
           unless pk && sequence
