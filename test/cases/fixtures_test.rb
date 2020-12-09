@@ -354,6 +354,7 @@ module CockroachDB
         t.references :firm, index: false
         t.string  :firm_name
         t.integer :credit_limit
+        t.integer "a" * max_identifier_length
       end
 
       Company.connection.drop_table :companies, if_exists: true
@@ -431,6 +432,17 @@ module CockroachDB
         instance.save!
         assert_equal max_id + 1, instance.id, "Sequence reset for #{instance.class.table_name} failed."
       end
+    end
+
+    private
+
+    def max_identifier_length
+      get_identifier.first.to_i
+    end
+
+    def get_identifier
+      connection = ActiveRecord::Base.connection
+      connection.execute("SHOW max_identifier_length").values.flatten
     end
   end
 end
