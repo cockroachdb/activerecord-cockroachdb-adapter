@@ -1,0 +1,1 @@
+exclude :test_belongs_to_with_annotation_includes_a_query_comment, "Skip"
