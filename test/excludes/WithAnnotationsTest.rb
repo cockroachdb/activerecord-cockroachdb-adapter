@@ -1,1 +1,6 @@
+exclude :test_has_and_belongs_to_many_with_annotation_includes_a_query_comment, "This test is overrided to fix the fixtures sequence. See test/cases/associations_test.rb"
 exclude :test_belongs_to_with_annotation_includes_a_query_comment, "This test is overrided to fix the fixtures sequence. See test/cases/associations_test.rb"
+exclude :test_has_one_with_annotation_includes_a_query_comment, "This test is overrided to fix the fixtures sequence. See test/cases/associations_test.rb"
+exclude :test_has_many_with_annotation_includes_a_query_comment, "This test is overrided to fix the fixtures sequence. See test/cases/associations_test.rb"
+exclude :test_has_many_through_with_annotation_includes_a_query_comment, "This test is overrided to fix the fixtures sequence. See test/cases/associations_test.rb"
+exclude :test_has_many_through_with_annotation_includes_a_query_comment_when_eager_loading, "This test is overrided to fix the fixtures sequence. See test/cases/associations_test.rb"
