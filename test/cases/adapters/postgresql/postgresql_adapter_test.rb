@@ -2,8 +2,6 @@ require "cases/helper_cockroachdb"
 require "cases/helper"
 require "support/ddl_helper"
 require "support/connection_helper"
-require 'pry'
-require 'readline'
 
 module CockroachDB
   module ConnectionAdapters
