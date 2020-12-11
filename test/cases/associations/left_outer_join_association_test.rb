@@ -6,7 +6,7 @@ require "models/author"
 
 module CockroachDB
   class LeftOuterJoinAssociationTest < ActiveRecord::TestCase
-    fixtures :authors, :posts
+    fixtures :author_addresses, :authors, :posts
 
     # This replaces the same test that's been excluded from
     # LeftOuterJoinAssociationTest. The query has been updated to guarantee the
