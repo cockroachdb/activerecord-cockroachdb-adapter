@@ -306,7 +306,8 @@ module CockroachDB
           id BIGINT PRIMARY KEY DEFAULT nextval('accounts_id_seq'),
           firm_id bigint,
           firm_name character varying,
-          credit_limit integer
+          credit_limit integer,
+          #{'a' * max_identifier_length} integer
         )
       ")
 
@@ -382,6 +383,8 @@ module CockroachDB
         t.column :name, :string, null: false
         t.column :college_id, :integer
       end
+
+      recreate_parrots
     end
 
     # This replaces the same test that's been excluded from
@@ -437,12 +440,37 @@ module CockroachDB
     private
 
     def max_identifier_length
-      get_identifier.first.to_i
+      ActiveRecord::Base.connection.index_name_length
     end
 
-    def get_identifier
-      connection = ActiveRecord::Base.connection
-      connection.execute("SHOW max_identifier_length").values.flatten
+    def recreate_parrots
+      conn = ActiveRecord::Base.connection
+
+      conn.drop_table :parrots_pirates, if_exists: true
+      conn.drop_table :parrots_treasures, if_exists: true
+      conn.drop_table :parrots, if_exists: true
+
+      conn.create_table :parrots, force: :cascade do |t|
+        t.string :name
+        t.string :color
+        t.string :parrot_sti_class
+        t.integer :killer_id
+        t.integer :updated_count, :integer, default: 0
+        t.datetime :created_at
+        t.datetime :created_on
+        t.datetime :updated_at
+        t.datetime :updated_on
+      end
+
+      conn.create_table :parrots_pirates, id: false, force: true do |t|
+        t.references :parrot, foreign_key: true
+        t.references :pirate, foreign_key: true
+      end
+
+      conn.create_table :parrots_treasures, id: false, force: true do |t|
+        t.references :parrot, foreign_key: true
+        t.references :treasure, foreign_key: true
+      end
     end
   end
 end
