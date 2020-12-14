@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.description   = "Allows the use of CockroachDB as a backend for ActiveRecord and Rails apps."
   spec.homepage      = "https://github.com/cockroachdb/activerecord-cockroachdb-adapter"
 
-  spec.add_dependency "activerecord", "~> 6.0.1"
+  spec.add_dependency "activerecord", "~> 6.0.3"
   spec.add_dependency "pg", ">= 0.20"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
