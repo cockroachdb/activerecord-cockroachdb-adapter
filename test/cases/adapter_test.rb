@@ -53,6 +53,23 @@ module CockroachDB
 
     fixtures :fk_test_has_pk
 
+    def before_setup
+      conn = ActiveRecord::Base.connection
+
+      conn.drop_table :fk_test_has_fk, if_exists: true
+      conn.drop_table :fk_test_has_pk, if_exists: true
+
+      conn.create_table :fk_test_has_pk, primary_key: "pk_id", force: :cascade do |t|
+      end
+
+      conn.create_table :fk_test_has_fk, force: true do |t|
+        t.references :fk, null: false
+        t.foreign_key :fk_test_has_pk, column: "fk_id", name: "fk_name", primary_key: "pk_id"
+      end
+
+      conn.execute "INSERT INTO fk_test_has_pk (pk_id) VALUES (1)"
+    end
+
     def setup
       @connection = ActiveRecord::Base.connection
     end
