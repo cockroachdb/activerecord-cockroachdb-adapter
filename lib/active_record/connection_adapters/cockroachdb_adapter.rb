@@ -27,7 +27,14 @@ module ActiveRecord
       # The postgres drivers don't allow the creation of an unconnected
       # PG::Connection object, so just pass a nil connection object for the
       # time being.
-      ConnectionAdapters::CockroachDBAdapter.new(nil, logger, conn_params, config)
+      conn = PG.connect(conn_params)
+      ConnectionAdapters::CockroachDBAdapter.new(conn, logger, conn_params, config)
+    rescue ::PG::Error => error
+      if error.message.include?("does not exist")
+        raise ActiveRecord::NoDatabaseError
+      else
+        raise
+      end
     end
   end
 end
@@ -70,11 +77,6 @@ module ActiveRecord
       end
 
       def supports_extensions?
-        false
-      end
-
-      def supports_ranges?
-        # See cockroachdb/cockroach#17022
         false
       end
 
@@ -151,7 +153,7 @@ module ActiveRecord
         end
         @crdb_version = version_num
       end
-        
+
       private
 
         def initialize_type_map(m = type_map)

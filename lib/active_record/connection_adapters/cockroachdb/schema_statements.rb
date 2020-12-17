@@ -57,9 +57,34 @@ module ActiveRecord
             end
           # The call to super might have appeneded [] already.
           if array && type != :primary_key && !sql.end_with?("[]")
-            sql = "#{sql}[]" 
+            sql = "#{sql}[]"
           end
           sql
+        end
+
+        # This overrides the method from PostegreSQL adapter
+        # Resets the sequence of a table's primary key to the maximum value.
+        def reset_pk_sequence!(table, pk = nil, sequence = nil)
+          unless pk && sequence
+            default_pk, default_sequence = pk_and_sequence_for(table)
+
+            pk ||= default_pk
+            sequence ||= default_sequence
+          end
+
+          if @logger && pk && !sequence
+            @logger.warn "#{table} has primary key #{pk} with no default sequence."
+          end
+
+          if pk && sequence
+            quoted_sequence = quote_table_name(sequence)
+            max_pk = query_value("SELECT MAX(#{quote_column_name pk}) FROM #{quote_table_name(table)}", "SCHEMA")
+            if max_pk.nil?
+              minvalue = query_value("SELECT seqmin FROM pg_sequence WHERE seqrelid = #{quote(quoted_sequence)}::regclass", "SCHEMA")
+            end
+
+            query_value("SELECT setval(#{quote(quoted_sequence)}, #{max_pk ? max_pk : minvalue}, #{max_pk ? true : false})", "SCHEMA")
+          end
         end
       end
     end
