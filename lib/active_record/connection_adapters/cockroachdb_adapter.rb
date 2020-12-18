@@ -24,12 +24,9 @@ module ActiveRecord
       valid_conn_param_keys = PG::Connection.conndefaults_hash.keys + [:sslmode, :application_name]
       conn_params.slice!(*valid_conn_param_keys)
 
-      # The postgres drivers don't allow the creation of an unconnected
-      # PG::Connection object, so just pass a nil connection object for the
-      # time being.
       conn = PG.connect(conn_params)
       ConnectionAdapters::CockroachDBAdapter.new(conn, logger, conn_params, config)
-    rescue ::PG::Error => error
+    rescue ::PG::Error, ActiveRecord::ActiveRecordError  => error
       if error.message.include?("does not exist")
         raise ActiveRecord::NoDatabaseError
       else
@@ -152,6 +149,12 @@ module ActiveRecord
           version_num = 202
         end
         @crdb_version = version_num
+      end
+
+      def self.database_exists?(config)
+        !!ActiveRecord::Base.cockroachdb_connection(config)
+      rescue ActiveRecord::NoDatabaseError
+        false
       end
 
       private

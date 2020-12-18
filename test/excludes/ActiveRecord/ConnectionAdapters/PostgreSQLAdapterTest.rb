@@ -14,3 +14,4 @@ exclude :test_default_sequence_name_bad_table, "Skipping until we can triage fur
 exclude :test_exec_insert_default_values_quoted_schema_with_returning_disabled_and_no_sequence_name_given, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_expression_index, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_serial_sequence, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_database_exists_returns_false_when_the_database_does_not_exist, "Test is reimplemented to use cockroachdb adapter"
