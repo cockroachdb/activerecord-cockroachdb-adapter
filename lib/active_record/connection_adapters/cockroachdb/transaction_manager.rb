@@ -9,7 +9,7 @@ module ActiveRecord
         # transactions will be retried until they pass or the max retry limit is
         # exceeded.
         def within_new_transaction(isolation: nil, joinable: true, attempts: 0)
-          super
+          super(isolation: isolation, joinable: joinable)
         rescue ActiveRecord::StatementInvalid => error
           raise unless retryable? error
           raise if attempts >= @connection.max_transaction_retries
