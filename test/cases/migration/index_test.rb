@@ -58,7 +58,7 @@ module ActiveRecord
 
         def test_double_add_index
           connection.add_index(table_name, [:foo], name: "some_idx")
-          assert_raises(ArgumentError) {
+          assert_raises(ActiveRecord::StatementInvalid) {
             connection.add_index(table_name, [:foo], name: "some_idx")
           }
         end
