@@ -22,3 +22,23 @@ ensure
 end
 
 load_cockroachdb_specific_schema
+
+module ActiveSupport
+  class TestCase
+    def postgis_version
+      @postgis_version ||= ActiveRecord::Base.connection.select_value('SELECT postgis_lib_version()')
+    end
+
+    def factory
+      RGeo::Cartesian.preferred_factory(srid: 3857)
+    end
+
+    def geographic_factory
+      RGeo::Geographic.spherical_factory(srid: 4326)
+    end
+
+    def spatial_factory_store
+      RGeo::ActiveRecord::SpatialFactoryStore.instance
+    end
+  end
+end

@@ -1,12 +1,24 @@
+require "rgeo/active_record"
+
 require 'active_record/connection_adapters/postgresql_adapter'
+require "active_record/connection_adapters/cockroachdb/column_methods"
 require "active_record/connection_adapters/cockroachdb/schema_statements"
 require "active_record/connection_adapters/cockroachdb/referential_integrity"
 require "active_record/connection_adapters/cockroachdb/transaction_manager"
-require "active_record/connection_adapters/cockroachdb/column"
 require "active_record/connection_adapters/cockroachdb/database_statements"
+require "active_record/connection_adapters/cockroachdb/table_definition"
 require "active_record/connection_adapters/cockroachdb/quoting"
 require "active_record/connection_adapters/cockroachdb/type"
 require "active_record/connection_adapters/cockroachdb/attribute_methods"
+require "active_record/connection_adapters/cockroachdb/column"
+require "active_record/connection_adapters/cockroachdb/spatial_column_info"
+require "active_record/connection_adapters/cockroachdb/setup"
+require "active_record/connection_adapters/cockroachdb/oid/spatial"
+require "active_record/connection_adapters/cockroachdb/arel_tosql"
+
+# Run to ignore spatial tables that will break schemna dumper.
+# Defined in ./setup.rb
+ActiveRecord::ConnectionAdapters::CockroachDB.initial_setup
 
 module ActiveRecord
   module ConnectionHandling
@@ -42,10 +54,98 @@ module ActiveRecord
       ADAPTER_NAME = "CockroachDB".freeze
       DEFAULT_PRIMARY_KEY = "rowid"
 
+      SPATIAL_COLUMN_OPTIONS =
+        {
+          geography:           { geographic: true },
+          geometry:            {},
+          geometry_collection: {},
+          line_string:         {},
+          multi_line_string:   {},
+          multi_point:         {},
+          multi_polygon:       {},
+          spatial:             {},
+          st_point:            {},
+          st_polygon:          {},
+        }
+
+      # http://postgis.17.x6.nabble.com/Default-SRID-td5001115.html      
+      DEFAULT_SRID = 0
+
       include CockroachDB::SchemaStatements
       include CockroachDB::ReferentialIntegrity
       include CockroachDB::DatabaseStatements
       include CockroachDB::Quoting
+
+      # override
+      # This method makes a sql query to gather information about columns
+      # in a table. It returns an array of arrays (one for each col) and
+      # passes each to the SchemaStatements#new_column_from_field method
+      # as the field parameter. This data is then used to format the column
+      # objects for the model and sent to the OID for data casting.
+      #
+      # The issue with the default method is that the sql_type field is 
+      # retrieved with the `format_type` function, but this is implemented
+      # differently in CockroachDB than PostGIS, so geometry/geography
+      # types are missing information which makes parsing them impossible.
+      # Below is an example of what `format_type` returns for a geometry
+      # column.
+      #
+      # column_type: geometry(POINT, 4326)
+      # Expected: geometry(POINT, 4326)
+      # Actual: geometry
+      #
+      # The solution is to make the default query with super, then
+      # iterate through the columns and if it is a spatial type,
+      # access the proper column_type with the information_schema.columns 
+      # table.
+      #
+      # @see: https://github.com/rails/rails/blob/8695b028261bdd244e254993255c6641bdbc17a5/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L829
+      def column_definitions(table_name)
+        fields = super
+        # iterate through and identify all spatial fields based on format_type
+        # being geometry or geography, then query for the information_schema.column
+        # column_type because that contains the necessary information.
+        fields.map do |field|
+          dtype = field[1]
+          if dtype == 'geometry' || dtype == 'geography'
+            col_name = field[0]
+            data_type = \
+            query(<<~SQL, "SCHEMA")
+              SELECT c.data_type
+                FROM information_schema.columns c
+              WHERE c.table_name = #{quote(table_name)}
+                AND c.column_name = #{quote(col_name)}
+            SQL
+            field[1] = data_type[0][0]
+          end
+          field
+        end
+      end
+
+      def arel_visitor
+        Arel::Visitors::CockroachDB.new(self)
+      end
+
+      def self.spatial_column_options(key)
+        SPATIAL_COLUMN_OPTIONS[key]
+      end
+
+      def postgis_lib_version
+        @postgis_lib_version ||= select_value("SELECT PostGIS_Lib_Version()")
+      end
+
+      def default_srid
+        DEFAULT_SRID
+      end
+
+      def srs_database_columns
+        {
+          auth_name_column: "auth_name",
+          auth_srid_column: "auth_srid",
+          proj4text_column: "proj4text",
+          srtext_column:    "srtext",
+        }
+      end
 
       def debugging?
         !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
@@ -160,7 +260,22 @@ module ActiveRecord
       private
 
         def initialize_type_map(m = type_map)
-          super(m)
+          %w(
+            geography
+            geometry
+            geometry_collection
+            line_string
+            multi_line_string
+            multi_point
+            multi_polygon
+            st_point
+            st_polygon
+          ).each do |geo_type|
+            m.register_type(geo_type) do |oid, _, sql_type|
+              CockroachDB::OID::Spatial.new(oid, sql_type)
+            end
+          end
+
           # NOTE(joey): PostgreSQL intervals have a precision.
           # CockroachDB intervals do not, so overide the type
           # definition. Returning a ArgumentError may not be correct.
@@ -172,6 +287,8 @@ module ActiveRecord
             end
             OID::SpecializedString.new(:interval, precision: precision)
           end
+
+          super(m)
         end
 
         # Configures the encoding, verbosity, schema search path, and time zone of the connection.
