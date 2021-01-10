@@ -30,15 +30,6 @@ module ActiveRecord
           else
             super
           end
-          # if value.is_a?(Numeric)
-          #   "'#{quote_string(value.to_s)}'"
-          # elsif RGeo::Feature::Geometry.check_type(value)
-          #   "'#{RGeo::WKRep::WKBGenerator.new(hex_format: true, type_format: :ewkb, emit_ewkb_srid: true).generate(value)}'"
-          # elsif value.is_a?(RGeo::Cartesian::BoundingBox)
-          #   "'#{value.min_x},#{value.min_y},#{value.max_x},#{value.max_y}'::box"
-          # else
-          #   super
-          # end
         end
       end
     end

@@ -75,11 +75,9 @@ module ActiveRecord
       # override
       # This method makes a sql query to gather information about columns
       # in a table. It returns an array of arrays (one for each col) and
-      # passes each to the SchemaStatements#new_column_from_field method
-      # as the field parameter. This data is then used to format the column
-      # objects for the model and sent to the OID for data casting.
+      # is mapped to columns in the SchemaStatements#columns method.
       #
-      # The issue with the default method is that the sql_type field is 
+      # The issue with the default method is that the sql_type field is
       # retrieved with the `format_type` function, but this is implemented
       # differently in CockroachDB than PostGIS, so geometry/geography
       # types are missing information which makes parsing them impossible.
@@ -92,7 +90,7 @@ module ActiveRecord
       #
       # The solution is to make the default query with super, then
       # iterate through the columns and if it is a spatial type,
-      # access the proper column_type with the information_schema.columns 
+      # access the proper column_type with the information_schema.columns
       # table.
       #
       # @see: https://github.com/rails/rails/blob/8695b028261bdd244e254993255c6641bdbc17a5/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L829
