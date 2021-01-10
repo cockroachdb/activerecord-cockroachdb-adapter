@@ -15,6 +15,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "activerecord", "~> 5.2"
   spec.add_dependency "pg", ">= 0.20"
+  spec.add_dependency "rgeo-activerecord", "~> 7.0.0"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
   # to allow pushing to a single host or delete this section to allow pushing to any host.

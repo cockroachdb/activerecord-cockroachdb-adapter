@@ -119,4 +119,14 @@ _SQL
     t.uuid :uuid, primary_key: true, **uuid_default
     t.string :title
   end
+
+  create_table :buildings, force: true do |t|
+    t.st_point :coordinates, srid: 3857
+    t.st_point :latlon, srid: 4326, geographic: true
+    t.st_polygon :boundary, srid: 3857
+    t.multi_polygon :m_poly, srid: 3857
+    t.multi_point :points, srid: 3857
+    t.line_string :path, srid: 3857
+    t.column(:shape, :geometry)
+  end
 end
