@@ -3,7 +3,7 @@
 set -euox pipefail
 
 # Download CockroachDB
-VERSION=v20.2.0-beta.3
+VERSION=v20.2.3
 wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
 readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
 
@@ -21,7 +21,7 @@ run_cockroach() {
   cockroach quit --insecure || true
   rm -rf cockroach-data
   # Start CockroachDB.
-  cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --listening-url-file="$urlfile" >/dev/null 2>&1 &
+  cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-$VERSION.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
   # Ensure CockroachDB is stopped on script exit.
   trap "echo 'Exit routine: Killing CockroachDB.' && kill -9 $! &> /dev/null" EXIT
   # Wait until CockroachDB has started.
