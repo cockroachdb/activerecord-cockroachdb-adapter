@@ -46,7 +46,7 @@ RGeo::Geos.supported?
 If this is `false`, you may need to specify the GEOS directory while installing. Here's an example linking it to the CockroachDB GEOS binary.
 
 ```sh
-gem install rgeo -- --with-geos-dir=/path/to/cockroach-v20/lib/
+gem install rgeo -- --with-geos-dir=/path/to/cockroach/lib/
 ```
 
 ### Working with RGeo
@@ -149,6 +149,8 @@ Following are the options understood by the adapter:
   constraint is of limited use for geography columns.
 - `:has_z` -- Specify that objects in this column include a Z coordinate.
   Default is false.
+- `:has_m` -- Specify that objects in this column include an M coordinate.
+  Default is false.
 
 To create a PostGIS spatial index, add `using: :gist` to your index:
 
@@ -248,9 +250,7 @@ record.shape1 = p2                 # shape1 uses a flat geos factory, so it
 record.save
 ```
 
-If, however, you attempt to set the value to the wrong type-- for example,
-setting a linestring attribute to a point value, you will get an exception
-from Postgres when you attempt to save the record.
+If you attempt to set the value to the wrong type, such as setting a linestring attribute to a point value, you will get an exception from the database when you attempt to save the record.
 
 ```rb
 record.path = p2      # This will appear to work, but...
