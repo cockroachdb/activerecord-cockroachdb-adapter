@@ -21,7 +21,7 @@ run_cockroach() {
   cockroach quit --insecure || true
   rm -rf cockroach-data
   # Start CockroachDB.
-  cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --listening-url-file="$urlfile" >/dev/null 2>&1 &
+  cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-$VERSION.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
   # Ensure CockroachDB is stopped on script exit.
   trap "echo 'Exit routine: Killing CockroachDB.' && kill -9 $! &> /dev/null" EXIT
   # Wait until CockroachDB has started.
