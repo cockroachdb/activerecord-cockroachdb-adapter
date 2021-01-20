@@ -68,6 +68,51 @@ module ActiveRecord
           )
         end
 
+        # copied from ConnectionAdapters::SchemaStatements
+        #
+        # modified insert into statement to always wrap the version value into single quotes for cockroachdb.
+        def assume_migrated_upto_version(version, migrations_paths = nil)
+          unless migrations_paths.nil?
+            ActiveSupport::Deprecation.warn(<<~MSG.squish)
+            Passing migrations_paths to #assume_migrated_upto_version is deprecated and will be removed in Rails 6.1.
+            MSG
+          end
+
+          version = version.to_i
+          sm_table = quote_table_name(schema_migration.table_name)
+
+          migrated = migration_context.get_all_versions
+          versions = migration_context.migrations.map(&:version)
+
+          unless migrated.include?(version)
+            execute "INSERT INTO #{sm_table} (version) VALUES ('#{quote(version)}')"
+          end
+
+          inserting = (versions - migrated).select { |v| v < version }
+          if inserting.any?
+            if (duplicate = inserting.detect { |v| inserting.count(v) > 1 })
+              raise "Duplicate migration #{duplicate}. Please renumber your migrations to resolve the conflict."
+            end
+            execute insert_versions_sql(inserting)
+          end
+        end
+
+        # copied from ConnectionAdapters::SchemaStatements
+        #
+        # modified insert into statement to always wrap the version value into single quotes for cockroachdb.
+        def insert_versions_sql(versions)
+          sm_table = quote_table_name(schema_migration.table_name)
+
+          if versions.is_a?(Array)
+            sql = +"INSERT INTO #{sm_table} (version) VALUES\n"
+            sql << versions.map { |v| "('#{quote(v)}')" }.join(",\n")
+            sql << ";\n\n"
+            sql
+          else
+            "INSERT INTO #{sm_table} (version) VALUES ('#{quote(versions)}');"
+          end
+        end
+
         # CockroachDB will use INT8 if the SQL type is INTEGER, so we make it use
         # INT4 explicitly when needed.
         #
