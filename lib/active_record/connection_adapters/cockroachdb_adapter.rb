@@ -1,6 +1,6 @@
 require "rgeo/active_record"
 
-require 'active_record/connection_adapters/postgresql_adapter'
+require "active_record/connection_adapters/postgresql_adapter"
 require "active_record/connection_adapters/cockroachdb/column_methods"
 require "active_record/connection_adapters/cockroachdb/schema_statements"
 require "active_record/connection_adapters/cockroachdb/referential_integrity"

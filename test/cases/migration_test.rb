@@ -1,5 +1,8 @@
 require "cases/helper_cockroachdb"
+require "models/person"
 
+class Reminder < ActiveRecord::Base; end unless Object.const_defined?(:Reminder)
+class Thing < ActiveRecord::Base; end unless Object.const_defined?(:Thing)
 module CockroachDB
   class MigrationTest < ActiveRecord::TestCase
     self.use_transactional_tests = false
