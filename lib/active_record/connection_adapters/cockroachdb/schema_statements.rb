@@ -4,7 +4,7 @@ module ActiveRecord
       module SchemaStatements
         include ActiveRecord::ConnectionAdapters::PostgreSQL::SchemaStatements
 
-        def add_index(table_name, column_name, options = {})
+        def add_index(table_name, column_name, **options)
           super
         rescue ActiveRecord::StatementInvalid => error
           if debugging? && error.cause.class == PG::FeatureNotSupported

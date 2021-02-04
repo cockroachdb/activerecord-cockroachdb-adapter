@@ -188,6 +188,40 @@ module ActiveRecord
           assert_not connection.index_exists?("testings", "last_name")
         end
 
+        def test_add_index_with_if_not_exists_matches_exact_index
+          connection.add_index(table_name, [:foo, :bar], unique: false, name: "index_testings_on_foo_bar")
+
+          assert connection.index_name_exists?(table_name, "index_testings_on_foo_bar")
+          assert_nothing_raised do
+            res = connection.add_index(table_name, [:foo, :bar], unique: true, if_not_exists: true)
+          end
+          assert connection.index_name_exists?(table_name, "index_testings_on_foo_and_bar")
+        end
+
+        def test_remove_index_with_name_which_does_not_exist_doesnt_raise_with_option
+          connection.add_index(table_name, [:foo], name: "foo")
+
+          assert connection.index_exists?(table_name, :foo, name: "foo")
+
+          connection.remove_index(table_name, nil, name: "foo", if_exists: true)
+
+          assert_not connection.index_exists?(table_name, :foo, name: "foo")
+        end
+
+        def test_remove_index_which_does_not_exist_doesnt_raise_with_option
+          connection.add_index(table_name, "foo")
+
+          connection.remove_index(table_name, "foo")
+
+          assert_raises ArgumentError do
+            connection.remove_index(table_name, "foo")
+          end
+
+          assert_nothing_raised do
+            connection.remove_index(table_name, "foo", if_exists: true)
+          end
+        end
+
         private
           def good_index_name
             "x" * connection.index_name_length

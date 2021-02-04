@@ -4,3 +4,4 @@ exclude :test_inet_column, "Skipping until we can triage further. See https://gi
 exclude :test_network_types, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_invalid_network_address, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_macaddr_column, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_mac_address_change_case_does_not_mark_dirty, "CockroachDB does not currently support the 'cidr' type."

@@ -1,0 +1,5 @@
+exclude :test_round_trip, "CockroachDB does not currently support the 'xml' type."
+exclude :test_null_xml, "CockroachDB does not currently support the 'xml' type."
+exclude :test_update_all, "CockroachDB does not currently support the 'xml' type."
+exclude :test_column, "CockroachDB does not currently support the 'xml' type."
+exclude :test_schema_dump_with_shorthand, "CockroachDB does not currently support the 'xml' type."
