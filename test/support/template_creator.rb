@@ -1,0 +1,87 @@
+# frozen_string_literal: true
+
+require 'active_record'
+require_relative 'paths_cockroachdb'
+
+module TemplateCreator
+  # extend self
+
+  CONNECTION_HASH = {
+    adapter: 'cockroachdb',
+    database: 'defaultdb',
+    port: 26257,
+    user: 'root',
+    host: 'localhost'
+  }.freeze
+
+  BACKUP_PATH = "nodelocal://self/activerecord-crdb-adapter".freeze
+
+  module_function
+
+  def template_db_name
+    "activerecord_unittest_template#{ActiveRecord.version.version.gsub('.', '')}"
+  end
+
+  def connect(connection_hash=nil)
+    connection_hash = CONNECTION_HASH if connection_hash.nil?
+    ActiveRecord::Base.establish_connection(connection_hash)
+  end
+
+  def template_db_exists?
+    if ActiveRecord::Base.connection.select_value("SELECT 1 FROM pg_database WHERE datname='#{template_db_name}'")
+      true
+    else
+      false
+    end
+  end
+
+  def drop_template_db
+    ActiveRecord::Base.connection.execute("DROP DATABASE #{template_db_name}")
+  end
+
+  def create_template_db
+    ActiveRecord::Base.connection.execute("CREATE DATABASE #{template_db_name}")
+  end
+
+  def load_schema
+    p 'loading schema'
+    load ARTest::CockroachDB.root_activerecord_test + '/schema/schema.rb'
+    load 'test/schema/cockroachdb_specific_schema.rb'
+  end
+
+  def create_test_template
+    connect
+    raise "#{template_db_name} already exists. If you do not have a backup created, please drop the database and run again." if template_db_exists?
+
+    create_template_db
+
+    # switch connection to template db
+    conn = CONNECTION_HASH.dup
+    conn['database'] = template_db_name
+    connect(conn)
+
+
+    load_schema
+
+    # create BACKUP to restore from
+    ActiveRecord::Base.connection.execute("BACKUP DATABASE #{template_db_name} TO '#{BACKUP_PATH}'")
+  end
+
+  def restore_from_template
+    # first, BACKUP the template_db
+    # then RESTORE target from that backup.
+    connect
+    raise "The TemplateDB does not exist. Run 'rake db:create_test_template' first." unless template_db_exists?
+
+    begin
+      ActiveRecord::Base.connection.execute("DROP DATABASE activerecord_unittest")
+    rescue ActiveRecord::StatementInvalid => e
+      unless e.cause.class == PG::InvalidCatalogName
+        raise e
+      end
+    end
+    ActiveRecord::Base.connection.execute("CREATE DATABASE activerecord_unittest")
+
+    ActiveRecord::Base.connection.execute("RESTORE #{template_db_name}.* FROM '#{BACKUP_PATH}' WITH into_db = 'activerecord_unittest'")
+  end
+end
