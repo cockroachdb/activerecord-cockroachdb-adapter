@@ -14,12 +14,20 @@ module TemplateCreator
     host: 'localhost'
   }.freeze
 
-  BACKUP_PATH = "nodelocal://self/activerecord-crdb-adapter".freeze
+  BACKUP_DIR = "nodelocal://self/activerecord-crdb-adapter"
 
   module_function
 
+  def ar_version
+    ActiveRecord.version.version.gsub('.','')
+  end
+
+  def version_backup_path
+    BACKUP_DIR + "/#{ar_version}"
+  end
+
   def template_db_name
-    "activerecord_unittest_template#{ActiveRecord.version.version.gsub('.', '')}"
+    "activerecord_unittest_template#{ar_version}"
   end
 
   def connect(connection_hash=nil)
@@ -60,11 +68,10 @@ module TemplateCreator
     conn['database'] = template_db_name
     connect(conn)
 
-
     load_schema
 
     # create BACKUP to restore from
-    ActiveRecord::Base.connection.execute("BACKUP DATABASE #{template_db_name} TO '#{BACKUP_PATH}'")
+    ActiveRecord::Base.connection.execute("BACKUP DATABASE #{template_db_name} TO '#{version_backup_path}'")
   end
 
   def restore_from_template
@@ -82,6 +89,6 @@ module TemplateCreator
     end
     ActiveRecord::Base.connection.execute("CREATE DATABASE activerecord_unittest")
 
-    ActiveRecord::Base.connection.execute("RESTORE #{template_db_name}.* FROM '#{BACKUP_PATH}' WITH into_db = 'activerecord_unittest'")
+    ActiveRecord::Base.connection.execute("RESTORE #{template_db_name}.* FROM '#{version_backup_path}' WITH into_db = 'activerecord_unittest'")
   end
 end
