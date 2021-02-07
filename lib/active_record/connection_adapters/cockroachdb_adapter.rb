@@ -14,6 +14,7 @@ require "active_record/connection_adapters/cockroachdb/column"
 require "active_record/connection_adapters/cockroachdb/spatial_column_info"
 require "active_record/connection_adapters/cockroachdb/setup"
 require "active_record/connection_adapters/cockroachdb/oid/spatial"
+require "active_record/connection_adapters/cockroachdb/oid/interval"
 require "active_record/connection_adapters/cockroachdb/arel_tosql"
 
 # Run to ignore spatial tables that will break schemna dumper.
@@ -24,26 +25,22 @@ module ActiveRecord
   module ConnectionHandling
     def cockroachdb_connection(config)
       # This is copied from the PostgreSQL adapter.
-      conn_params = config.symbolize_keys
-
-      conn_params.delete_if { |_, v| v.nil? }
+      conn_params = config.symbolize_keys.compact
 
       # Map ActiveRecords param names to PGs.
       conn_params[:user] = conn_params.delete(:username) if conn_params[:username]
       conn_params[:dbname] = conn_params.delete(:database) if conn_params[:database]
 
       # Forward only valid config params to PG::Connection.connect.
-      valid_conn_param_keys = PG::Connection.conndefaults_hash.keys + [:sslmode, :application_name]
+      valid_conn_param_keys = PG::Connection.conndefaults_hash.keys + [:requiressl]
       conn_params.slice!(*valid_conn_param_keys)
 
-      conn = PG.connect(conn_params)
-      ConnectionAdapters::CockroachDBAdapter.new(conn, logger, conn_params, config)
-    rescue ::PG::Error, ActiveRecord::ActiveRecordError  => error
-      if error.message.include?("does not exist")
-        raise ActiveRecord::NoDatabaseError
-      else
-        raise
-      end
+      ConnectionAdapters::CockroachDBAdapter.new(
+        ConnectionAdapters::CockroachDBAdapter.new_client(conn_params),
+        logger,
+        conn_params,
+        config
+      )
     end
   end
 end
@@ -75,56 +72,6 @@ module ActiveRecord
       include CockroachDB::ReferentialIntegrity
       include CockroachDB::DatabaseStatements
       include CockroachDB::Quoting
-
-      # override
-      # This method makes a sql query to gather information about columns
-      # in a table. It returns an array of arrays (one for each col) and
-      # passes each to the SchemaStatements#new_column_from_field method
-      # as the field parameter. This data is then used to format the column
-      # objects for the model and sent to the OID for data casting.
-      #
-      # The issue with the default method is that the sql_type field is 
-      # retrieved with the `format_type` function, but this is implemented
-      # differently in CockroachDB than PostGIS, so geometry/geography
-      # types are missing information which makes parsing them impossible.
-      # Below is an example of what `format_type` returns for a geometry
-      # column.
-      #
-      # column_type: geometry(POINT, 4326)
-      # Expected: geometry(POINT, 4326)
-      # Actual: geometry
-      #
-      # The solution is to make the default query with super, then
-      # iterate through the columns and if it is a spatial type,
-      # access the proper column_type with the information_schema.columns 
-      # table.
-      #
-      # @see: https://github.com/rails/rails/blob/8695b028261bdd244e254993255c6641bdbc17a5/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L829
-      def column_definitions(table_name)
-        fields = super
-        # iterate through and identify all spatial fields based on format_type
-        # being geometry or geography, then query for the information_schema.column
-        # column_type because that contains the necessary information.
-        fields.map do |field|
-          dtype = field[1]
-          if dtype == 'geometry' || dtype == 'geography'
-            col_name = field[0]
-            data_type = \
-            query(<<~SQL, "SCHEMA")
-              SELECT c.data_type
-                FROM information_schema.columns c
-              WHERE c.table_name = #{quote(table_name)}
-                AND c.column_name = #{quote(col_name)}
-            SQL
-            field[1] = data_type[0][0]
-          end
-          field
-        end
-      end
-
-      def arel_visitor
-        Arel::Visitors::CockroachDB.new(self)
-      end
 
       def self.spatial_column_options(key)
         SPATIAL_COLUMN_OPTIONS[key]
@@ -276,19 +223,28 @@ module ActiveRecord
             end
           end
 
-          # NOTE(joey): PostgreSQL intervals have a precision.
-          # CockroachDB intervals do not, so overide the type
-          # definition. Returning a ArgumentError may not be correct.
-          # This needs to be tested.
-          m.register_type "interval" do |_, _, sql_type|
-            precision = extract_precision(sql_type)
-            if precision
-              raise(ArgumentError, "CockroachDB does not support precision on intervals, but got precision: #{precision}")
-            end
-            OID::SpecializedString.new(:interval, precision: precision)
-          end
-
+          # Belongs after other types are defined because of issues described
+          # in this https://github.com/rails/rails/pull/38571
+          # Once that PR is merged, we can call super at the top.
           super(m)
+
+          # Override numeric type. This is almost identical to the default,
+          # except that the conditional based on the fmod is changed.
+          m.register_type "numeric" do |_, fmod, sql_type|
+            precision = extract_precision(sql_type)
+            scale = extract_scale(sql_type)
+
+            # If fmod is -1, that means that precision is defined, but not
+            # scale or neither is defined.
+            if fmod && fmod == -1
+              # Below comment is from ActiveRecord
+              # FIXME: Remove this class, and the second argument to
+              # lookups on PG
+              Type::DecimalWithoutScale.new(precision: precision)
+            else
+              OID::Decimal.new(precision: precision, scale: scale)
+            end
+          end
         end
 
         # Configures the encoding, verbosity, schema search path, and time zone of the connection.
@@ -396,6 +352,84 @@ module ActiveRecord
           return unless supports_string_to_array_coercion? 
           return unless default =~ /\AARRAY\[\]\z/
           return "{}"
+        end
+
+        # override
+        # This method makes a query to gather information about columns
+        # in a table. It returns an array of arrays (one for each col) and
+        # passes each to the SchemaStatements#new_column_from_field method
+        # as the field parameter. This data is then used to format the column
+        # objects for the model and sent to the OID for data casting.
+        #
+        # Sometimes there are differences between how data is formatted
+        # in Postgres and CockroachDB, so additional queries for certain types
+        # may be necessary to properly form the column definition.
+        #
+        # @see: https://github.com/rails/rails/blob/8695b028261bdd244e254993255c6641bdbc17a5/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L829
+        def column_definitions(table_name)
+          fields = super
+
+          # Use regex comparison because if a type is an array it will
+          # have [] appended to the end of it.
+          target_types = [
+            /geometry/,
+            /geography/,
+            /interval/,
+            /numeric/
+          ]
+          re = Regexp.union(target_types)
+          fields.map do |field|
+            dtype = field[1]
+            if re.match(dtype)
+              crdb_column_definition(field, table_name)
+            else
+              field
+            end
+          end
+        end
+
+        # Use the crdb_sql_type instead of the sql_type returned by
+        # column_definitions. This will include limit,
+        # precision, and scale information in the type.
+        # Ex. geometry -> geometry(point, 4326)
+        def crdb_column_definition(field, table_name)
+          col_name = field[0]
+          data_type = \
+          query(<<~SQL, "SCHEMA")
+            SELECT c.crdb_sql_type
+              FROM information_schema.columns c
+            WHERE c.table_name = #{quote(table_name)}
+              AND c.column_name = #{quote(col_name)}
+          SQL
+          field[1] = data_type[0][0].downcase
+          field
+        end
+
+        # override
+        # This method is used to determine if a
+        # FEATURE_NOT_SUPPORTED error from the PG gem should
+        # be an ActiveRecord::PreparedStatementCacheExpired
+        # error.
+        #
+        # ActiveRecord handles this by checking that the sql state matches the
+        # FEATURE_NOT_SUPPORTED code and that the source function
+        # is "RevalidateCachedQuery" since that is the only function
+        # in postgres that will create this error.
+        #
+        # That method will not work for CockroachDB because the error
+        # originates from the "runExecBuilder" function, so we need
+        # to modify the original to match the CockroachDB behavior.
+        def is_cached_plan_failure?(e)
+          pgerror = e.cause
+
+          pgerror.result.result_error_field(PG::PG_DIAG_SQLSTATE) == FEATURE_NOT_SUPPORTED &&
+            pgerror.result.result_error_field(PG::PG_DIAG_SOURCE_FUNCTION) == "runExecBuilder"
+        rescue
+          false
+        end
+
+        def arel_visitor
+          Arel::Visitors::CockroachDB.new(self)
         end
 
       # end private
