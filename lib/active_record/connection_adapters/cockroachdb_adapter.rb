@@ -234,8 +234,8 @@ module ActiveRecord
             precision = extract_precision(sql_type)
             scale = extract_scale(sql_type)
 
-            # If fmod is -1, that means that precision is defined, but not
-            # scale or neither is defined.
+            # If fmod is -1, that means that precision is defined but not
+            # scale, or neither is defined.
             if fmod && fmod == -1
               # Below comment is from ActiveRecord
               # FIXME: Remove this class, and the second argument to

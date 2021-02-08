@@ -6,7 +6,7 @@ require_relative 'paths_cockroachdb'
 module TemplateCreator
   # extend self
 
-  CONNECTION_HASH = {
+  DEFAULT_CONNECTION_HASH = {
     adapter: 'cockroachdb',
     database: 'defaultdb',
     port: 26257,
@@ -31,16 +31,12 @@ module TemplateCreator
   end
 
   def connect(connection_hash=nil)
-    connection_hash = CONNECTION_HASH if connection_hash.nil?
+    connection_hash = DEFAULT_CONNECTION_HASH if connection_hash.nil?
     ActiveRecord::Base.establish_connection(connection_hash)
   end
 
   def template_db_exists?
-    if ActiveRecord::Base.connection.select_value("SELECT 1 FROM pg_database WHERE datname='#{template_db_name}'")
-      true
-    else
-      false
-    end
+    ActiveRecord::Base.connection.select_value("SELECT 1 FROM pg_database WHERE datname='#{template_db_name}'") == 1
   end
 
   def drop_template_db
@@ -64,7 +60,7 @@ module TemplateCreator
     create_template_db
 
     # switch connection to template db
-    conn = CONNECTION_HASH.dup
+    conn = DEFAULT_CONNECTION_HASH.dup
     conn['database'] = template_db_name
     connect(conn)
 
@@ -75,8 +71,6 @@ module TemplateCreator
   end
 
   def restore_from_template
-    # first, BACKUP the template_db
-    # then RESTORE target from that backup.
     connect
     raise "The TemplateDB does not exist. Run 'rake db:create_test_template' first." unless template_db_exists?
 

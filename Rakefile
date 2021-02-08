@@ -10,7 +10,7 @@ task default: [:test]
 namespace :db do
   task "create_test_template" do
     ENV['DEBUG_COCKROACHDB_ADAPTER'] = "1"
-    ENV['COCKROACH_SKIP_LOAD_SCHEMA'] = '1'
+    ENV['COCKROACH_SKIP_LOAD_SCHEMA'] = "1"
     ENV["ARCONN"] = "cockroachdb"
 
     TemplateCreator.connect
