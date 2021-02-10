@@ -41,6 +41,14 @@ module ActiveRecord
         conn_params,
         config
       )
+    # This rescue flow appears in new_client, but it is needed here as well
+    # since Cockroach will sometimes not raise until a query is made.
+    rescue ActiveRecord::StatementInvalid => error
+      if conn_params && conn_params[:dbname] && error.cause.message.include?(conn_params[:dbname])
+        raise ActiveRecord::NoDatabaseError
+      else
+        raise ActiveRecord::ConnectionNotEstablished, error.message
+      end
     end
   end
 end
@@ -234,6 +242,9 @@ module ActiveRecord
             precision = extract_precision(sql_type)
             scale = extract_scale(sql_type)
 
+            # TODO(#178) this should never use DecimalWithoutScale since scale
+            # is assumed to be 0 if it is not explicitly defined.
+            #
             # If fmod is -1, that means that precision is defined but not
             # scale, or neither is defined.
             if fmod && fmod == -1

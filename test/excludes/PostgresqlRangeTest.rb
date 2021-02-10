@@ -35,4 +35,3 @@ exclude :test_exclude_beginning_for_subtypes_without_succ_method_is_not_supporte
 exclude :test_tstzrange_values, "CockroachDB doesn't support ranges. See https://github.com/cockroachdb/cockroach/issues/27791"
 exclude :test_update_tstzrange, "CockroachDB doesn't support ranges. See https://github.com/cockroachdb/cockroach/issues/27791"
 exclude :test_create_int8range, "CockroachDB doesn't support ranges. See https://github.com/cockroachdb/cockroach/issues/27791"
-

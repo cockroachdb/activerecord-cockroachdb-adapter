@@ -16,7 +16,8 @@ module CockroachDB
       end
 
       def test_database_exists_returns_false_when_the_database_does_not_exist
-        config = { database: "non_extant_database", adapter: "cockroach" }
+        db_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
+        config = db_config.configuration_hash.dup
         config[:database] = "non_extant_database"
         assert_not ActiveRecord::ConnectionAdapters::CockroachDBAdapter.database_exists?(config),
                    "expected database #{config[:database]} to not exist"
