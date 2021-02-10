@@ -1,4 +1,3 @@
-exclude :test_double_add_index, "This test runs schema changes in transactions. We run our own version with transactions disabled."
 exclude :test_index_exists_with_custom_name_checks_columns, "This test runs schema changes in transactions. We run our own version with transactions disabled."
 exclude :test_named_index_exists, "This test runs schema changes in transactions. We run our own version with transactions disabled."
 exclude :test_rename_index_too_long, "This test runs schema changes in transactions. We run our own version with transactions disabled."
@@ -13,3 +12,6 @@ exclude :test_rename_index, "This test runs schema changes in transactions. We r
 exclude :test_unique_index_exists, "This test runs schema changes in transactions. We run our own version with transactions disabled."
 exclude :test_add_partial_index, "This test runs schema changes in transactions. We run our own version with transactions disabled."
 exclude :test_index_symbol_names, "This test runs schema changes in transactions. We run our own version with transactions disabled."
+exclude :test_add_index_with_if_not_exists_matches_exact_index, "This test runs schema changes in transactions. We run our own version with transactions disabled."
+exclude :test_remove_index_with_name_which_does_not_exist_doesnt_raise_with_option, "This test runs schema changes in transactions. We run our own version with transactions disabled."
+exclude :test_remove_index_which_does_not_exist_doesnt_raise_with_option, "This test runs schema changes in transactions. We run our own version with transactions disabled."

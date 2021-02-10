@@ -1,0 +1,7 @@
+exclude :test_deprecated_legacy_type, "We implement our own tests for intervals, since CockroachDB does not support Iso8601 IntervalStyle currently."
+exclude :test_column, "We implement our own tests for intervals, since CockroachDB does not support Iso8601 IntervalStyle currently."
+exclude :test_interval_type_cast_from_numeric, "We implement our own tests for intervals, since CockroachDB does not support Iso8601 IntervalStyle currently."
+exclude :test_schema_dump_with_default_value, "We implement our own tests for intervals, since CockroachDB does not support Iso8601 IntervalStyle currently."
+exclude :test_interval_type, "We implement our own tests for intervals, since CockroachDB does not support Iso8601 IntervalStyle currently."
+exclude :test_interval_type_cast_from_invalid_string, "We implement our own tests for intervals, since CockroachDB does not support Iso8601 IntervalStyle currently."
+exclude :test_interval_type_cast_string_and_numeric_from_user, "We implement our own tests for intervals, since CockroachDB does not support Iso8601 IntervalStyle currently."
