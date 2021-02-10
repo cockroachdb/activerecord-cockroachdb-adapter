@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/cockroachdb/activerecord-cockroachdb-adapter"
 
   spec.add_dependency "activerecord", "~> 6.1"
-  spec.add_dependency "pg", ">= 1.2"
+  spec.add_dependency "pg", "~> 1.2"
   spec.add_dependency "rgeo-activerecord", "~> 7.0.0"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
