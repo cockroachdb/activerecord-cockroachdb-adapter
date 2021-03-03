@@ -2,6 +2,7 @@ exclude :test_column, "The money type is not implemented in CockroachDB. See htt
 exclude :test_default, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
 exclude :test_money_values, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
 exclude :test_money_type_cast, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
+exclude :test_money_regex_backtracking, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
 exclude :test_schema_dumping, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
 exclude :test_create_and_update_money, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
 exclude :test_update_all_with_money_string, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
