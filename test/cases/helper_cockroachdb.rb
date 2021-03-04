@@ -21,7 +21,19 @@ ensure
   $stdout = original_stdout
 end
 
-load_cockroachdb_specific_schema
+if ENV['COCKROACH_LOAD_FROM_TEMPLATE'].nil? && ENV['COCKROACH_SKIP_LOAD_SCHEMA'].nil?
+  load_cockroachdb_specific_schema
+elsif ENV['COCKROACH_LOAD_FROM_TEMPLATE']
+  require 'support/template_creator'
+
+  p "loading schema from template"
+
+  # load from template
+  TemplateCreator.restore_from_template
+
+  # reconnect to activerecord_unittest
+  ARTest.connect
+end
 
 module ActiveSupport
   class TestCase

@@ -8,3 +8,5 @@ exclude :test_create_and_update_money, "The money type is not implemented in Coc
 exclude :test_update_all_with_money_string, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
 exclude :test_update_all_with_money_big_decimal, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
 exclude :test_update_all_with_money_numeric, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
+exclude :test_sum_with_type_cast, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."
+exclude :test_pluck_with_type_cast, "The money type is not implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/41578."

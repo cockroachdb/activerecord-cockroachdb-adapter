@@ -1,0 +1,1 @@
+exclude :test_doesnt_error_when_a_read_query_with_cursors_is_called_while_preventing_writes, "CockroachDB does not currently support declaring a cursor. See https://github.com/cockroachdb/cockroach/issues/41412."

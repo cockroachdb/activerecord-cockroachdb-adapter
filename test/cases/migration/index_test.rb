@@ -51,14 +51,14 @@ module ActiveRecord
           e = assert_raises(ArgumentError) {
             connection.rename_index(table_name, "old_idx", too_long_index_name)
           }
-          assert_match(/too long; the limit is #{connection.allowed_index_name_length} characters/, e.message)
+          assert_match(/too long; the limit is #{connection.index_name_length} characters/, e.message)
 
           assert connection.index_name_exists?(table_name, "old_idx")
         end
 
         def test_double_add_index
           connection.add_index(table_name, [:foo], name: "some_idx")
-          assert_raises(ArgumentError) {
+          assert_raises(ActiveRecord::StatementInvalid) {
             connection.add_index(table_name, [:foo], name: "some_idx")
           }
         end
@@ -186,6 +186,40 @@ module ActiveRecord
 
           connection.remove_index("testings", "last_name")
           assert_not connection.index_exists?("testings", "last_name")
+        end
+
+        def test_add_index_with_if_not_exists_matches_exact_index
+          connection.add_index(table_name, [:foo, :bar], unique: false, name: "index_testings_on_foo_bar")
+
+          assert connection.index_name_exists?(table_name, "index_testings_on_foo_bar")
+          assert_nothing_raised do
+            res = connection.add_index(table_name, [:foo, :bar], unique: true, if_not_exists: true)
+          end
+          assert connection.index_name_exists?(table_name, "index_testings_on_foo_and_bar")
+        end
+
+        def test_remove_index_with_name_which_does_not_exist_doesnt_raise_with_option
+          connection.add_index(table_name, [:foo], name: "foo")
+
+          assert connection.index_exists?(table_name, :foo, name: "foo")
+
+          connection.remove_index(table_name, nil, name: "foo", if_exists: true)
+
+          assert_not connection.index_exists?(table_name, :foo, name: "foo")
+        end
+
+        def test_remove_index_which_does_not_exist_doesnt_raise_with_option
+          connection.add_index(table_name, "foo")
+
+          connection.remove_index(table_name, "foo")
+
+          assert_raises ArgumentError do
+            connection.remove_index(table_name, "foo")
+          end
+
+          assert_nothing_raised do
+            connection.remove_index(table_name, "foo", if_exists: true)
+          end
         end
 
         private

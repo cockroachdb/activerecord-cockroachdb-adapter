@@ -1,5 +1,8 @@
 require "cases/helper_cockroachdb"
+require "models/person"
 
+class Reminder < ActiveRecord::Base; end unless Object.const_defined?(:Reminder)
+class Thing < ActiveRecord::Base; end unless Object.const_defined?(:Thing)
 module CockroachDB
   class MigrationTest < ActiveRecord::TestCase
     self.use_transactional_tests = false
@@ -13,6 +16,7 @@ module CockroachDB
       end
       Reminder.reset_column_information
       @verbose_was, ActiveRecord::Migration.verbose = ActiveRecord::Migration.verbose, false
+      @schema_migration = ActiveRecord::Base.connection.schema_migration
       ActiveRecord::Base.connection.schema_cache.clear!
     end
 
@@ -66,6 +70,44 @@ module CockroachDB
       assert_equal "id", columns.first.name
     ensure
       Person.connection.drop_table :table_from_query_testings rescue nil
+    end
+
+    def test_remove_column_with_if_not_exists_not_set
+      migration_a = Class.new(ActiveRecord::Migration::Current) {
+        def version; 100 end
+        def migrate(x)
+          add_column "people", "last_name", :string
+        end
+      }.new
+
+      migration_b = Class.new(ActiveRecord::Migration::Current) {
+        def version; 101 end
+        def migrate(x)
+          remove_column "people", "last_name"
+        end
+      }.new
+
+      migration_c = Class.new(ActiveRecord::Migration::Current) {
+        def version; 102 end
+        def migrate(x)
+          remove_column "people", "last_name"
+        end
+      }.new
+
+      ActiveRecord::Migrator.new(:up, [migration_a], @schema_migration, 100).migrate
+      assert_column Person, :last_name, "migration_a should have added the last_name column on people"
+
+      ActiveRecord::Migrator.new(:up, [migration_b], @schema_migration, 101).migrate
+      assert_no_column Person, :last_name, "migration_b should have dropped the last_name column on people"
+      migrator = ActiveRecord::Migrator.new(:up, [migration_c], @schema_migration, 102)
+
+      error = assert_raises do
+        migrator.migrate
+      end
+
+      assert_match(/column \"last_name\" does not exist/, error.message)
+    ensure
+      Person.reset_column_information
     end
   end
 
