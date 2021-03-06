@@ -6,7 +6,7 @@
   that loads types.
 - Changed version numbers to semver.
 
-## 6.1.0beta1
+## 6.1.0beta1 - 2021-02-10
 
 - Initial support for Rails 6.1.
 - Support for spatial functionality.
