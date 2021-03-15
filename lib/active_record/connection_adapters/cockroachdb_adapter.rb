@@ -205,6 +205,20 @@ module ActiveRecord
           version_num = 202
         end
         @crdb_version = version_num
+
+        Thread.new do
+          begin
+            query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
+            query_value(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
+          rescue ActiveRecord::StatementInvalid => error
+            if error.cause.class == PG::UndefinedFunction
+              # The increment_feature_counter built-in is not supported on this
+              # CockroachDB version. Ignore.
+            else
+              raise error
+            end
+          end
+        end
       end
 
       def self.database_exists?(config)
