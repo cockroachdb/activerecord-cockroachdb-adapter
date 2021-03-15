@@ -209,6 +209,26 @@ module ActiveRecord
           version_num = 202
         end
         @crdb_version = version_num
+
+        if @config[:disable_cockroachdb_telemetry]
+          return
+        end
+        Thread.new do
+          pool.with_connection do |conn|
+            if !conn.active?
+              return
+            end
+            begin
+              query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
+              conn.execute(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
+            rescue ActiveRecord::StatementInvalid
+              # The increment_feature_counter built-in is not supported on this
+              # CockroachDB version. Ignore.
+            rescue => error
+              logger.warn "Unexpected error when incrementing feature counter: #{error}"
+            end
+          end
+        end
       end
 
       def self.database_exists?(config)
