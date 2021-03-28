@@ -28,6 +28,18 @@ module CockroachDB
         assert ActiveRecord::ConnectionAdapters::CockroachDBAdapter.database_exists?(db_config.configuration_hash),
           "expected database #{db_config.database} to exist"
       end
+
+      def test_using_follower_reads_connects_properly
+        database_config = { "use_follower_reads": true, "adapter" => "cockroachdb", "database" => "activerecord_unittest" }
+        ar_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
+        database_config.update(ar_config.configuration_hash)
+
+        ActiveRecord::Base.establish_connection(database_config)
+        conn = ActiveRecord::Base.connection
+        conn_params = conn.instance_variable_get("@config")
+
+        assert conn_params[:use_follower_reads]
+      end
     end
   end
 end

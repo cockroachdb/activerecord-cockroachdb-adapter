@@ -268,6 +268,7 @@ module ActiveRecord
           if @config[:encoding]
             @connection.set_client_encoding(@config[:encoding])
           end
+
           self.client_min_messages = @config[:min_messages] || "warning"
           self.schema_search_path = @config[:schema_search_path] || @config[:schema_order]
 
@@ -447,24 +448,27 @@ module ActiveRecord
         # Currently, querying from the pg_type catalog can be slow due to geo-partitioning
         # so this modified query uses AS OF SYSTEM TIME '-10s' to read historical data.
         def load_additional_types(oids = nil)
-          initializer = OID::TypeMapInitializer.new(type_map)
+          if @config[:use_follower_reads]
+            initializer = OID::TypeMapInitializer.new(type_map)
 
-          query = <<~SQL
-            SELECT t.oid, t.typname, t.typelem, t.typdelim, t.typinput, r.rngsubtype, t.typtype, t.typbasetype
-            FROM pg_type as t
-            LEFT JOIN pg_range as r ON oid = rngtypid AS OF SYSTEM TIME '-10s'
-          SQL
+            query = <<~SQL
+              SELECT t.oid, t.typname, t.typelem, t.typdelim, t.typinput, r.rngsubtype, t.typtype, t.typbasetype
+              FROM pg_type as t
+              LEFT JOIN pg_range as r ON oid = rngtypid AS OF SYSTEM TIME '-10s'
+            SQL
 
-          if oids
-            query += "WHERE t.oid IN (%s)" % oids.join(", ")
+            if oids
+              query += "WHERE t.oid IN (%s)" % oids.join(", ")
+            else
+              query += initializer.query_conditions_for_initial_load
+            end
+
+            execute_and_clear(query, "SCHEMA", []) do |records|
+              initializer.run(records)
+            end
           else
-            query += initializer.query_conditions_for_initial_load
+            super
           end
-
-          execute_and_clear(query, "SCHEMA", []) do |records|
-            initializer.run(records)
-          end
-
         rescue ActiveRecord::StatementInvalid => e
           raise e unless e.cause.is_a? PG::InvalidCatalogName
           # use original if database is younger than 10s
@@ -477,48 +481,51 @@ module ActiveRecord
         # Currently, querying from the pg_type catalog can be slow due to geo-partitioning
         # so this modified query uses AS OF SYSTEM TIME '-10s' to read historical data.
         def add_pg_decoders
-          @default_timezone = nil
-          @timestamp_decoder = nil
+          if @config[:use_follower_reads]
+            @default_timezone = nil
+            @timestamp_decoder = nil
 
-          coders_by_name = {
-            "int2" => PG::TextDecoder::Integer,
-            "int4" => PG::TextDecoder::Integer,
-            "int8" => PG::TextDecoder::Integer,
-            "oid" => PG::TextDecoder::Integer,
-            "float4" => PG::TextDecoder::Float,
-            "float8" => PG::TextDecoder::Float,
-            "numeric" => PG::TextDecoder::Numeric,
-            "bool" => PG::TextDecoder::Boolean,
-            "timestamp" => PG::TextDecoder::TimestampUtc,
-            "timestamptz" => PG::TextDecoder::TimestampWithTimeZone,
-          }
+            coders_by_name = {
+              "int2" => PG::TextDecoder::Integer,
+              "int4" => PG::TextDecoder::Integer,
+              "int8" => PG::TextDecoder::Integer,
+              "oid" => PG::TextDecoder::Integer,
+              "float4" => PG::TextDecoder::Float,
+              "float8" => PG::TextDecoder::Float,
+              "numeric" => PG::TextDecoder::Numeric,
+              "bool" => PG::TextDecoder::Boolean,
+              "timestamp" => PG::TextDecoder::TimestampUtc,
+              "timestamptz" => PG::TextDecoder::TimestampWithTimeZone,
+            }
 
-          known_coder_types = coders_by_name.keys.map { |n| quote(n) }
-          query = <<~SQL % known_coder_types.join(", ")
-            SELECT t.oid, t.typname
-            FROM pg_type as t AS OF SYSTEM TIME '-10s'
-            WHERE t.typname IN (%s)
-          SQL
+            known_coder_types = coders_by_name.keys.map { |n| quote(n) }
+            query = <<~SQL % known_coder_types.join(", ")
+              SELECT t.oid, t.typname
+              FROM pg_type as t AS OF SYSTEM TIME '-10s'
+              WHERE t.typname IN (%s)
+            SQL
 
+            coders = execute_and_clear(query, "SCHEMA", []) do |result|
+              result
+                .map { |row| construct_coder(row, coders_by_name[row["typname"]]) }
+                .compact
+            end
 
-          coders = execute_and_clear(query, "SCHEMA", []) do |result|
-            result
-              .map { |row| construct_coder(row, coders_by_name[row["typname"]]) }
-              .compact
+            map = PG::TypeMapByOid.new
+            coders.each { |coder| map.add_coder(coder) }
+            @connection.type_map_for_results = map
+
+            @type_map_for_results = PG::TypeMapByOid.new
+            @type_map_for_results.default_type_map = map
+            @type_map_for_results.add_coder(PG::TextDecoder::Bytea.new(oid: 17, name: "bytea"))
+            @type_map_for_results.add_coder(MoneyDecoder.new(oid: 790, name: "money"))
+
+            # extract timestamp decoder for use in update_typemap_for_default_timezone
+            @timestamp_decoder = coders.find { |coder| coder.name == "timestamp" }
+            update_typemap_for_default_timezone
+          else
+            super
           end
-
-          map = PG::TypeMapByOid.new
-          coders.each { |coder| map.add_coder(coder) }
-          @connection.type_map_for_results = map
-
-          @type_map_for_results = PG::TypeMapByOid.new
-          @type_map_for_results.default_type_map = map
-          @type_map_for_results.add_coder(PG::TextDecoder::Bytea.new(oid: 17, name: "bytea"))
-          @type_map_for_results.add_coder(MoneyDecoder.new(oid: 790, name: "money"))
-
-          # extract timestamp decoder for use in update_typemap_for_default_timezone
-          @timestamp_decoder = coders.find { |coder| coder.name == "timestamp" }
-          update_typemap_for_default_timezone
         rescue ActiveRecord::StatementInvalid => e
           raise e unless e.cause.is_a? PG::InvalidCatalogName
           # use original if database is younger than 10s
