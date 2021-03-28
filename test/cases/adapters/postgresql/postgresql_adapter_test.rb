@@ -36,9 +36,9 @@ module CockroachDB
 
         ActiveRecord::Base.establish_connection(database_config)
         conn = ActiveRecord::Base.connection
-        conn_params = conn.instance_variable_get("@config")
+        conn_config = conn.instance_variable_get("@config")
 
-        assert conn_params[:use_follower_reads]
+        assert conn_config[:use_follower_reads]
       end
     end
   end
