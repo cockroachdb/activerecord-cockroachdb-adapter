@@ -15,6 +15,15 @@ module CockroachDB
         @connection_handler = ActiveRecord::Base.connection_handler
       end
 
+      def teardown
+        # use connection without follower_reads
+        database_config = { "adapter" => "cockroachdb", "database" => "activerecord_unittest" }
+        ar_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
+        database_config.update(ar_config.configuration_hash)
+
+        ActiveRecord::Base.establish_connection(database_config)
+      end
+
       def test_database_exists_returns_false_when_the_database_does_not_exist
         db_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
         config = db_config.configuration_hash.dup
