@@ -173,6 +173,10 @@ module ActiveRecord
         @crdb_version >= 202
       end
 
+      def supports_partitioned_indexes?
+        false
+      end
+
       # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
       # migration from PostgreSQL to CockroachDB. In practice, this limitation
       # is arbitrary since CockroachDB supports index name lengths and table alias
@@ -206,16 +210,22 @@ module ActiveRecord
         end
         @crdb_version = version_num
 
+        if @config[:disable_cockroachdb_telemetry]
+          return
+        end
         Thread.new do
-          begin
-            query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
-            query_value(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
-          rescue ActiveRecord::StatementInvalid => error
-            if error.cause.class == PG::UndefinedFunction
+          pool.with_connection do |conn|
+            if !conn.active?
+              return
+            end
+            begin
+              query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
+              conn.execute(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
+            rescue ActiveRecord::StatementInvalid
               # The increment_feature_counter built-in is not supported on this
               # CockroachDB version. Ignore.
-            else
-              raise error
+            rescue => error
+              logger.warn "Unexpected error when incrementing feature counter: #{error}"
             end
           end
         end
