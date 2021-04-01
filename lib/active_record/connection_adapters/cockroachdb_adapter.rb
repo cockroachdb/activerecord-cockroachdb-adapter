@@ -173,6 +173,10 @@ module ActiveRecord
         @crdb_version >= 202
       end
 
+      def supports_partitioned_indexes?
+        false
+      end
+
       # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
       # migration from PostgreSQL to CockroachDB. In practice, this limitation
       # is arbitrary since CockroachDB supports index name lengths and table alias
