@@ -447,7 +447,7 @@ module ActiveRecord
         # Currently, querying from the pg_type catalog can be slow due to geo-partitioning
         # so this modified query uses AS OF SYSTEM TIME '-10s' to read historical data.
         def load_additional_types(oids = nil)
-          if @config[:use_follower_reads]
+          if @config[:use_follower_reads_for_type_introspection]
             initializer = OID::TypeMapInitializer.new(type_map)
 
             query = <<~SQL
@@ -480,7 +480,7 @@ module ActiveRecord
         # Currently, querying from the pg_type catalog can be slow due to geo-partitioning
         # so this modified query uses AS OF SYSTEM TIME '-10s' to read historical data.
         def add_pg_decoders
-          if @config[:use_follower_reads]
+          if @config[:use_follower_reads_for_type_introspection]
             @default_timezone = nil
             @timestamp_decoder = nil
 

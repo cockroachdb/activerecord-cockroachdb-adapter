@@ -22,6 +22,12 @@ development:
   user: <username>
 ```
 
+## Configuration
+
+In addition to the standard adapter settings, CockroachDB also supports the following:
+
+- `use_follower_reads_for_type_introspection`: Use follower reads on queries to the `pg_type` catalog when set to `true`. This helps to speed up initialization by reading historical data, but may not find recently created user-defined types.
+
 ## Working with Spatial Data
 
 The adapter uses [RGeo](https://github.com/rgeo/rgeo) and [RGeo-ActiveRecord](https://github.com/rgeo/rgeo-activerecord) to represent geometric and geographic data as Ruby objects and easily interface them with the adapter. The following is a brief introduction to RGeo and tips to help setup your spatial application. More documentation about RGeo can be found in the [YARD Docs](https://rubydoc.info/github/rgeo/rgeo) and [wiki](https://github.com/rgeo/rgeo/wiki).

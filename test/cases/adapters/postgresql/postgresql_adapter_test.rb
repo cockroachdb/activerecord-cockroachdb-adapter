@@ -39,7 +39,7 @@ module CockroachDB
       end
 
       def test_using_follower_reads_connects_properly
-        database_config = { "use_follower_reads": true, "adapter" => "cockroachdb", "database" => "activerecord_unittest" }
+        database_config = { "use_follower_reads_for_type_introspection": true, "adapter" => "cockroachdb", "database" => "activerecord_unittest" }
         ar_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
         database_config.update(ar_config.configuration_hash)
 
@@ -47,7 +47,7 @@ module CockroachDB
         conn = ActiveRecord::Base.connection
         conn_config = conn.instance_variable_get("@config")
 
-        assert conn_config[:use_follower_reads]
+        assert conn_config[:use_follower_reads_for_type_introspection]
       end
     end
   end
