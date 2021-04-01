@@ -56,6 +56,31 @@ end
 
 module ActiveRecord
   module ConnectionAdapters
+    module CockroachDBConnectionPool
+      def initialize(pool_config)
+        super(pool_config)
+        disable_telemetry = pool_config.db_config.configuration_hash[:disable_cockroachdb_telemetry]
+        return if disable_telemetry
+
+        Thread.new do
+          with_connection do |conn|
+            if conn.active?
+              begin
+                query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
+                conn.execute(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
+              rescue ActiveRecord::StatementInvalid
+                # The increment_feature_counter built-in is not supported on this
+                # CockroachDB version. Ignore.
+              rescue StandardError, NotImplementedError => e
+                conn.logger.warn "Unexpected error when incrementing feature counter: #{e}"
+              end
+            end
+          end
+        end.join # close thread after execution
+      end
+    end
+    ConnectionPool.prepend(CockroachDBConnectionPool)
+
     class CockroachDBAdapter < PostgreSQLAdapter
       ADAPTER_NAME = "CockroachDB".freeze
       DEFAULT_PRIMARY_KEY = "rowid"
@@ -194,6 +219,7 @@ module ActiveRecord
 
       def initialize(connection, logger, conn_params, config)
         super(connection, logger, conn_params, config)
+
         crdb_version_string = query_value("SHOW crdb_version")
         if crdb_version_string.include? "v1."
           version_num = 1
@@ -209,26 +235,6 @@ module ActiveRecord
           version_num = 202
         end
         @crdb_version = version_num
-
-        if @config[:disable_cockroachdb_telemetry]
-          return
-        end
-        Thread.new do
-          pool.with_connection do |conn|
-            if !conn.active?
-              return
-            end
-            begin
-              query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
-              conn.execute(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
-            rescue ActiveRecord::StatementInvalid
-              # The increment_feature_counter built-in is not supported on this
-              # CockroachDB version. Ignore.
-            rescue => error
-              logger.warn "Unexpected error when incrementing feature counter: #{error}"
-            end
-          end
-        end
       end
 
       def self.database_exists?(config)
