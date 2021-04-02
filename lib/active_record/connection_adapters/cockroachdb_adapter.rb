@@ -403,6 +403,100 @@ module ActiveRecord
           return "{}"
         end
 
+        # override
+        # This method loads info about data types from the database to
+        # populate the TypeMap.
+        #
+        # Currently, querying from the pg_type catalog can be slow due to geo-partitioning
+        # so this modified query uses AS OF SYSTEM TIME '-10s' to read historical data.
+        def load_additional_types(oids = nil)
+          if @config[:use_follower_reads_for_type_introspection]
+            initializer = OID::TypeMapInitializer.new(type_map)
+
+            query = <<~SQL
+              SELECT t.oid, t.typname, t.typelem, t.typdelim, t.typinput, r.rngsubtype, t.typtype, t.typbasetype
+              FROM pg_type as t
+              LEFT JOIN pg_range as r ON oid = rngtypid AS OF SYSTEM TIME '-10s'
+            SQL
+
+            if oids
+              query += "WHERE t.oid IN (%s)" % oids.join(", ")
+            else
+              query += initializer.query_conditions_for_initial_load
+            end
+
+            execute_and_clear(query, "SCHEMA", []) do |records|
+              initializer.run(records)
+            end
+          else
+            super
+          end
+        rescue ActiveRecord::StatementInvalid => e
+          raise e unless e.cause.is_a? PG::InvalidCatalogName
+          # use original if database is younger than 10s
+          super
+        end
+
+        # override
+        # This method maps data types to their proper decoder.
+        #
+        # Currently, querying from the pg_type catalog can be slow due to geo-partitioning
+        # so this modified query uses AS OF SYSTEM TIME '-10s' to read historical data.
+        def add_pg_decoders
+          if @config[:use_follower_reads_for_type_introspection]
+            @default_timezone = nil
+            @timestamp_decoder = nil
+
+            coders_by_name = {
+              "int2" => PG::TextDecoder::Integer,
+              "int4" => PG::TextDecoder::Integer,
+              "int8" => PG::TextDecoder::Integer,
+              "oid" => PG::TextDecoder::Integer,
+              "float4" => PG::TextDecoder::Float,
+              "float8" => PG::TextDecoder::Float,
+              "numeric" => PG::TextDecoder::Numeric,
+              "bool" => PG::TextDecoder::Boolean,
+              "timestamp" => PG::TextDecoder::TimestampUtc,
+              "timestamptz" => PG::TextDecoder::TimestampWithTimeZone,
+            }
+
+            known_coder_types = coders_by_name.keys.map { |n| quote(n) }
+            query = <<~SQL % known_coder_types.join(", ")
+              SELECT t.oid, t.typname
+              FROM pg_type as t AS OF SYSTEM TIME '-10s'
+              WHERE t.typname IN (%s)
+            SQL
+
+            coders = execute_and_clear(query, "SCHEMA", []) do |result|
+              result
+                .map { |row| construct_coder(row, coders_by_name[row["typname"]]) }
+                .compact
+            end
+
+            map = PG::TypeMapByOid.new
+            coders.each { |coder| map.add_coder(coder) }
+            @connection.type_map_for_results = map
+
+            @type_map_for_results = PG::TypeMapByOid.new
+            @type_map_for_results.default_type_map = map
+            @type_map_for_results.add_coder(PG::TextDecoder::Bytea.new(oid: 17, name: "bytea"))
+
+            # extract timestamp decoder for use in update_typemap_for_default_timezone
+            @timestamp_decoder = coders.find { |coder| coder.name == "timestamp" }
+            update_typemap_for_default_timezone
+          else
+            super
+          end
+        rescue ActiveRecord::StatementInvalid => e
+          raise e unless e.cause.is_a? PG::InvalidCatalogName
+          # use original if database is younger than 10s
+          super
+        end
+
+        def arel_visitor
+          Arel::Visitors::CockroachDB.new(self)
+        end
+
       # end private
     end
   end
