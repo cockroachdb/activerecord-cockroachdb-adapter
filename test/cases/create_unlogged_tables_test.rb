@@ -53,7 +53,7 @@ module ActiveRecord
         @connection.create_table(TABLE_NAME, temporary: true) do |t|
         end
 
-        assert_equal @connection.execute(LOGGED_QUERY).first[LOGGED_FIELD], LOGGED
+        assert_equal @connection.execute(LOGGED_QUERY).first[LOGGED_FIELD], TEMPORARY
       end
     end
   end
