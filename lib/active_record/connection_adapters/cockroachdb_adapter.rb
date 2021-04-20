@@ -60,23 +60,22 @@ module ActiveRecord
       def initialize(pool_config)
         super(pool_config)
         disable_telemetry = pool_config.db_config.configuration_hash[:disable_cockroachdb_telemetry]
-        return if disable_telemetry
+        adapter = pool_config.db_config.configuration_hash[:adapter]
+        return if disable_telemetry || adapter != "cockroachdb"
 
-        Thread.new do
-          with_connection do |conn|
-            if conn.active?
-              begin
-                query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
-                conn.execute(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
-              rescue ActiveRecord::StatementInvalid
-                # The increment_feature_counter built-in is not supported on this
-                # CockroachDB version. Ignore.
-              rescue StandardError, NotImplementedError => e
-                conn.logger.warn "Unexpected error when incrementing feature counter: #{e}"
-              end
+        with_connection do |conn|
+          if conn.active?
+            begin
+              query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
+              conn.execute(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
+            rescue ActiveRecord::StatementInvalid
+              # The increment_feature_counter built-in is not supported on this
+              # CockroachDB version. Ignore.
+            rescue StandardError => e
+              conn.logger.warn "Unexpected error when incrementing feature counter: #{e}"
             end
           end
-        end.join # close thread after execution
+        end
       end
     end
     ConnectionPool.prepend(CockroachDBConnectionPool)
