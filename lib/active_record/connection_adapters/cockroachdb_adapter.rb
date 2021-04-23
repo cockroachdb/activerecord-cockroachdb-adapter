@@ -98,7 +98,7 @@ module ActiveRecord
           st_polygon:          {},
         }
 
-      # http://postgis.17.x6.nabble.com/Default-SRID-td5001115.html      
+      # http://postgis.17.x6.nabble.com/Default-SRID-td5001115.html
       DEFAULT_SRID = 0
 
       include CockroachDB::SchemaStatements
@@ -272,12 +272,9 @@ module ActiveRecord
             precision = extract_precision(sql_type)
             scale = extract_scale(sql_type)
 
-            # TODO(#178) this should never use DecimalWithoutScale since scale
-            # is assumed to be 0 if it is not explicitly defined.
-            #
             # If fmod is -1, that means that precision is defined but not
             # scale, or neither is defined.
-            if fmod && fmod == -1
+            if fmod && fmod == -1 && !precision.nil?
               # Below comment is from ActiveRecord
               # FIXME: Remove this class, and the second argument to
               # lookups on PG
@@ -390,7 +387,7 @@ module ActiveRecord
         # In general, it is hard to parse that, but it is easy to handle the common
         # case of an empty array.
         def extract_empty_array_from_default(default)
-          return unless supports_string_to_array_coercion? 
+          return unless supports_string_to_array_coercion?
           return unless default =~ /\AARRAY\[\]\z/
           return "{}"
         end
