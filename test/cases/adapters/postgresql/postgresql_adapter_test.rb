@@ -16,7 +16,7 @@ module CockroachDB
       end
 
       def teardown
-        # use connection without follower_reads
+        # use connection without follower_reads and telemetry
         database_config = { "adapter" => "cockroachdb", "database" => "activerecord_unittest" }
         ar_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
         database_config.update(ar_config.configuration_hash)
@@ -36,6 +36,19 @@ module CockroachDB
         db_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
         assert ActiveRecord::ConnectionAdapters::CockroachDBAdapter.database_exists?(db_config.configuration_hash),
           "expected database #{db_config.database} to exist"
+      end
+
+      def test_using_telemetry_builtin_connects_properly
+        database_config = { "adapter" => "cockroachdb", "database" => "activerecord_unittest" }
+        ar_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
+        database_config.update(ar_config.configuration_hash)
+        database_config[:disable_cockroachdb_telemetry] = false
+
+        ActiveRecord::Base.establish_connection(database_config)
+        conn = ActiveRecord::Base.connection
+        conn_config = conn.instance_variable_get("@config")
+
+        assert_equal(false, conn_config[:disable_cockroachdb_telemetry])
       end
 
       def test_using_follower_reads_connects_properly
