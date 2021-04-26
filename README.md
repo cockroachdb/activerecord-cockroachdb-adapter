@@ -27,6 +27,7 @@ development:
 In addition to the standard adapter settings, CockroachDB also supports the following:
 
 - `use_follower_reads_for_type_introspection`: Use follower reads on queries to the `pg_type` catalog when set to `true`. This helps to speed up initialization by reading historical data, but may not find recently created user-defined types.
+- `disable_cockroachdb_telemetry`: Determines if a telemetry call is made to the database when the connection pool is initialized. Setting this to `true` will prevent the call from being made.
 
 ## Working with Spatial Data
 
