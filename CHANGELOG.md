@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.0.0 - 2021-04-26
+
+- Add a telemetry query on start-up. This helps the Cockroach Labs team
+  prioritize support for the adapter. It can be disabled by setting the
+  `disable_cockroachdb_telemetry` configuration option to false.
+
 ## 6.0.0-beta.5 - 2021-04-02
 
 - Added a configuration option named `use_follower_reads_for_type_introspection`.
