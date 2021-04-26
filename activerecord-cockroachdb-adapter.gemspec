@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "activerecord-cockroachdb-adapter"
-  spec.version       = "6.1.0-beta.3"
+  spec.version       = "6.1.0"
   spec.licenses      = ["Apache-2.0"]
   spec.authors       = ["Cockroach Labs"]
   spec.email         = ["cockroach-db@googlegroups.com"]
