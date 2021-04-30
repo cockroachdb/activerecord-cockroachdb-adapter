@@ -1,16 +1,18 @@
 # ActiveRecord CockroachDB Adapter
 
-CockroachDB adapter for ActiveRecord 4 and 5. This is a lightweight extension of the PostgreSQL adapter that establishes compatibility with [CockroachDB](https://github.com/cockroachdb/cockroach).
+CockroachDB adapter for ActiveRecord 5 and 6. This is a lightweight extension of the PostgreSQL adapter that establishes compatibility with [CockroachDB](https://github.com/cockroachdb/cockroach).
 
 ## Installation
 
 Add this line to your project's Gemfile:
 
 ```ruby
-gem 'activerecord-cockroachdb-adapter', '~> 5.2.0'
+gem 'activerecord-cockroachdb-adapter', '~> 6.1.0'
 ```
 
-If you're using Rails 4.x, use the `0.1.x` versions of this gem.
+If you're using Rails 5.2, use the `5.2.x` versions of this gem.
+
+If you're using Rails 6.0, use the `6.0.x` versions of this gem.
 
 In `database.yml`, use the following adapter setting:
 
