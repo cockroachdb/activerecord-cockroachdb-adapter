@@ -76,6 +76,8 @@ module ActiveRecord
             end
           end
         end
+      rescue ActiveRecord::NoDatabaseError
+        # The database doesn't exist, allow activerecord to catch this itself later
       end
     end
     ConnectionPool.prepend(CockroachDBConnectionPool)
