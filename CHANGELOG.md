@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.0.1 - 2021-05-14
+
+- Fix a bug where starting the driver can result in a NoDatabaseError.
+
 ## 6.0.0 - 2021-04-26
 
 - Add a telemetry query on start-up. This helps the Cockroach Labs team
