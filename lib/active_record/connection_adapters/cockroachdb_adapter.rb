@@ -56,6 +56,35 @@ end
 
 module ActiveRecord
   module ConnectionAdapters
+    module CockroachDBConnectionPool
+      def initialize(pool_config)
+        super(pool_config)
+        disable_telemetry = pool_config.db_config.configuration_hash[:disable_cockroachdb_telemetry]
+        adapter = pool_config.db_config.configuration_hash[:adapter]
+        return if disable_telemetry || adapter != "cockroachdb"
+
+
+        begin
+          with_connection do |conn|
+            if conn.active?
+              begin
+                query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
+                conn.execute(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
+              rescue ActiveRecord::StatementInvalid
+                # The increment_feature_counter built-in is not supported on this
+                # CockroachDB version. Ignore.
+              rescue StandardError => e
+                conn.logger.warn "Unexpected error when incrementing feature counter: #{e}"
+              end
+            end
+          end
+        rescue ActiveRecord::NoDatabaseError
+          # Prevent failures on db creation and parallel testing.
+        end
+      end
+    end
+    ConnectionPool.prepend(CockroachDBConnectionPool)
+
     class CockroachDBAdapter < PostgreSQLAdapter
       ADAPTER_NAME = "CockroachDB".freeze
       DEFAULT_PRIMARY_KEY = "rowid"
@@ -74,7 +103,7 @@ module ActiveRecord
           st_polygon:          {},
         }
 
-      # http://postgis.17.x6.nabble.com/Default-SRID-td5001115.html      
+      # http://postgis.17.x6.nabble.com/Default-SRID-td5001115.html
       DEFAULT_SRID = 0
 
       include CockroachDB::SchemaStatements
@@ -192,6 +221,7 @@ module ActiveRecord
 
       def initialize(connection, logger, conn_params, config)
         super(connection, logger, conn_params, config)
+
         crdb_version_string = query_value("SHOW crdb_version")
         if crdb_version_string.include? "v1."
           version_num = 1
@@ -247,12 +277,9 @@ module ActiveRecord
             precision = extract_precision(sql_type)
             scale = extract_scale(sql_type)
 
-            # TODO(#178) this should never use DecimalWithoutScale since scale
-            # is assumed to be 0 if it is not explicitly defined.
-            #
             # If fmod is -1, that means that precision is defined but not
             # scale, or neither is defined.
-            if fmod && fmod == -1
+            if fmod && fmod == -1 && !precision.nil?
               # Below comment is from ActiveRecord
               # FIXME: Remove this class, and the second argument to
               # lookups on PG
@@ -365,7 +392,7 @@ module ActiveRecord
         # In general, it is hard to parse that, but it is easy to handle the common
         # case of an empty array.
         def extract_empty_array_from_default(default)
-          return unless supports_string_to_array_coercion? 
+          return unless supports_string_to_array_coercion?
           return unless default =~ /\AARRAY\[\]\z/
           return "{}"
         end

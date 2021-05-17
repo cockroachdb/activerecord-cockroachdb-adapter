@@ -1,16 +1,18 @@
 # ActiveRecord CockroachDB Adapter
 
-CockroachDB adapter for ActiveRecord 4 and 5. This is a lightweight extension of the PostgreSQL adapter that establishes compatibility with [CockroachDB](https://github.com/cockroachdb/cockroach).
+CockroachDB adapter for ActiveRecord 5 and 6. This is a lightweight extension of the PostgreSQL adapter that establishes compatibility with [CockroachDB](https://github.com/cockroachdb/cockroach).
 
 ## Installation
 
 Add this line to your project's Gemfile:
 
 ```ruby
-gem 'activerecord-cockroachdb-adapter', '~> 5.2.0'
+gem 'activerecord-cockroachdb-adapter', '~> 6.1.0'
 ```
 
-If you're using Rails 4.x, use the `0.1.x` versions of this gem.
+If you're using Rails 5.2, use the `5.2.x` versions of this gem.
+
+If you're using Rails 6.0, use the `6.0.x` versions of this gem.
 
 In `database.yml`, use the following adapter setting:
 
@@ -27,6 +29,7 @@ development:
 In addition to the standard adapter settings, CockroachDB also supports the following:
 
 - `use_follower_reads_for_type_introspection`: Use follower reads on queries to the `pg_type` catalog when set to `true`. This helps to speed up initialization by reading historical data, but may not find recently created user-defined types.
+- `disable_cockroachdb_telemetry`: Determines if a telemetry call is made to the database when the connection pool is initialized. Setting this to `true` will prevent the call from being made.
 
 ## Working with Spatial Data
 

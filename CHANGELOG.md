@@ -1,5 +1,15 @@
 # Changelog
 
+## 6.1.1 - 2021-05-14
+
+- Fix a bug where starting the driver can result in a NoDatabaseError. 
+
+## 6.1.0 - 2021-04-26
+
+- Add a telemetry query on start-up. This helps the Cockroach Labs team
+  prioritize support for the adapter. It can be disabled by setting the
+  `disable_cockroachdb_telemetry` configuration option to false.
+
 ## 6.1.0-beta.3 - 2021-04-02
 
 - Added a configuration option named `use_follower_reads_for_type_introspection`.
