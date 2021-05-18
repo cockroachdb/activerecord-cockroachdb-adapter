@@ -68,7 +68,7 @@ module ActiveRecord
               end
             end
           end
-        rescue ActiveRecord::NoDatabaseError
+        rescue StandardError
           # Prevent failures on db creation and parallel testing.
         end
       end
