@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.0.2 - 2021-05-20
+
+- Fix a bug where starting the driver can result in a ConnectionNotEstablished error.
+
 ## 6.0.1 - 2021-05-14
 
 - Fix a bug where starting the driver can result in a NoDatabaseError.
