@@ -7,7 +7,7 @@ CockroachDB adapter for ActiveRecord 4 and 5. This is a lightweight extension of
 Add this line to your project's Gemfile:
 
 ```ruby
-gem 'activerecord-cockroachdb-adapter', '~> 5.2.0'
+gem 'activerecord-cockroachdb-adapter', '~> 5.2'
 ```
 
 If you're using Rails 4.x, use the `0.1.x` versions of this gem.
@@ -21,6 +21,11 @@ development:
   host: <hostname>
   user: <username>
 ```
+## Configuration
+
+In addition to the standard adapter settings, CockroachDB also supports the following:
+
+- `disable_cockroachdb_telemetry`: Determines if a telemetry call is made to the database when the connection pool is initialized. Setting this to `true` will prevent the call from being made.
 
 ## Working with Spatial Data
 
