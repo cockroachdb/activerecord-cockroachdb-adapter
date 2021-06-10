@@ -40,6 +40,14 @@ module ActiveRecord
       # PG::Connection object, so just pass a nil connection object for the
       # time being.
       ConnectionAdapters::CockroachDBAdapter.new(nil, logger, conn_params, config)
+    # This rescue flow appears in new_client, but it is needed here as well
+    # since Cockroach will sometimes not raise until a query is made.
+    rescue ActiveRecord::StatementInvalid => error
+      if conn_params && conn_params[:dbname] && error.cause.message.include?(conn_params[:dbname])
+        raise ActiveRecord::NoDatabaseError, error.cause.message
+      else
+        raise ActiveRecord::ConnectionNotEstablished, error.message
+      end
     end
   end
 end
