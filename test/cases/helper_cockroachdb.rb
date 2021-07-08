@@ -35,8 +35,24 @@ elsif ENV['COCKROACH_LOAD_FROM_TEMPLATE']
   ARTest.connect
 end
 
+require 'timeout'
+
+module TestTimeoutHelper
+  def time_it
+    t0 = Minitest.clock_time
+
+    Timeout.timeout(180, Timeout::Error, 'Test took over 3 minutes to finish') do
+      yield
+    end
+  ensure
+    self.time = Minitest.clock_time - t0
+  end
+end
+
 module ActiveSupport
   class TestCase
+    include TestTimeoutHelper
+
     def postgis_version
       @postgis_version ||= ActiveRecord::Base.connection.select_value('SELECT postgis_lib_version()')
     end

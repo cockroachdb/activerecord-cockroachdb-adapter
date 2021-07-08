@@ -43,6 +43,17 @@ module ActiveRecord
         end
         assert_equal @connection.execute(LOGGED_QUERY).first[LOGGED_FIELD], LOGGED
       end
+
+      # Cockroachdb has an issue about `pg_class`
+      # https://github.com/cockroachdb/cockroach/issues/56656
+      # This override can be removed after it be fix
+      def test_gracefully_handles_temporary_tables
+        @connection.execute("SET experimental_enable_temp_tables = 'on';")
+        @connection.create_table(TABLE_NAME, temporary: true) do |t|
+        end
+
+        assert_equal @connection.execute(LOGGED_QUERY).first[LOGGED_FIELD], TEMPORARY
+      end
     end
   end
 end
