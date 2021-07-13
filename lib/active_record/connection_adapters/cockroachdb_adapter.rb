@@ -225,12 +225,10 @@ module ActiveRecord
       end
 
       def supports_comments?
-        # See cockroachdb/cockroach#19472.
-        false
+        @crdb_version >= 201
       end
 
       def supports_comments_in_create?
-        # See cockroachdb/cockroach#19472.
         false
       end
 
@@ -280,8 +278,10 @@ module ActiveRecord
           version_num = 192
         elsif crdb_version_string.include? "v20.1."
           version_num = 201
-        else
+        elsif crdb_version_string.include? "v20.2."
           version_num = 202
+        else
+          version_num = 210
         end
         @crdb_version = version_num
       end

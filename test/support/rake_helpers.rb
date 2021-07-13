@@ -1,4 +1,4 @@
-COCKROACHDB_TEST_HELPER = 'test/cases/helper_cockroachdb'
+COCKROACHDB_TEST_HELPER = 'test/cases/helper_cockroachdb.rb'
 
 def test_files
   env_activerecord_test_files ||
