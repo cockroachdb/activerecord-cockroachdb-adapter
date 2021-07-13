@@ -15,3 +15,4 @@ exclude :test_exec_insert_default_values_quoted_schema_with_returning_disabled_a
 exclude :test_expression_index, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_serial_sequence, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_database_exists_returns_false_when_the_database_does_not_exist, "Test is reimplemented to use cockroachdb adapter"
+exclude :test_doesnt_error_when_a_read_query_with_cursors_is_called_while_preventing_writes, "CockroachDB does not currently support declaring a cursor. See https://github.com/cockroachdb/cockroach/issues/41412."
