@@ -17,6 +17,7 @@ require "active_record/connection_adapters/cockroachdb/oid/type_map_initializer"
 require "active_record/connection_adapters/cockroachdb/oid/spatial"
 require "active_record/connection_adapters/cockroachdb/oid/interval"
 require "active_record/connection_adapters/cockroachdb/arel_tosql"
+require "active_record/connection_adapters/cockroachdb/version"
 
 # Run to ignore spatial tables that will break schemna dumper.
 # Defined in ./setup.rb
@@ -63,13 +64,18 @@ module ActiveRecord
         adapter = pool_config.db_config.configuration_hash[:adapter]
         return if disable_telemetry || adapter != "cockroachdb"
 
-
         begin
           with_connection do |conn|
             if conn.active?
               begin
-                query = "SELECT crdb_internal.increment_feature_counter('ActiveRecord %d.%d')"
-                conn.execute(query % [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR])
+                ar_version = conn.quote("ActiveRecord %d.%d" % [ActiveRecord::VERSION::MAJOR,
+                                                                ActiveRecord::VERSION::MINOR])
+                ar_query = "SELECT crdb_internal.increment_feature_counter(%s)" % ar_version
+                adapter_version = conn.quote("activerecord-cockroachdb-adapter #{CockroachDB::VERSION}")
+                adapter_query = "SELECT crdb_internal.increment_feature_counter(%s)" % adapter_version
+
+                conn.execute(ar_query)
+                conn.execute(adapter_query)
               rescue ActiveRecord::StatementInvalid
                 # The increment_feature_counter built-in is not supported on this
                 # CockroachDB version. Ignore.
