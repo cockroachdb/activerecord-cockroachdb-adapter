@@ -4,7 +4,7 @@ lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 require './lib/version.rb'
-version = ActiveRecord::CockroachDBAdapterVersion
+version = ActiveRecord::COCKROACH_DB_ADAPTER_VERSION
 
 Gem::Specification.new do |spec|
   spec.name          = "activerecord-cockroachdb-adapter"

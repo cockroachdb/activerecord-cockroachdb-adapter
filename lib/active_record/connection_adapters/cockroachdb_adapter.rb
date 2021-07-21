@@ -71,7 +71,7 @@ module ActiveRecord
                 ar_version = conn.quote("ActiveRecord %d.%d" % [ActiveRecord::VERSION::MAJOR,
                                                                 ActiveRecord::VERSION::MINOR])
                 ar_query = "SELECT crdb_internal.increment_feature_counter(%s)" % ar_version
-                adapter_version = conn.quote("activerecord-cockroachdb-adapter #{ActiveRecord::CockroachDBAdapterVersion}")
+                adapter_version = conn.quote("activerecord-cockroachdb-adapter #{ActiveRecord::COCKROACH_DB_ADAPTER_VERSION}")
                 adapter_query = "SELECT crdb_internal.increment_feature_counter(%s)" % adapter_version
 
                 conn.execute(ar_query)
