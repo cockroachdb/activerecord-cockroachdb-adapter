@@ -3,10 +3,8 @@
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
-version_line = File.open('./lib/active_record/connection_adapters/cockroachdb/version.rb') do |f|
-  f.find {|line| line.include?("VERSION")}
-end
-version = version_line.split('=').last.strip.gsub("\"", '')
+require './lib/version.rb'
+version = ActiveRecord::CockroachDBAdapterVersion
 
 Gem::Specification.new do |spec|
   spec.name          = "activerecord-cockroachdb-adapter"

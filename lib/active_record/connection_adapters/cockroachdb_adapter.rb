@@ -17,7 +17,7 @@ require "active_record/connection_adapters/cockroachdb/oid/type_map_initializer"
 require "active_record/connection_adapters/cockroachdb/oid/spatial"
 require "active_record/connection_adapters/cockroachdb/oid/interval"
 require "active_record/connection_adapters/cockroachdb/arel_tosql"
-require "active_record/connection_adapters/cockroachdb/version"
+require_relative "../../version"
 
 # Run to ignore spatial tables that will break schemna dumper.
 # Defined in ./setup.rb
@@ -71,7 +71,7 @@ module ActiveRecord
                 ar_version = conn.quote("ActiveRecord %d.%d" % [ActiveRecord::VERSION::MAJOR,
                                                                 ActiveRecord::VERSION::MINOR])
                 ar_query = "SELECT crdb_internal.increment_feature_counter(%s)" % ar_version
-                adapter_version = conn.quote("activerecord-cockroachdb-adapter #{CockroachDB::VERSION}")
+                adapter_version = conn.quote("activerecord-cockroachdb-adapter #{ActiveRecord::CockroachDBAdapterVersion}")
                 adapter_query = "SELECT crdb_internal.increment_feature_counter(%s)" % adapter_version
 
                 conn.execute(ar_query)
