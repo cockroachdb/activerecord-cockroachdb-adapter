@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.1.3 - 2021-07-28
+
+- Santitize the input to the telemetry query that is issued on startup.
+
 ## 6.1.2 - 2021-05-20
 
 - Fix a bug where starting the driver can result in a ConnectionNotEstablished error.
