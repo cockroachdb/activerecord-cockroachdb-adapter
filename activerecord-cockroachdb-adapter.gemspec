@@ -1,10 +1,14 @@
 # coding: utf-8
-lib = File.expand_path('../lib', __FILE__)
+
+lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require './lib/version.rb'
+version = ActiveRecord::COCKROACH_DB_ADAPTER_VERSION
 
 Gem::Specification.new do |spec|
   spec.name          = "activerecord-cockroachdb-adapter"
-  spec.version       = "6.0.2"
+  spec.version       = version
   spec.licenses      = ["Apache-2.0"]
   spec.authors       = ["Cockroach Labs"]
   spec.email         = ["cockroach-db@googlegroups.com"]
