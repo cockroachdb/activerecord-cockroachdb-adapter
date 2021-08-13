@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.0.3 - 2021-08-13
+
+- Santitize the input to the telemetry query that is issued on startup.
+- Add support for CockroachDB v21.
+
 ## 6.0.2 - 2021-05-20
 
 - Fix a bug where starting the driver can result in a ConnectionNotEstablished error.
