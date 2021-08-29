@@ -352,7 +352,8 @@ module ActiveRecord
           super ||
             extract_escaped_string_from_default(default) ||
             extract_time_from_default(default) ||
-            extract_empty_array_from_default(default)
+            extract_empty_array_from_default(default) ||
+            extract_decimal_from_default(default)
         end
 
         # Both PostgreSQL and CockroachDB use C-style string escapes under the
@@ -401,6 +402,14 @@ module ActiveRecord
           return unless supports_string_to_array_coercion?
           return unless default =~ /\AARRAY\[\]\z/
           return "{}"
+        end
+
+        # This method exists to extract the decimal defaults (e.g. scientific notation)
+        # that don't get parsed correctly
+        def extract_decimal_from_default(default)
+          Float(default).to_s
+        rescue
+          nil
         end
 
         # override
