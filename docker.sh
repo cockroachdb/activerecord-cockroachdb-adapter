@@ -4,10 +4,7 @@
 
 set -euox pipefail
 
-DOCKER_IMAGE_TAG=activerecord_test_container
-
-# Build the docker image to use.
-docker build -t ${DOCKER_IMAGE_TAG} build/
+DOCKER_IMAGE_TAG=cockroachdb/activerecord_test_container:20210914
 
 # Absolute path to this repository.
 repo_root=$(cd "$(dirname "${0}")" && pwd)
@@ -26,7 +23,7 @@ container_root=${repo_root}/docker_root
 mkdir -p "${container_root}"/{etc,home,home/"${username}"/activerecord-cockroachdb-adapter,home/.gems}
 echo "${username}:x:${uid_gid}::/home/${username}:/bin/bash" > "${container_root}/etc/passwd"
 
-docker run \
+exec docker run \
   --volume="${container_root}/etc/passwd:/etc/passwd" \
   --volume="${container_root}/home/${username}:/home/${username}" \
   --volume="${repo_root}:/home/${username}/activerecord-cockroachdb-adapter" \
