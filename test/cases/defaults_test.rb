@@ -21,4 +21,25 @@ module CockroachDB
       assert_match %r/t\.datetime\s+"modified_time_function",\s+default: -> { "now\(\)" }/, output
     end
   end
+
+  class DefaultNumbersTest < ActiveRecord::TestCase
+    class DefaultNumber < ActiveRecord::Base; end
+
+    setup do
+      @connection = ActiveRecord::Base.connection
+      @connection.create_table :default_numbers do |t|
+        t.decimal :decimal_number, precision: 32, scale: 16, default: 0
+      end
+    end
+
+    teardown do
+      @connection.drop_table :default_numbers, if_exists: true
+    end
+
+    def test_default_decimal_number_in_scientific_notation
+      record = DefaultNumber.new
+      assert_equal 0.0, record.decimal_number
+      assert_equal "0.0", record.decimal_number_before_type_cast
+    end
+  end
 end

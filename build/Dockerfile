@@ -4,7 +4,7 @@
 FROM cockroachdb/example-orms-builder:20200413-1918
 
 # Native dependencies for libxml-ruby and sqlite3.
-RUN apt-get update -y && apt-get install -y \
+RUN apt-get --allow-releaseinfo-change update -y && apt-get install -y \
   libxslt-dev \
   libxml2-dev \
   libsqlite3-dev \
