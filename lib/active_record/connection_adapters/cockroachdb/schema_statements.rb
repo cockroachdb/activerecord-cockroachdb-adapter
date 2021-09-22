@@ -32,6 +32,41 @@ module ActiveRecord
           end
         end
 
+        # override
+        # Modified version of the postgresql foreign_keys method.
+        # Replaces t2.oid::regclass::text with t2.relname since this is
+        # more efficient in CockroachDB.
+        def foreign_keys(table_name)
+          scope = quoted_scope(table_name)
+          fk_info = exec_query(<<~SQL, "SCHEMA")
+            SELECT t2.relname AS to_table, a1.attname AS column, a2.attname AS primary_key, c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid
+            FROM pg_constraint c
+            JOIN pg_class t1 ON c.conrelid = t1.oid
+            JOIN pg_class t2 ON c.confrelid = t2.oid
+            JOIN pg_attribute a1 ON a1.attnum = c.conkey[1] AND a1.attrelid = t1.oid
+            JOIN pg_attribute a2 ON a2.attnum = c.confkey[1] AND a2.attrelid = t2.oid
+            JOIN pg_namespace t3 ON c.connamespace = t3.oid
+            WHERE c.contype = 'f'
+              AND t1.relname = #{scope[:name]}
+              AND t3.nspname = #{scope[:schema]}
+            ORDER BY c.conname
+          SQL
+
+          fk_info.map do |row|
+            options = {
+              column: row["column"],
+              name: row["name"],
+              primary_key: row["primary_key"]
+            }
+
+            options[:on_delete] = extract_foreign_key_action(row["on_delete"])
+            options[:on_update] = extract_foreign_key_action(row["on_update"])
+            options[:validate] = row["valid"]
+
+            ForeignKeyDefinition.new(table_name, row["to_table"], options)
+          end
+        end
+
         # CockroachDB uses unique_rowid() for primary keys, not sequences. It's
         # possible to force a table to use sequences, but since it's not the
         # default behavior we'll always return nil for default_sequence_name.
