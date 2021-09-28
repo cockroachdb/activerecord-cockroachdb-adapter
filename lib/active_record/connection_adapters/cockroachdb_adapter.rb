@@ -253,8 +253,7 @@ module ActiveRecord
         false
       end
 
-      private
-
+      class << self
         def initialize_type_map(m = type_map)
           %w(
             geography
@@ -291,10 +290,13 @@ module ActiveRecord
               # lookups on PG
               Type::DecimalWithoutScale.new(precision: precision)
             else
-              OID::Decimal.new(precision: precision, scale: scale)
+              ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Decimal.new(precision: precision, scale: scale)
             end
           end
         end
+      end
+
+      private
 
         # Configures the encoding, verbosity, schema search path, and time zone of the connection.
         # This is called by #connect and should not be called manually.
@@ -316,7 +318,7 @@ module ActiveRecord
           # If using Active Record's time zone support configure the connection to return
           # TIMESTAMP WITH ZONE types in UTC.
           unless variables["timezone"]
-            if ActiveRecord::Base.default_timezone == :utc
+            if ActiveRecord.default_timezone == :utc
               variables["timezone"] = "UTC"
             elsif @local_tz
               variables["timezone"] = @local_tz

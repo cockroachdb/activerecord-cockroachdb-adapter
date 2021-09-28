@@ -58,6 +58,24 @@ def supports_default_expression?
   end
 end
 
+def supports_non_unique_constraint_name?
+  if current_adapter?(:Mysql2Adapter)
+    conn = ActiveRecord::Base.connection
+    conn.mariadb?
+  else
+    false
+  end
+end
+
+def supports_text_column_with_default?
+  if current_adapter?(:Mysql2Adapter)
+    conn = ActiveRecord::Base.connection
+    conn.mariadb? && conn.database_version >= "10.2.1"
+  else
+    true
+  end
+end
+
 %w[
   supports_savepoints?
   supports_partial_index?
@@ -85,12 +103,12 @@ end
 def with_timezone_config(cfg)
   verify_default_timezone_config
 
-  old_default_zone = ActiveRecord::Base.default_timezone
+  old_default_zone = ActiveRecord.default_timezone
   old_awareness = ActiveRecord::Base.time_zone_aware_attributes
   old_zone = Time.zone
 
   if cfg.has_key?(:default)
-    ActiveRecord::Base.default_timezone = cfg[:default]
+    ActiveRecord.default_timezone = cfg[:default]
   end
   if cfg.has_key?(:aware_attributes)
     ActiveRecord::Base.time_zone_aware_attributes = cfg[:aware_attributes]
@@ -100,7 +118,7 @@ def with_timezone_config(cfg)
   end
   yield
 ensure
-  ActiveRecord::Base.default_timezone = old_default_zone
+  ActiveRecord.default_timezone = old_default_zone
   ActiveRecord::Base.time_zone_aware_attributes = old_awareness
   Time.zone = old_zone
 end
@@ -118,12 +136,12 @@ def verify_default_timezone_config
       Got: #{Time.zone}
     MSG
   end
-  if ActiveRecord::Base.default_timezone != EXPECTED_DEFAULT_TIMEZONE
+  if ActiveRecord.default_timezone != EXPECTED_DEFAULT_TIMEZONE
     $stderr.puts <<-MSG
 \n#{self}
-    Global state `ActiveRecord::Base.default_timezone` was leaked.
+    Global state `ActiveRecord.default_timezone` was leaked.
       Expected: #{EXPECTED_DEFAULT_TIMEZONE}
-      Got: #{ActiveRecord::Base.default_timezone}
+      Got: #{ActiveRecord.default_timezone}
     MSG
   end
   if ActiveRecord::Base.time_zone_aware_attributes != EXPECTED_TIME_ZONE_AWARE_ATTRIBUTES
@@ -155,7 +173,9 @@ end
 
 def clean_up_legacy_connection_handlers
   handler = ActiveRecord::Base.default_connection_handler
-  ActiveRecord::Base.connection_handlers = {}
+  assert_deprecated do
+    ActiveRecord::Base.connection_handlers = {}
+  end
 
   handler.connection_pool_names.each do |name|
     next if ["ActiveRecord::Base", "ARUnit2Model", "Contact", "ContactSti", "FirstAbstractClass", "SecondAbstractClass"].include?(name)
@@ -193,11 +213,9 @@ ensure
   $stdout = original_stdout
 end
 
-# if loading from template, defer until we load both schemas in helper_cockroachdb
 if ENV['COCKROACH_LOAD_FROM_TEMPLATE'].nil? && ENV['COCKROACH_SKIP_LOAD_SCHEMA'].nil?
   load_schema
 end
-
 class SQLSubscriber
   attr_reader :logged
   attr_reader :payloads
@@ -229,3 +247,13 @@ module InTimeZone
       ActiveRecord::Base.time_zone_aware_attributes = old_tz
     end
 end
+
+# Encryption
+
+ActiveRecord::Encryption.configure \
+  primary_key: "test master key",
+  deterministic_key: "test deterministic key",
+  key_derivation_salt: "testing key derivation salt"
+
+ActiveRecord::Encryption::ExtendedDeterministicQueries.install_support
+ActiveRecord::Encryption::ExtendedDeterministicUniquenessValidator.install_support
