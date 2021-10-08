@@ -435,7 +435,8 @@ module ActiveRecord
             /geometry/,
             /geography/,
             /interval/,
-            /numeric/
+            /numeric/,
+            /timestamp/
           ]
           re = Regexp.union(target_types)
           fields.map do |field|

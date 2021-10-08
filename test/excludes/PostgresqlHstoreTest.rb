@@ -46,3 +46,8 @@ exclude :test_hstore_dirty_from_database_equal, "Skipping until we can triage fu
 exclude :test_parse2, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_gen3, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_changes_with_store_accessors, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
+exclude :test_various_null, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
+exclude :test_spaces, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
+exclude :test_signs, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
+exclude :test_equal_signs, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
+exclude :test_commas, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"

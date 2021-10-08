@@ -12,8 +12,8 @@ module CockroachDB
     # directory instead of using the adapter name.
     fixtures :topics
 
-    def test_deserializing_rails_6_0_marshal_basic
-      topic = Marshal.load(marshal_fixture("rails_6_0_topic"))
+    def test_deserializing_rails_6_1_marshal_basic
+      topic = Marshal.load(marshal_fixture("rails_6_1_topic"))
 
       assert_not_predicate topic, :new_record?
       assert_equal 1, topic.id
@@ -21,8 +21,8 @@ module CockroachDB
       assert_equal "Have a nice day", topic.content
     end
 
-    def test_deserializing_rails_6_0_marshal_with_loaded_association_cache
-      topic = Marshal.load(marshal_fixture("rails_6_0_topic_associations"))
+    def test_deserializing_rails_6_1_marshal_with_loaded_association_cache
+      topic = Marshal.load(marshal_fixture("rails_6_1_topic_associations"))
 
       assert_not_predicate topic, :new_record?
       assert_equal 1, topic.id

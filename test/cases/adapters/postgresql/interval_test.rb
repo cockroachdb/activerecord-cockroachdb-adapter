@@ -82,7 +82,7 @@ module CockroachDB
         maximum_term: 6.year + 5.month + 4.days + 3.hours + 2.minutes + 1.seconds
       )
       i = IntervalDataType.last!
-      assert_equal "P6Y5M4DT3H2M1S", i.maximum_term.iso8601
+      assert_equal "P6Y5M4DT3H2M1.0S", i.maximum_term.iso8601
     end
 
     def test_interval_type
@@ -94,7 +94,7 @@ module CockroachDB
       )
       i = IntervalDataType.last!
 
-      assert_equal "P6Y5M4DT3H2M1S",     i.maximum_term.iso8601
+      assert_equal "P6Y5M4DT3H2M1.0S",     i.maximum_term.iso8601
       assert_equal "P1Y2M3DT4H5M6.235S", i.minimum_term.iso8601
       assert_equal "P3Y",                i.default_term.iso8601
       assert_equal %w[ P1M P1Y PT1H ],   i.all_terms.map(&:iso8601)

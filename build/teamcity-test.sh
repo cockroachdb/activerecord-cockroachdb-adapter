@@ -3,7 +3,7 @@
 set -euox pipefail
 
 # Download CockroachDB
-VERSION=v21.1.5
+VERSION=v21.1.9
 wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
 readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
 
@@ -37,6 +37,7 @@ run_cockroach() {
   cockroach sql --insecure -e 'SET CLUSTER SETTING sql.stats.histogram_collection.enabled = false;'
   cockroach sql --insecure -e "SET CLUSTER SETTING jobs.retention_time = '180s';"
   cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true'"
+  cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = 'true'"
 }
 
 # Install ruby dependencies.
