@@ -70,3 +70,19 @@ module ActiveSupport
     end
   end
 end
+
+module ARTestCaseHelper
+  def with_cockroachdb_datetime_type(type)
+    adapter = ActiveRecord::ConnectionAdapters::CockroachDBAdapter
+    adapter.remove_instance_variable(:@native_database_types) if adapter.instance_variable_defined?(:@native_database_types)
+    datetime_type_was = adapter.datetime_type
+    adapter.datetime_type = type
+    yield
+  ensure
+    adapter = ActiveRecord::ConnectionAdapters::CockroachDBAdapter
+    adapter.datetime_type = datetime_type_was
+    adapter.remove_instance_variable(:@native_database_types) if adapter.instance_variable_defined?(:@native_database_types)
+  end
+end
+
+ActiveRecord::TestCase.include(ARTestCaseHelper)

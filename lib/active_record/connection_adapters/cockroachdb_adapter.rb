@@ -435,8 +435,7 @@ module ActiveRecord
             /geometry/,
             /geography/,
             /interval/,
-            /numeric/,
-            /timestamp/
+            /numeric/
           ]
           re = Regexp.union(target_types)
           fields.map do |field|
@@ -462,6 +461,7 @@ module ActiveRecord
             WHERE c.table_name = #{quote(table_name)}
               AND c.column_name = #{quote(col_name)}
           SQL
+          p field, data_type, table_name
           field[1] = data_type[0][0].downcase
           field
         end

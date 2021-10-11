@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "cases/helper"
+require "cases/helper_cockroachdb"
 
 module ActiveRecord
   module CockroachDB
@@ -42,22 +43,23 @@ module ActiveRecord
         end
 
         def test_change_type_with_symbol_using_timestamp_with_timestamptz_as_default
-          with_postgresql_datetime_type(:timestamptz) do
+          with_cockroachdb_datetime_type(:timestamptz) do
             connection.change_column :strings, :somedate, :timestamp, cast_as: :timestamp
             assert_equal :timestamp, connection.columns(:strings).find { |c| c.name == "somedate" }.type
           end
         end
 
         def test_change_type_with_symbol_with_timestamptz_as_default
-          with_postgresql_datetime_type(:timestamptz) do
+          with_cockroachdb_datetime_type(:timestamptz) do
             connection.change_column :strings, :somedate, :timestamptz, cast_as: :timestamptz
             assert_equal :datetime, connection.columns(:strings).find { |c| c.name == "somedate" }.type
           end
         end
 
         def test_change_type_with_symbol_using_datetime_with_timestamptz_as_default
-          with_postgresql_datetime_type(:timestamptz) do
+          with_cockroachdb_datetime_type(:timestamptz) do
             connection.change_column :strings, :somedate, :datetime, cast_as: :datetime
+            item = connection.columns(:strings).find { |c| c.name == "somedate" }
             assert_equal :datetime, connection.columns(:strings).find { |c| c.name == "somedate" }.type
           end
         end
