@@ -15,7 +15,6 @@ require "active_record/connection_adapters/cockroachdb/spatial_column_info"
 require "active_record/connection_adapters/cockroachdb/setup"
 require "active_record/connection_adapters/cockroachdb/oid/type_map_initializer"
 require "active_record/connection_adapters/cockroachdb/oid/spatial"
-require "active_record/connection_adapters/cockroachdb/oid/interval"
 require "active_record/connection_adapters/cockroachdb/arel_tosql"
 require_relative "../../version"
 
@@ -322,6 +321,10 @@ module ActiveRecord
               variables["timezone"] = @local_tz
             end
           end
+
+          # Set interval output format to ISO 8601 for ease of parsing by ActiveSupport::Duration.parse
+          execute("SET intervalstyle_enabled = true", "SCHEMA")
+          execute("SET intervalstyle = iso_8601", "SCHEMA")
 
           # NOTE(joey): This is a workaround as CockroachDB 1.1.x
           # supports SET TIME ZONE <...> and SET "time zone" = <...> but

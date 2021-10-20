@@ -3,7 +3,7 @@
 set -euox pipefail
 
 # Download CockroachDB
-VERSION=v21.2.0-beta.4
+VERSION=v21.2.0-rc.1
 wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
 readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
 
