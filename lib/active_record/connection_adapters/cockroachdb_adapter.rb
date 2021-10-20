@@ -176,8 +176,7 @@ module ActiveRecord
       end
 
       def supports_expression_index?
-        # See cockroachdb/cockroach#9682
-        false
+        @crdb_version >= 212
       end
 
       def supports_datetime_with_precision?
@@ -240,8 +239,10 @@ module ActiveRecord
           version_num = 201
         elsif crdb_version_string.include? "v20.2."
           version_num = 202
-        else
+        elsif crdb_version_string.include? "v21.1."
           version_num = 210
+        else
+          version_num = 212
         end
         @crdb_version = version_num
       end
