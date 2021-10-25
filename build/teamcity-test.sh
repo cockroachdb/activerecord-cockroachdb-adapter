@@ -37,6 +37,14 @@ run_cockroach() {
   cockroach sql --insecure -e 'SET CLUSTER SETTING sql.stats.histogram_collection.enabled = false;'
   cockroach sql --insecure -e "SET CLUSTER SETTING jobs.retention_time = '180s';"
   cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true'"
+  #cockroach sql --insecure -e "SET CLUSTER SETTING jobs.registry.interval.gc = '30s'"
+  cockroach sql --insecure -e "SET CLUSTER SETTING jobs.retention_time = '15s'"
+  #cockroach sql --insecure -e "SET CLUSTER SETTING jobs.registry.interval.cancel = '180s'"
+  cockroach sql --insecure -e "SET CLUSTER SETTING kv.raft_log.disable_synchronization_unsafe = true"
+  cockroach sql --insecure -e "SET CLUSTER SETTING kv.range_merge.queue_interval = '50ms'"
+  cockroach sql --insecure -e "SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false"
+  cockroach sql --insecure -e "ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = '5'"
+  cockroach sql --insecure -e "ALTER DATABASE system CONFIGURE ZONE USING gc.ttlseconds = '5'"
 }
 
 # Install ruby dependencies.
