@@ -181,7 +181,7 @@ module ActiveRecord
       end
 
       def supports_datetime_with_precision?
-        false
+        @crdb_version >= 201
       end
 
       def supports_comments?
@@ -197,8 +197,7 @@ module ActiveRecord
       end
 
       def supports_virtual_columns?
-        # See cockroachdb/cockroach#20882.
-        false
+        @crdb_version >= 2
       end
 
       def supports_string_to_array_coercion?
