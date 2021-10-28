@@ -181,7 +181,7 @@ module ActiveRecord
       end
 
       def supports_datetime_with_precision?
-        @crdb_version >= 201
+        false
       end
 
       def supports_comments?
