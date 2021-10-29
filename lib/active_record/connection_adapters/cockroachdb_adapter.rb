@@ -197,7 +197,7 @@ module ActiveRecord
       end
 
       def supports_virtual_columns?
-        @crdb_version >= 2
+        false
       end
 
       def supports_string_to_array_coercion?
