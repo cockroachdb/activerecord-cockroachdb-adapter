@@ -22,7 +22,7 @@ module ActiveRecord
 
           foreign_keys.each do |foreign_key|
             begin
-              add_foreign_key(foreign_key.from_table, foreign_key.to_table, foreign_key.options)
+              add_foreign_key(foreign_key.from_table, foreign_key.to_table, **foreign_key.options)
             rescue ActiveRecord::StatementInvalid => error
               if error.cause.class == PG::DuplicateObject
                 # This error is safe to ignore because the yielded caller
