@@ -435,7 +435,21 @@ module ActiveRecord
         #
         # @see: https://github.com/rails/rails/blob/8695b028261bdd244e254993255c6641bdbc17a5/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L829
         def column_definitions(table_name)
-          fields = super
+          fields = query(<<~SQL, "SCHEMA")
+              SELECT a.attname, format_type(a.atttypid, a.atttypmod),
+                     pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod,
+                     c.collname, NULL AS comment,
+                     #{supports_virtual_columns? ? 'attgenerated' : quote('')} as attgenerated
+                FROM pg_attribute a
+                LEFT JOIN pg_attrdef d ON a.attrelid = d.adrelid AND a.attnum = d.adnum
+                LEFT JOIN pg_type t ON a.atttypid = t.oid
+                LEFT JOIN pg_collation c ON a.attcollation = c.oid AND a.attcollation <> t.typcollation
+               WHERE a.attrelid = #{quote(quote_table_name(table_name))}::regclass
+                 AND a.attnum > 0 AND NOT a.attisdropped
+               ORDER BY a.attnum
+          SQL
+
+          crdb_fields = crdb_column_definitions(table_name)
 
           # Use regex comparison because if a type is an array it will
           # have [] appended to the end of it.
@@ -445,32 +459,33 @@ module ActiveRecord
             /interval/,
             /numeric/
           ]
+
           re = Regexp.union(target_types)
           fields.map do |field|
             dtype = field[1]
-            if re.match(dtype)
-              crdb_column_definition(field, table_name)
-            else
-              field
-            end
+            field[1] = crdb_fields[field[0]][2].downcase if re.match(dtype)
+            field[7] = crdb_fields[field[0]][1]&.gsub!(/^\'|\'?$/, '')
+            field
           end
         end
 
+        # Fetch the column comment because it's faster this way
         # Use the crdb_sql_type instead of the sql_type returned by
         # column_definitions. This will include limit,
         # precision, and scale information in the type.
         # Ex. geometry -> geometry(point, 4326)
-        def crdb_column_definition(field, table_name)
-          col_name = field[0]
-          data_type = \
+        def crdb_column_definitions(table_name)
+          fields = \
           query(<<~SQL, "SCHEMA")
-            SELECT c.crdb_sql_type
+            SELECT c.column_name, c.column_comment, c.crdb_sql_type
               FROM information_schema.columns c
             WHERE c.table_name = #{quote(table_name)}
-              AND c.column_name = #{quote(col_name)}
           SQL
-          field[1] = data_type[0][0].downcase
-          field
+
+          fields.reduce({}) do |a, e|
+            a[e[0]] = e
+            a
+          end
         end
 
         # override
