@@ -39,7 +39,7 @@ module CockroachDB
       assert_equal 3, @column_min.precision
 
       crdb_version = @connection.instance_variable_get(:@crdb_version)
-      @iso8601_enabled = crdb_version >= 212
+      @iso8601_enabled = crdb_version >= 2120
     end
 
     teardown do
