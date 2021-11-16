@@ -49,6 +49,11 @@ module TestTimeoutHelper
   end
 end
 
+# Retry tests that fail due to foreign keys not always being removed synchronously
+# in disable_referential_integrity, which causes foreign key errors during
+# fixutre creation.
+#
+# Can be removed once cockroachdb/cockroach#71496 is resolved.
 module TestRetryHelper
   def run_one_method(klass, method_name, reporter)
     reporter.prerecord(klass, method_name)
