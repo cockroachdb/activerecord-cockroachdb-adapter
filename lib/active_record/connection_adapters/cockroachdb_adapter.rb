@@ -46,7 +46,9 @@ module ActiveRecord
     # This rescue flow appears in new_client, but it is needed here as well
     # since Cockroach will sometimes not raise until a query is made.
     rescue ActiveRecord::StatementInvalid => error
-      if conn_params && conn_params[:dbname] && error.cause.message.include?(conn_params[:dbname])
+      no_db_err_check1 = conn_params && conn_params[:dbname] && error.cause.message.include?(conn_params[:dbname])
+      no_db_err_check2 = conn_params && conn_params[:dbname] && error.cause.message.include?("pg_type")
+      if no_db_err_check1 || no_db_err_check2
         raise ActiveRecord::NoDatabaseError
       else
         raise ActiveRecord::ConnectionNotEstablished, error.message
@@ -173,12 +175,11 @@ module ActiveRecord
       end
 
       def supports_partial_index?
-        @crdb_version >= 202
+        @crdb_version >= 2020
       end
 
       def supports_expression_index?
-        # See cockroachdb/cockroach#9682
-        false
+        @crdb_version >= 2122
       end
 
       def supports_datetime_with_precision?
@@ -186,7 +187,7 @@ module ActiveRecord
       end
 
       def supports_comments?
-        @crdb_version >= 201
+        @crdb_version >= 2010
       end
 
       def supports_comments_in_create?
@@ -198,12 +199,11 @@ module ActiveRecord
       end
 
       def supports_virtual_columns?
-        # See cockroachdb/cockroach#20882.
         false
       end
 
       def supports_string_to_array_coercion?
-        @crdb_version >= 202
+        @crdb_version >= 2020
       end
 
       def supports_partitioned_indexes?
@@ -234,17 +234,31 @@ module ActiveRecord
         elsif crdb_version_string.include? "v2."
           version_num 2
         elsif crdb_version_string.include? "v19.1."
-          version_num = 191
+          version_num = 1910
         elsif crdb_version_string.include? "v19.2."
-          version_num = 192
+          version_num = 1920
         elsif crdb_version_string.include? "v20.1."
-          version_num = 201
+          version_num = 2010
         elsif crdb_version_string.include? "v20.2."
-          version_num = 202
+          version_num = 2020
+        elsif crdb_version_string.include? "v21.1."
+          version_num = 2110
+        elsif crdb_version_string.include? "v21.2.0"
+          version_num = 2120
         else
-          version_num = 210
+          version_num = 2121
         end
         @crdb_version = version_num
+
+        # NOTE: this is normally in configure_connection, but that is run
+        # before crdb_version is determined. Once all supported versions
+        # of CockroachDB support SET intervalstyle it can safely be moved
+        # back.
+        # Set interval output format to ISO 8601 for ease of parsing by ActiveSupport::Duration.parse
+        if @crdb_version >= 2120
+          execute("SET intervalstyle_enabled = true", "SCHEMA")
+          execute("SET intervalstyle = iso_8601", "SCHEMA")
+        end
       end
 
       def self.database_exists?(config)
