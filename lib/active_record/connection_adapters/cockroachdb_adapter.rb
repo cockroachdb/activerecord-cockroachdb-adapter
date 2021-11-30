@@ -179,7 +179,7 @@ module ActiveRecord
       end
 
       def supports_expression_index?
-        @crdb_version >= 2121
+        @crdb_version >= 2122
       end
 
       def supports_datetime_with_precision?
