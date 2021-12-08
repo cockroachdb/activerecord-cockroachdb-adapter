@@ -5,3 +5,4 @@ exclude :test_schema_dump_interval_type, "Skipping until we can triage further. 
 exclude :test_do_not_dump_foreign_keys_for_ignored_tables, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_schema_dump_includes_bigint_default, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_schema_dump_keeps_large_precision_integer_columns_as_decimal, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_schema_dump_with_timestamptz_datetime_format, "Re-implementing ourselves because we need CockroachDB specific methods."

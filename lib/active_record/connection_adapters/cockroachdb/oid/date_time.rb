@@ -5,6 +5,8 @@ module ActiveRecord
     module CockroachDB
       module OID
         module DateTime
+          protected
+
           # override
           # Uses CockroachDBAdapter instead of PostgreSQLAdapter
           def real_type_unless_aliased(real_type)

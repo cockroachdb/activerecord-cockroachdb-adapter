@@ -32,6 +32,7 @@ ActiveRecord::Schema.define do
     t.text :char3, default: "a text field"
     t.bigint :bigint_default, default: -> { "0::bigint" }
     t.text :multiline_default, default: "--- []
+
 "
   end
 

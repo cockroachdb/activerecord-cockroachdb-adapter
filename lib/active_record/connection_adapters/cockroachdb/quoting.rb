@@ -2,8 +2,6 @@ module ActiveRecord
   module ConnectionAdapters
     module CockroachDB
       module Quoting
-        private
-
         # CockroachDB does not allow inserting integer values into string
         # columns, but ActiveRecord expects this to work. CockroachDB will
         # however allow inserting string values into integer columns. It will
@@ -19,7 +17,7 @@ module ActiveRecord
         # (https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry#Well-known_binary)
         # but when creating objects, using RGeo features is more convenient than
         # converting to WKB, so this does it automatically.
-        def _quote(value)
+        def quote(value)
           if value.is_a?(Numeric)
             "'#{quote_string(value.to_s)}'"
           elsif RGeo::Feature::Geometry.check_type(value)

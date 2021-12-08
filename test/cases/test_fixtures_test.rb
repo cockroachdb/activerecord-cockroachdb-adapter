@@ -22,8 +22,8 @@ module CockroachDB
 
     unless in_memory_db?
       def test_doesnt_rely_on_active_support_test_case_specific_methods_with_legacy_connection_handling
-        old_value = ActiveRecord::Base.legacy_connection_handling
-        ActiveRecord::Base.legacy_connection_handling = true
+        old_value = ActiveRecord.legacy_connection_handling
+        ActiveRecord.legacy_connection_handling = true
 
         tmp_dir = Dir.mktmpdir
         File.write(File.join(tmp_dir, "zines.yml"), <<~YML)
@@ -55,7 +55,7 @@ module CockroachDB
         clean_up_legacy_connection_handlers
         ActiveRecord::Base.connection_handler = old_handler
         FileUtils.rm_r(tmp_dir)
-        ActiveRecord::Base.legacy_connection_handling = old_value
+        ActiveRecord.legacy_connection_handling = old_value
       end
 
       def test_doesnt_rely_on_active_support_test_case_specific_methods

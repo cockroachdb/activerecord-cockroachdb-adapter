@@ -5,3 +5,5 @@ exclude :test_add_column_with_primary_key_attribute, "PK can be re-assigned to a
 exclude :test_drop_table_if_exists, "It's not possible to check for the result of an operation in the same txn as which the operation is performed"
 exclude :test_change_column_null, "It's not possible to check for the result of an operation in the same txn as which the operation is performed"
 exclude :test_keeping_default_and_notnull_constraints_on_change, "It's not possible to check for the result of an operation in the same txn as which the operation is performed"
+exclude :test_add_column_with_postgresql_datetime_type, "Re-implement our own version"
+exclude :test_add_column_with_datetime_in_timestamptz_mode, "We need to use an Adapter specific method in this test"
