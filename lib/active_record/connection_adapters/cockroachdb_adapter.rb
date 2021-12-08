@@ -16,6 +16,7 @@ require "active_record/connection_adapters/cockroachdb/setup"
 require "active_record/connection_adapters/cockroachdb/oid/type_map_initializer"
 require "active_record/connection_adapters/cockroachdb/oid/spatial"
 require "active_record/connection_adapters/cockroachdb/oid/interval"
+require "active_record/connection_adapters/cockroachdb/oid/date_time"
 require "active_record/connection_adapters/cockroachdb/arel_tosql"
 require_relative "../../version"
 
