@@ -85,7 +85,7 @@ module CockroachDB
         maximum_term: 6.year + 5.month + 4.days + 3.hours + 2.minutes + 1.seconds
       )
       i = IntervalDataType.last!
-      assert_equal "P6Y5M4DT3H2M1.0S", i.maximum_term.iso8601
+      assert_equal "P6Y5M4DT3H2M1S", i.maximum_term.iso8601
     end
 
     def test_interval_type
@@ -97,7 +97,7 @@ module CockroachDB
       )
       i = IntervalDataType.last!
 
-      assert_equal "P6Y5M4DT3H2M1.0S",     i.maximum_term.iso8601
+      assert_equal "P6Y5M4DT3H2M1S",     i.maximum_term.iso8601
       assert_equal "P1Y2M3DT4H5M6.235S", i.minimum_term.iso8601
       assert_equal "P3Y",                i.default_term.iso8601
       assert_equal %w[ P1M P1Y PT1H ],   i.all_terms.map(&:iso8601)
@@ -121,12 +121,6 @@ module CockroachDB
       assert_equal "PT10H",  i.minimum_term.iso8601
     end
 
-    def test_interval_type_cast_from_numeric_with_fraction
-      i = IntervalDataType.create!(minimum_term: 36000.05)
-      i.reload
-      assert_equal "PT10H0.05S", i.minimum_term.iso8601
-    end
-
     def test_interval_type_cast_string_and_numeric_from_user
       i = IntervalDataType.new(maximum_term: "P1YT2M", minimum_term: "PT10H", legacy_term: "P1DT1H")
       assert i.maximum_term.is_a?(ActiveSupport::Duration)
@@ -136,10 +130,12 @@ module CockroachDB
       assert_equal "P1DT1H", i.legacy_term
     end
 
-    def test_deprecated_legacy_type
-      assert_deprecated do
-        DeprecatedIntervalDataType.new
-      end
+    def test_average_interval_type
+      IntervalDataType.create!([{ maximum_term: 6.years }, { maximum_term: 4.months }])
+      value = IntervalDataType.average(:maximum_term)
+
+      assert_equal 3.years + 2.months, value
+      assert_instance_of ActiveSupport::Duration, value
     end
 
     def test_schema_dump_with_default_value
