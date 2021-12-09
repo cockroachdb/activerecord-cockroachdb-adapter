@@ -51,6 +51,7 @@ module CockroachDB
     ensure
       ActiveRecord::ConnectionAdapters::CockroachDBAdapter::NATIVE_DATABASE_TYPES.delete(:datetimes_as_enum)
       ActiveRecord::Migration.new.remove_column :postgresql_timestamp_with_zones, :times, if_exists: true
+      ActiveRecord::Base.connection.execute("DROP TYPE IF EXISTS custom_time_format")
       $stdout = original
     end
   end

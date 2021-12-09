@@ -13,7 +13,7 @@ module ActiveRecord
             read_committed:   "READ COMMITTED",
             repeatable_read:  "REPEATABLE READ",
             serializable:     "SERIALIZABLE",
-            read_uncommitted: "SERIALIZABLE"
+            read_uncommitted: "READ UNCOMMITTED"
           }
         end
 
