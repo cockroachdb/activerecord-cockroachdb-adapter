@@ -239,6 +239,7 @@ module CockroachDB
       Parrot.connection.exec_query("
         CREATE TABLE parrots (
           id INT PRIMARY KEY DEFAULT nextval('parrots_id_seq'),
+          breed INT DEFAULT 0,
           name VARCHAR NULL,
           color VARCHAR NULL,
           parrot_sti_class VARCHAR NULL,
