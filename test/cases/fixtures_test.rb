@@ -452,6 +452,7 @@ module CockroachDB
 
       conn.create_table :parrots, force: :cascade do |t|
         t.string :name
+        t.integer :breed, default: 0
         t.string :color
         t.string :parrot_sti_class
         t.integer :killer_id
