@@ -272,6 +272,19 @@ module ActiveRecord
         false
       end
 
+      # override
+      # The PostgreSQLAdapter uses syntax for an anonymous function
+      # (DO $$) that CockroachDB does not support.
+      #
+      # Given a name and an array of values, creates an enum type.
+      def create_enum(name, values)
+        sql_values = values.map { |s| "'#{s}'" }.join(", ")
+        query = <<~SQL
+          CREATE TYPE IF NOT EXISTS \"#{name}\" AS ENUM (#{sql_values});
+        SQL
+        exec_query(query)
+      end
+
       class << self
         def initialize_type_map(m = type_map)
           %w(
