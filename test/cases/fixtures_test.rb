@@ -20,6 +20,7 @@ require "models/treasure"
 
 module CockroachDB
   class FixturesTest < ActiveRecord::TestCase
+    include ConnectionHelper
     self.use_instantiated_fixtures = true
     self.use_transactional_tests = false
 
@@ -34,10 +35,14 @@ module CockroachDB
     # Drop and recreate the parrots and treasures tables so they use
     # primary key sequences. After recreating the tables, load their fixtures.
     def before_setup
-      parrots_redefine
-      treasures_redefine
-      parrots_pirates_redefine
-      parrots_treasures_redefine
+      conn = ActiveRecord::Base.connection
+
+      conn.disable_referential_integrity do
+        parrots_redefine
+        treasures_redefine
+        parrots_pirates_redefine
+        parrots_treasures_redefine
+      end
     end
 
     def teardown
@@ -446,34 +451,43 @@ module CockroachDB
 
     def recreate_parrots
       conn = ActiveRecord::Base.connection
+      conn.disable_referential_integrity do
+        conn.drop_table :parrots_pirates, if_exists: true
+        conn.drop_table :parrots_treasures, if_exists: true
+        conn.drop_table :parrots, if_exists: true
 
-      conn.drop_table :parrots_pirates, if_exists: true
-      conn.drop_table :parrots_treasures, if_exists: true
-      conn.drop_table :parrots, if_exists: true
+        conn.create_table :parrots, force: :cascade do |t|
+          t.string :name
+          t.integer :breed, default: 0
+          t.string :color
+          t.string :parrot_sti_class
+          t.integer :killer_id
+          t.integer :updated_count, :integer, default: 0
+          t.datetime :created_at
+          t.datetime :created_on
+          t.datetime :updated_at
+          t.datetime :updated_on
+        end
 
-      conn.create_table :parrots, force: :cascade do |t|
-        t.string :name
-        t.integer :breed, default: 0
-        t.string :color
-        t.string :parrot_sti_class
-        t.integer :killer_id
-        t.integer :updated_count, :integer, default: 0
-        t.datetime :created_at
-        t.datetime :created_on
-        t.datetime :updated_at
-        t.datetime :updated_on
-      end
+        conn.create_table :parrots_pirates, id: false, force: true do |t|
+          t.references :parrot, foreign_key: true
+          t.references :pirate, foreign_key: true
+        end
 
-      conn.create_table :parrots_pirates, id: false, force: true do |t|
-        t.references :parrot, foreign_key: true
-        t.references :pirate, foreign_key: true
-      end
-
-      conn.create_table :parrots_treasures, id: false, force: true do |t|
-        t.references :parrot, foreign_key: true
-        t.references :treasure, foreign_key: true
+        conn.create_table :parrots_treasures, id: false, force: true do |t|
+          t.references :parrot, foreign_key: true
+          t.references :treasure, foreign_key: true
+        end
       end
     end
+  end
+
+
+  class FkObjectToPointTo < ActiveRecord::Base
+    has_many :fk_pointing_to_non_existent_objects
+  end
+  class FkPointingToNonExistentObject < ActiveRecord::Base
+    belongs_to :fk_object_to_point_to
   end
 
   class FixturesWithForeignKeyViolationsTest < ActiveRecord::TestCase
@@ -491,6 +505,7 @@ module CockroachDB
     end
 
     def test_raises_fk_violations
+      p ActiveRecord::Base.connection.tables
       fk_pointing_to_non_existent_object = <<~FIXTURE
       first:
         fk_object_to_point_to: one
@@ -498,7 +513,6 @@ module CockroachDB
       File.write(FIXTURES_ROOT + "/fk_pointing_to_non_existent_object.yml", fk_pointing_to_non_existent_object)
 
       with_verify_foreign_keys_for_fixtures do
-        p current_adapter?(:CockroachDBAdapter)
         if current_adapter?(:SQLite3Adapter, :PostgreSQLAdapter, :CockroachDBAdapter)
           assert_raise RuntimeError do
             ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, ["fk_pointing_to_non_existent_object"])
