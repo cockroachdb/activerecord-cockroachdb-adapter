@@ -44,7 +44,7 @@ module ActiveRecord
             end
           ensure
             ActiveRecord::Base.table_name_prefix = old_prefix
-            ActiveRecord::Base.table_name_prefix = old_suffix
+            ActiveRecord::Base.table_name_suffix = old_suffix
           end
         end
       end
