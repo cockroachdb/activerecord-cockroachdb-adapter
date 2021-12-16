@@ -8,10 +8,6 @@ module CockroachDB
     include SchemaDumpingHelper
 
     class IntervalDataType < ActiveRecord::Base
-      attribute :maximum_term, :interval
-      attribute :minimum_term, :interval, precision: 3
-      attribute :default_term, :interval
-      attribute :all_terms,    :interval, array: true
       attribute :legacy_term,  :string
     end
 
@@ -27,9 +23,6 @@ module CockroachDB
           t.interval "all_terms", array: true
           t.interval "legacy_term"
         end
-        @connection.create_table("deprecated_interval_data_types") do |t|
-          t.interval "duration"
-        end
       end
       @column_max = IntervalDataType.columns_hash["maximum_term"]
       @column_min = IntervalDataType.columns_hash["minimum_term"]
@@ -44,7 +37,6 @@ module CockroachDB
 
     teardown do
       @connection.execute "DROP TABLE IF EXISTS interval_data_types"
-      @connection.execute "DROP TABLE IF EXISTS deprecated_interval_data_types"
     end
 
     IntervalTestCase = Struct.new(:input, :expected)
