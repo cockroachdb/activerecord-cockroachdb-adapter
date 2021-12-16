@@ -506,6 +506,10 @@ module CockroachDB
     self.use_instantiated_fixtures = true
     self.use_transactional_tests = false
 
+    def before_setup
+      skip("This test will pass only if the activerecord fixtures_test.rb file is run. When it's not run there's an issue where the fixture table name is not pluralized.")
+    end
+
     fixtures :fk_object_to_point_to
 
     def setup
@@ -517,7 +521,6 @@ module CockroachDB
     end
 
     def test_raises_fk_violations
-      skip("This test will pass only if the activerecord fixtures_test.rb file is run. When it's not run there's an issue where the fixture table name is not pluralized.")
       fk_pointing_to_non_existent_object = <<~FIXTURE
       first:
         fk_object_to_point_to: one
@@ -542,7 +545,6 @@ module CockroachDB
     end
 
     def test_does_not_raise_if_no_fk_violations
-      skip("This test will pass only if the activerecord fixtures_test.rb file is run. When it's not run there's an issue where the fixture table name is not pluralized.")
       fk_pointing_to_valid_object = <<~FIXTURE
       first:
         fk_object_to_point_to_id: 1
