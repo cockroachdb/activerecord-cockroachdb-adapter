@@ -18,6 +18,7 @@ require "active_record/connection_adapters/cockroachdb/oid/spatial"
 require "active_record/connection_adapters/cockroachdb/oid/interval"
 require "active_record/connection_adapters/cockroachdb/oid/date_time"
 require "active_record/connection_adapters/cockroachdb/arel_tosql"
+require_relative "../migration/cockroachdb/compatibility"
 require_relative "../../version"
 
 # Run to ignore spatial tables that will break schemna dumper.
