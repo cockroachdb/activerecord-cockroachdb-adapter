@@ -1,9 +1,12 @@
 # Changelog
 
+## 6.1.4 - 2021-12-09
+
+- Add support for CockroachDB v21.2.
+
 ## 6.1.3 - 2021-07-28
 
 - Santitize the input to the telemetry query that is issued on startup.
-- Add support for CockroachDB v21.
 
 ## 6.1.2 - 2021-05-20
 
