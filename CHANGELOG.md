@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.0.0 - 2021-12-17
+
+- Add support for ActiveRecord 7.0.
+
 ## 6.1.4 - 2021-12-09
 
 - Add support for CockroachDB v21.2.

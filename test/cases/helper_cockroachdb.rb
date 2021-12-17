@@ -41,7 +41,8 @@ module TestTimeoutHelper
   def time_it
     t0 = Minitest.clock_time
 
-    Timeout.timeout(180, Timeout::Error, 'Test took over 3 minutes to finish') do
+    timeout_mins = 5
+    Timeout.timeout(timeout_mins * 60, Timeout::Error, "Test took over #{timeout_mins} minutes to finish") do
       yield
     end
   ensure
