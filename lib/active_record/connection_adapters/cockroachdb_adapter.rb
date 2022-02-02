@@ -297,9 +297,19 @@ module ActiveRecord
             precision = extract_precision(sql_type)
             scale = extract_scale(sql_type)
 
+
+            # The type for the numeric depends on the width of the field,
+            # so we'll do something special here.
+            #
+            # When dealing with decimal columns:
+            #
+            # places after decimal  = fmod - 4 & 0xffff
+            # places before decimal = (fmod - 4) >> 16 & 0xffff
+            #
+            # For older versions of CockroachDB (<v22.1), fmod is -1 for 0 width.
             # If fmod is -1, that means that precision is defined but not
             # scale, or neither is defined.
-            if fmod && fmod == -1 && !precision.nil?
+            if fmod && ((fmod == -1 && !precision.nil?) || (fmod - 4 & 0xffff).zero?)
               # Below comment is from ActiveRecord
               # FIXME: Remove this class, and the second argument to
               # lookups on PG
