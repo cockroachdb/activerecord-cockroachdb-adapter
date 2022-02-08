@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.1.5 - 2022-02-08
+
+- Support `atttypmod` being sent for DECIMAL types.
+  This is needed for CockroachDB v22.1.
+
 ## 6.1.4 - 2021-12-09
 
 - Add support for CockroachDB v21.2.
