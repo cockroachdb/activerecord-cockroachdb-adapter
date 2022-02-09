@@ -3,7 +3,7 @@
 set -euox pipefail
 
 # Download CockroachDB
-VERSION=v21.2.0
+VERSION=v21.2.5
 wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
 readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
 
@@ -35,8 +35,28 @@ run_cockroach() {
   cockroach sql --insecure -e 'CREATE DATABASE activerecord_unittest2;'
   cockroach sql --insecure -e 'SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false;'
   cockroach sql --insecure -e 'SET CLUSTER SETTING sql.stats.histogram_collection.enabled = false;'
-  cockroach sql --insecure -e "SET CLUSTER SETTING jobs.retention_time = '180s';"
-  cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true'"
+
+  cockroach sql --insecure -e "ALTER RANGE default CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;"
+  cockroach sql --insecure -e "ALTER TABLE system.public.jobs CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;"
+  cockroach sql --insecure -e "ALTER RANGE meta CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;"
+  cockroach sql --insecure -e "ALTER RANGE system CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;"
+  cockroach sql --insecure -e "ALTER RANGE liveness CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;"
+
+  cockroach sql --insecure -e "SET CLUSTER SETTING kv.range_merge.queue_interval = '50ms'"
+  cockroach sql --insecure -e "SET CLUSTER SETTING kv.raft_log.disable_synchronization_unsafe = 'true'"
+  cockroach sql --insecure -e "SET CLUSTER SETTING jobs.registry.interval.cancel = '180s';"
+  cockroach sql --insecure -e "SET CLUSTER SETTING jobs.registry.interval.gc = '30s';"
+  cockroach sql --insecure -e "SET CLUSTER SETTING jobs.retention_time = '15s';"
+  cockroach sql --insecure -e "SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false;"
+  cockroach sql --insecure -e "SET CLUSTER SETTING kv.range_split.by_load_merge_delay = '5s';"
+
+  # Enable when we test with v22.1.
+  # cockroach sql --insecure -e "SET CLUSTER SETTING sql.catalog.unsafe_skip_system_config_trigger.enabled = true;"
+
+  # Enable experimental features.
+  cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';"
+  cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.datestyle.enabled = true"
+  cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.intervalstyle.enabled = true;"
 }
 
 # Install ruby dependencies.
