@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.1.6 - 2022-02-25
+
+- Fix mixed versions of CockroachDB v21.1 and v21.2 not working.
+
 ## 6.1.5 - 2022-02-08
 
 - Support `atttypmod` being sent for DECIMAL types.
