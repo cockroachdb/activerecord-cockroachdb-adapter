@@ -228,25 +228,25 @@ module ActiveRecord
       def initialize(connection, logger, conn_params, config)
         super(connection, logger, conn_params, config)
 
-        crdb_version_string = query_value("SHOW crdb_version")
-        if crdb_version_string.include? "v1."
+        crdb_version_string = query_value("SHOW CLUSTER SETTING version")
+        if crdb_version_string.start_with? "1."
           version_num = 1
-        elsif crdb_version_string.include? "v2."
-          version_num 2
-        elsif crdb_version_string.include? "v19.1."
+        elsif crdb_version_string.start_with? "2."
+          version_num = 2
+        elsif crdb_version_string.start_with? "19.1"
           version_num = 1910
-        elsif crdb_version_string.include? "v19.2."
+        elsif crdb_version_string.start_with? "19.2"
           version_num = 1920
-        elsif crdb_version_string.include? "v20.1."
+        elsif crdb_version_string.start_with? "20.1"
           version_num = 2010
-        elsif crdb_version_string.include? "v20.2."
+        elsif crdb_version_string.start_with? "20.2"
           version_num = 2020
-        elsif crdb_version_string.include? "v21.1."
+        elsif crdb_version_string.start_with? "21.1"
           version_num = 2110
-        elsif crdb_version_string.include? "v21.2.0"
+        elsif crdb_version_string.start_with? "21.2"
           version_num = 2120
         else
-          version_num = 2121
+          version_num = 2210
         end
         @crdb_version = version_num
 
