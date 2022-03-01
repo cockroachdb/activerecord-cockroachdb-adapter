@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.1.7 - 2022-03-01
+
+- Fix query to get the CockroachDB version so it does not require any privileges.
+
 ## 6.1.6 - 2022-02-25
 
 - Fix mixed versions of CockroachDB v21.1 and v21.2 not working.
