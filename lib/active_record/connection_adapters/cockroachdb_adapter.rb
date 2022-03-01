@@ -228,27 +228,42 @@ module ActiveRecord
       def initialize(connection, logger, conn_params, config)
         super(connection, logger, conn_params, config)
 
-        crdb_version_string = query_value("SHOW CLUSTER SETTING version")
-        if crdb_version_string.start_with? "1."
-          version_num = 1
-        elsif crdb_version_string.start_with? "2."
-          version_num = 2
-        elsif crdb_version_string.start_with? "19.1"
-          version_num = 1910
-        elsif crdb_version_string.start_with? "19.2"
-          version_num = 1920
-        elsif crdb_version_string.start_with? "20.1"
-          version_num = 2010
-        elsif crdb_version_string.start_with? "20.2"
-          version_num = 2020
-        elsif crdb_version_string.start_with? "21.1"
-          version_num = 2110
-        elsif crdb_version_string.start_with? "21.2"
-          version_num = 2120
+        # crdb_version is the version of the binary running on the node. We
+        # really want to use `SHOW CLUSTER SETTING version` to get the cluster
+        # version, but that is only available to admins. Instead, we can use
+        # crdb_internal.is_at_least_version, but that's only available in 22.1.
+        crdb_version_string = query_value("SHOW crdb_version")
+        if crdb_version_string.include? "v22.1"
+          version_num = query_value(<<~SQL, "VERSION")
+            SELECT
+              CASE
+              WHEN crdb_internal.is_at_least_version('22.2') THEN 2220
+              WHEN crdb_internal.is_at_least_version('22.1') THEN 2210
+              ELSE 2120
+              END;
+          SQL
         else
-          version_num = 2210
+          # This branch can be removed once the dialect stops supporting v21.2
+          # and earlier.
+          if crdb_version_string.include? "v1."
+            version_num = 1
+          elsif crdb_version_string.include? "v2."
+            version_num 2
+          elsif crdb_version_string.include? "v19.1."
+            version_num = 1910
+          elsif crdb_version_string.include? "v19.2."
+            version_num = 1920
+          elsif crdb_version_string.include? "v20.1."
+            version_num = 2010
+          elsif crdb_version_string.include? "v20.2."
+            version_num = 2020
+          elsif crdb_version_string.include? "v21.1."
+            version_num = 2110
+          else
+            version_num = 2120
+          end
         end
-        @crdb_version = version_num
+        @crdb_version = version_num.to_i
 
         # NOTE: this is normally in configure_connection, but that is run
         # before crdb_version is determined. Once all supported versions
@@ -256,8 +271,14 @@ module ActiveRecord
         # back.
         # Set interval output format to ISO 8601 for ease of parsing by ActiveSupport::Duration.parse
         if @crdb_version >= 2120
-          execute("SET intervalstyle_enabled = true", "SCHEMA")
-          execute("SET intervalstyle = iso_8601", "SCHEMA")
+          begin
+            execute("SET intervalstyle_enabled = true", "SCHEMA")
+            execute("SET intervalstyle = iso_8601", "SCHEMA")
+          rescue
+            # Ignore any error. This can happen with a cluster that has
+            # not yet finalized the v21.2 upgrade. v21.2 does not have
+            # a way to tell if the upgrade was finalized (see comment above).
+          end
         end
       end
 
