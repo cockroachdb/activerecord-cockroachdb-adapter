@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.1.8 - 2022-03-14
+
+- Add a test helper from https://github.com/rails/rails/pull/40822
+  to be able to test against Rails upstream.
+
 ## 6.1.7 - 2022-03-01
 
 - Fix query to get the CockroachDB version so it does not require any privileges.
