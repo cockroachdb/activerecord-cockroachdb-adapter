@@ -1,5 +1,4 @@
 exclude :test_change_column_quotes_column_names, "This functionality is not yet implemented in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/9851"
-exclude :test_create_table_without_id, "Tables cannot be created without a pk in CockroachDB"
 exclude :test_create_table_with_limits, "The only assertion that fails is on the default sql_type; this is bigint instead of integer in CockroachDB"
 exclude :test_add_column_with_primary_key_attribute, "PK can be re-assigned to a new column, but it must be done in a separate statement. In other words, the target column must already exist. See https://www.cockroachlabs.com/docs/v20.1/alter-primary-key.html"
 exclude :test_drop_table_if_exists, "It's not possible to check for the result of an operation in the same txn as which the operation is performed"
