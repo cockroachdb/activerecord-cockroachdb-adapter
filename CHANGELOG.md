@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.1.9 - 2022-04-26
+
+- Fix bug where duplicate `rowid` columns would be created when loading
+  a schema dump of a table that was not created with an explicit primary key.
+- Support the NOT VISIBLE syntax from CockroachDB, by using the `hidden`
+  column modifier in the Rails schema.
+
 ## 6.1.8 - 2022-03-14
 
 - Add a test helper from https://github.com/rails/rails/pull/40822
