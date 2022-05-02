@@ -181,7 +181,10 @@ module ActiveRecord
       end
 
       def supports_expression_index?
-        @crdb_version >= 2122
+        # Expression indexes are partially supported by CockroachDB v21.2,
+        # but activerecord requires "ON CONFLICT expression" support.
+        # See https://github.com/cockroachdb/cockroach/issues/67893
+        false
       end
 
       def supports_datetime_with_precision?
