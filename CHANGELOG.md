@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.1.10 - 2022-05-06
+
+- Disable supports_expression_index regardless of CockroachDB version until
+  `ON CONFLICT expression` is supported.
+
+  See https://github.com/cockroachdb/cockroach/issues/67893.
+
 ## 6.1.9 - 2022-04-26
 
 - Fix bug where duplicate `rowid` columns would be created when loading
