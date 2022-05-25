@@ -77,7 +77,7 @@ module ActiveRecord
         # override
         # https://github.com/rails/rails/blob/6-0-stable/activerecord/lib/active_record/connection_adapters/postgresql/schema_statements.rb#L624
         def new_column_from_field(table_name, field)
-          column_name, type, default, notnull, oid, fmod, collation, comment = field
+          column_name, type, default, notnull, oid, fmod, collation, comment, generated, hidden = field
           type_metadata = fetch_type_metadata(column_name, type, oid.to_i, fmod.to_i)
           default_value = extract_value_from_default(default)
           default_function = extract_default_function(default_value, default)
@@ -99,7 +99,9 @@ module ActiveRecord
             collation: collation,
             comment: comment.presence,
             serial: serial,
-            spatial: spatial
+            spatial: spatial,
+            generated: generated,
+            hidden: hidden
           )
         end
 
@@ -185,6 +187,14 @@ module ActiveRecord
         def spatial_column_info(table_name)
           @spatial_column_info ||= {}
           @spatial_column_info[table_name.to_sym] ||= SpatialColumnInfo.new(self, table_name.to_s)
+        end
+
+        def create_schema_dumper(options)
+          CockroachDB::SchemaDumper.create(self, options)
+        end
+
+        def schema_creation
+          CockroachDB::SchemaCreation.new(self)
         end
       end
     end

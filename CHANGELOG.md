@@ -1,8 +1,36 @@
 # Changelog
 
-## 7.0.0 - 2021-12-17
+## 6.1.10 - 2022-05-06
 
-- Add support for ActiveRecord 7.0.
+- Disable supports_expression_index regardless of CockroachDB version until
+  `ON CONFLICT expression` is supported.
+
+  See https://github.com/cockroachdb/cockroach/issues/67893.
+
+## 6.1.9 - 2022-04-26
+
+- Fix bug where duplicate `rowid` columns would be created when loading
+  a schema dump of a table that was not created with an explicit primary key.
+- Support the NOT VISIBLE syntax from CockroachDB, by using the `hidden`
+  column modifier in the Rails schema.
+
+## 6.1.8 - 2022-03-14
+
+- Add a test helper from https://github.com/rails/rails/pull/40822
+  to be able to test against Rails upstream.
+
+## 6.1.7 - 2022-03-01
+
+- Fix query to get the CockroachDB version so it does not require any privileges.
+
+## 6.1.6 - 2022-02-25
+
+- Fix mixed versions of CockroachDB v21.1 and v21.2 not working.
+
+## 6.1.5 - 2022-02-08
+
+- Support `atttypmod` being sent for DECIMAL types.
+  This is needed for CockroachDB v22.1.
 
 ## 6.1.4 - 2021-12-09
 

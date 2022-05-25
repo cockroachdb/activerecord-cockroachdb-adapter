@@ -1,7 +1,10 @@
 require "rgeo/active_record"
 
 require "active_record/connection_adapters/postgresql_adapter"
+require "active_record/connection_adapters/cockroachdb/attribute_methods"
 require "active_record/connection_adapters/cockroachdb/column_methods"
+require "active_record/connection_adapters/cockroachdb/schema_creation"
+require "active_record/connection_adapters/cockroachdb/schema_dumper"
 require "active_record/connection_adapters/cockroachdb/schema_statements"
 require "active_record/connection_adapters/cockroachdb/referential_integrity"
 require "active_record/connection_adapters/cockroachdb/transaction_manager"
@@ -9,7 +12,6 @@ require "active_record/connection_adapters/cockroachdb/database_statements"
 require "active_record/connection_adapters/cockroachdb/table_definition"
 require "active_record/connection_adapters/cockroachdb/quoting"
 require "active_record/connection_adapters/cockroachdb/type"
-require "active_record/connection_adapters/cockroachdb/attribute_methods"
 require "active_record/connection_adapters/cockroachdb/column"
 require "active_record/connection_adapters/cockroachdb/spatial_column_info"
 require "active_record/connection_adapters/cockroachdb/setup"
@@ -181,7 +183,10 @@ module ActiveRecord
       end
 
       def supports_expression_index?
-        @crdb_version >= 2122
+        # Expression indexes are partially supported by CockroachDB v21.2,
+        # but activerecord requires "ON CONFLICT expression" support.
+        # See https://github.com/cockroachdb/cockroach/issues/67893
+        false
       end
 
       def supports_datetime_with_precision?
@@ -201,7 +206,7 @@ module ActiveRecord
       end
 
       def supports_virtual_columns?
-        false
+        @crdb_version >= 2110
       end
 
       def supports_string_to_array_coercion?
@@ -234,27 +239,42 @@ module ActiveRecord
       def initialize(connection, logger, conn_params, config)
         super(connection, logger, conn_params, config)
 
+        # crdb_version is the version of the binary running on the node. We
+        # really want to use `SHOW CLUSTER SETTING version` to get the cluster
+        # version, but that is only available to admins. Instead, we can use
+        # crdb_internal.is_at_least_version, but that's only available in 22.1.
         crdb_version_string = query_value("SHOW crdb_version")
-        if crdb_version_string.include? "v1."
-          version_num = 1
-        elsif crdb_version_string.include? "v2."
-          version_num 2
-        elsif crdb_version_string.include? "v19.1."
-          version_num = 1910
-        elsif crdb_version_string.include? "v19.2."
-          version_num = 1920
-        elsif crdb_version_string.include? "v20.1."
-          version_num = 2010
-        elsif crdb_version_string.include? "v20.2."
-          version_num = 2020
-        elsif crdb_version_string.include? "v21.1."
-          version_num = 2110
-        elsif crdb_version_string.include? "v21.2.0"
-          version_num = 2120
+        if crdb_version_string.include? "v22.1"
+          version_num = query_value(<<~SQL, "VERSION")
+            SELECT
+              CASE
+              WHEN crdb_internal.is_at_least_version('22.2') THEN 2220
+              WHEN crdb_internal.is_at_least_version('22.1') THEN 2210
+              ELSE 2120
+              END;
+          SQL
         else
-          version_num = 2121
+          # This branch can be removed once the dialect stops supporting v21.2
+          # and earlier.
+          if crdb_version_string.include? "v1."
+            version_num = 1
+          elsif crdb_version_string.include? "v2."
+            version_num 2
+          elsif crdb_version_string.include? "v19.1."
+            version_num = 1910
+          elsif crdb_version_string.include? "v19.2."
+            version_num = 1920
+          elsif crdb_version_string.include? "v20.1."
+            version_num = 2010
+          elsif crdb_version_string.include? "v20.2."
+            version_num = 2020
+          elsif crdb_version_string.include? "v21.1."
+            version_num = 2110
+          else
+            version_num = 2120
+          end
         end
-        @crdb_version = version_num
+        @crdb_version = version_num.to_i
 
         # NOTE: this is normally in configure_connection, but that is run
         # before crdb_version is determined. Once all supported versions
@@ -262,8 +282,14 @@ module ActiveRecord
         # back.
         # Set interval output format to ISO 8601 for ease of parsing by ActiveSupport::Duration.parse
         if @crdb_version >= 2120
-          execute("SET intervalstyle_enabled = true", "SCHEMA")
-          execute("SET intervalstyle = iso_8601", "SCHEMA")
+          begin
+            execute("SET intervalstyle_enabled = true", "SCHEMA")
+            execute("SET intervalstyle = iso_8601", "SCHEMA")
+          rescue
+            # Ignore any error. This can happen with a cluster that has
+            # not yet finalized the v21.2 upgrade. v21.2 does not have
+            # a way to tell if the upgrade was finalized (see comment above).
+          end
         end
       end
 
@@ -315,9 +341,19 @@ module ActiveRecord
             precision = extract_precision(sql_type)
             scale = extract_scale(sql_type)
 
+
+            # The type for the numeric depends on the width of the field,
+            # so we'll do something special here.
+            #
+            # When dealing with decimal columns:
+            #
+            # places after decimal  = fmod - 4 & 0xffff
+            # places before decimal = (fmod - 4) >> 16 & 0xffff
+            #
+            # For older versions of CockroachDB (<v22.1), fmod is -1 for 0 width.
             # If fmod is -1, that means that precision is defined but not
             # scale, or neither is defined.
-            if fmod && fmod == -1 && !precision.nil?
+            if fmod && ((fmod == -1 && !precision.nil?) || (fmod - 4 & 0xffff).zero?)
               # Below comment is from ActiveRecord
               # FIXME: Remove this class, and the second argument to
               # lookups on PG
@@ -464,7 +500,8 @@ module ActiveRecord
               SELECT a.attname, format_type(a.atttypid, a.atttypmod),
                      pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod,
                      c.collname, NULL AS comment,
-                     #{supports_virtual_columns? ? 'attgenerated' : quote('')} as attgenerated
+                     #{supports_virtual_columns? ? 'attgenerated' : quote('')} as attgenerated,
+                     NULL as is_hidden
                 FROM pg_attribute a
                 LEFT JOIN pg_attrdef d ON a.attrelid = d.adrelid AND a.attnum = d.adnum
                 LEFT JOIN pg_type t ON a.atttypid = t.oid
@@ -490,7 +527,17 @@ module ActiveRecord
             dtype = field[1]
             field[1] = crdb_fields[field[0]][2].downcase if re.match(dtype)
             field[7] = crdb_fields[field[0]][1]&.gsub!(/^\'|\'?$/, '')
+            field[9] = true if crdb_fields[field[0]][3]
             field
+          end
+          fields.delete_if do |field|
+            # Don't include rowid column if it is hidden and the primary key
+            # is not defined (meaning CRDB implicitly created it).
+            if field[0] == CockroachDBAdapter::DEFAULT_PRIMARY_KEY
+              field[9] && !primary_key(table_name)
+            else
+              false # Keep this entry.
+            end
           end
         end
 
@@ -502,7 +549,7 @@ module ActiveRecord
         def crdb_column_definitions(table_name)
           fields = \
           query(<<~SQL, "SCHEMA")
-            SELECT c.column_name, c.column_comment, c.crdb_sql_type
+            SELECT c.column_name, c.column_comment, c.crdb_sql_type, c.is_hidden::BOOLEAN
               FROM information_schema.columns c
             WHERE c.table_name = #{quote(table_name)}
           SQL
