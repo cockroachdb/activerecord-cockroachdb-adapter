@@ -46,7 +46,9 @@ module CockroachDB
 
         old_handler = ActiveRecord::Base.connection_handler
         ActiveRecord::Base.connection_handler = ActiveRecord::ConnectionAdapters::ConnectionHandler.new
-        ActiveRecord::Base.connection_handlers = {}
+        assert_deprecated do
+          ActiveRecord::Base.connection_handlers = {}
+        end
         ActiveRecord::Base.establish_connection(:arunit)
 
         test_result = klass.new("test_run_successfully").run
