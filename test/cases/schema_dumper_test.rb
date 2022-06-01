@@ -190,6 +190,73 @@ module CockroachDB
         migration.migrate(:down)
         $stdout = original
       end
+
+      if ActiveRecord::Base.connection.supports_check_constraints?
+        def test_schema_dumps_check_constraints
+          constraint_definition = dump_table_schema("products").split(/\n/).grep(/t.check_constraint.*products_price_check/).first.strip
+          if current_adapter?(:Mysql2Adapter)
+            assert_equal 't.check_constraint "`price` > `discounted_price`", name: "products_price_check"', constraint_definition
+          else
+            assert_equal 't.check_constraint "(price > discounted_price)", name: "products_price_check"', constraint_definition
+          end
+        end
+      end
+
+      def test_schema_dump_defaults_with_universally_supported_types
+        migration = Class.new(ActiveRecord::Migration::Current) do
+          def up
+            create_table("defaults_with_universally_supported_types") do |t|
+              t.string :string_with_default, default: 'Hello!'
+              t.date :date_with_default, default: '2014-06-05'
+              t.datetime :datetime_with_default, default: '2014-06-05 07:17:04'
+              t.time :time_with_default, default: '2000-01-01 07:17:04'
+              t.decimal :decimal_with_default, precision: 20, scale: 10, default: '1234567890.0123456789'
+            end
+          end
+          def down
+            drop_table("defaults_with_universally_supported_types")
+          end
+        end
+        migration.migrate(:up)
+
+        output = perform_schema_dump
+
+        assert output.include?('t.string "string_with_default", default: "Hello!"')
+        assert output.include?('t.date "date_with_default", default: "2014-06-05"')
+
+        if supports_datetime_with_precision?
+          assert output.include?('t.datetime "datetime_with_default", default: "2014-06-05 07:17:04"')
+        else
+          assert output.include?('t.datetime "datetime_with_default", precision: nil, default: "2014-06-05 07:17:04"')
+        end
+
+        assert output.include?('t.time "time_with_default", default: "2000-01-01 07:17:04"')
+        assert output.include?('t.decimal "decimal_with_default", precision: 20, scale: 10, default: "1234567890.0123456789"')
+      ensure
+        migration.migrate(:down)
+      end
+
+      if supports_text_column_with_default?
+        def test_schema_dump_with_text_column
+          migration = Class.new(ActiveRecord::Migration::Current) do
+            def up
+              create_table("text_column_with_default") do |t|
+                t.text :text_with_default, default: "John' Doe"
+              end
+            end
+            def down
+              drop_table("text_column_with_default")
+            end
+          end
+          migration.migrate(:up)
+
+          output = perform_schema_dump
+
+          assert output.include?('t.text "text_with_default", default: "John\' Doe"')
+        ensure
+          migration.migrate(:down)
+        end
+      end
     end
   end
 end

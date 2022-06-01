@@ -53,7 +53,52 @@ if ActiveRecord::Base.connection.supports_check_constraints?
             if current_adapter?(:Mysql2Adapter)
               assert_equal "`price` > 0", constraint.expression
             else
-              assert_equal "price > 0", constraint.expression
+              assert_equal "(price > 0)", constraint.expression
+            end
+          end
+
+          def test_check_constraints
+            check_constraints = @connection.check_constraints("products")
+            assert_equal 1, check_constraints.size
+
+            constraint = check_constraints.first
+            assert_equal "products", constraint.table_name
+            assert_equal "products_price_check", constraint.name
+
+            if current_adapter?(:Mysql2Adapter)
+              assert_equal "`price` > `discounted_price`", constraint.expression
+            else
+              assert_equal "(price > discounted_price)", constraint.expression
+            end
+
+            if current_adapter?(:PostgreSQLAdapter)
+              begin
+                # Test that complex expression is correctly parsed from the database
+                @connection.add_check_constraint(:trades,
+                  "CASE WHEN price IS NOT NULL THEN true ELSE false END", name: "price_is_required")
+
+                constraint = @connection.check_constraints("trades").find { |c| c.name == "price_is_required" }
+                assert_includes constraint.expression, "WHEN price IS NOT NULL"
+              ensure
+                @connection.remove_check_constraint(:trades, name: "price_is_required")
+              end
+            end
+          end
+
+          def test_add_check_constraint
+            @connection.add_check_constraint :trades, "quantity > 0"
+
+            check_constraints = @connection.check_constraints("trades")
+            assert_equal 1, check_constraints.size
+
+            constraint = check_constraints.first
+            assert_equal "trades", constraint.table_name
+            assert_equal "chk_rails_2189e9f96c", constraint.name
+
+            if current_adapter?(:Mysql2Adapter)
+              assert_equal "`quantity` > 0", constraint.expression
+            else
+              assert_equal "(quantity > 0)", constraint.expression
             end
           end
         end
