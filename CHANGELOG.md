@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.0.0 - 2022-06-02
+
+- Add support for Active Record 7.0.3
+
 ## 6.1.10 - 2022-05-06
 
 - Disable supports_expression_index regardless of CockroachDB version until
@@ -46,7 +50,7 @@
 
 ## 6.1.1 - 2021-05-14
 
-- Fix a bug where starting the driver can result in a NoDatabaseError. 
+- Fix a bug where starting the driver can result in a NoDatabaseError.
 
 ## 6.1.0 - 2021-04-26
 
