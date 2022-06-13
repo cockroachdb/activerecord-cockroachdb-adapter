@@ -41,7 +41,8 @@ module TestTimeoutHelper
   def time_it
     t0 = Minitest.clock_time
 
-    Timeout.timeout(180, Timeout::Error, 'Test took over 3 minutes to finish') do
+    timeout_mins = 5
+    Timeout.timeout(timeout_mins * 60, Timeout::Error, "Test took over #{timeout_mins} minutes to finish") do
       yield
     end
   ensure
@@ -98,3 +99,19 @@ module ActiveSupport
     end
   end
 end
+
+module ARTestCaseHelper
+  def with_cockroachdb_datetime_type(type)
+    adapter = ActiveRecord::ConnectionAdapters::CockroachDBAdapter
+    adapter.remove_instance_variable(:@native_database_types) if adapter.instance_variable_defined?(:@native_database_types)
+    datetime_type_was = adapter.datetime_type
+    adapter.datetime_type = type
+    yield
+  ensure
+    adapter = ActiveRecord::ConnectionAdapters::CockroachDBAdapter
+    adapter.datetime_type = datetime_type_was
+    adapter.remove_instance_variable(:@native_database_types) if adapter.instance_variable_defined?(:@native_database_types)
+  end
+end
+
+ActiveRecord::TestCase.include(ARTestCaseHelper)

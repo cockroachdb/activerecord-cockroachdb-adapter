@@ -16,3 +16,4 @@ exclude :test_expression_index, "Skipping until we can triage further. See https
 exclude :test_serial_sequence, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_database_exists_returns_false_when_the_database_does_not_exist, "Test is reimplemented to use cockroachdb adapter"
 exclude :test_database_exists_returns_true_when_the_database_exists, "Test is reimplemented to use cockroachdb adapter"
+exclude :test_only_reload_type_map_once_for_every_unrecognized_type, "Rewrite to replace \"silence_warnings\" by \"silence_stream\""

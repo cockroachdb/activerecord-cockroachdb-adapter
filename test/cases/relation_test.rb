@@ -21,6 +21,14 @@ module ActiveRecord
         post_with_annotation = Post.where(id: 1).annotate("**//foo//**")
         assert_match %r{= '1' /\* foo \*/}, post_with_annotation.to_sql
       end
+
+      def test_respond_to_for_non_selected_element
+        post = Post.select(:title).first
+        assert_not_respond_to post, :body, "post should not respond_to?(:body) since invoking it raises exception"
+
+        silence_stream($stdout) { post = Post.select("'title' as post_title").first }
+        assert_not_respond_to post, :title, "post should not respond_to?(:body) since invoking it raises exception"
+      end
     end
   end
 end

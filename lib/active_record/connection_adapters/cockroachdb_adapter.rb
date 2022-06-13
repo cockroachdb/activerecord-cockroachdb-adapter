@@ -18,7 +18,9 @@ require "active_record/connection_adapters/cockroachdb/setup"
 require "active_record/connection_adapters/cockroachdb/oid/type_map_initializer"
 require "active_record/connection_adapters/cockroachdb/oid/spatial"
 require "active_record/connection_adapters/cockroachdb/oid/interval"
+require "active_record/connection_adapters/cockroachdb/oid/date_time"
 require "active_record/connection_adapters/cockroachdb/arel_tosql"
+require_relative "../migration/cockroachdb/compatibility"
 require_relative "../../version"
 
 # Run to ignore spatial tables that will break schemna dumper.
@@ -215,6 +217,10 @@ module ActiveRecord
         false
       end
 
+      def supports_deferrable_constraints?
+        false
+      end
+
       # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
       # migration from PostgreSQL to CockroachDB. In practice, this limitation
       # is arbitrary since CockroachDB supports index name lengths and table alias
@@ -293,8 +299,20 @@ module ActiveRecord
         false
       end
 
-      private
+      # override
+      # The PostgreSQLAdapter uses syntax for an anonymous function
+      # (DO $$) that CockroachDB does not support.
+      #
+      # Given a name and an array of values, creates an enum type.
+      def create_enum(name, values)
+        sql_values = values.map { |s| "'#{s}'" }.join(", ")
+        query = <<~SQL
+          CREATE TYPE IF NOT EXISTS \"#{name}\" AS ENUM (#{sql_values});
+        SQL
+        exec_query(query)
+      end
 
+      class << self
         def initialize_type_map(m = type_map)
           %w(
             geography
@@ -341,10 +359,13 @@ module ActiveRecord
               # lookups on PG
               Type::DecimalWithoutScale.new(precision: precision)
             else
-              OID::Decimal.new(precision: precision, scale: scale)
+              ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Decimal.new(precision: precision, scale: scale)
             end
           end
         end
+      end
+
+      private
 
         # Configures the encoding, verbosity, schema search path, and time zone of the connection.
         # This is called by #connect and should not be called manually.
@@ -366,7 +387,7 @@ module ActiveRecord
           # If using Active Record's time zone support configure the connection to return
           # TIMESTAMP WITH ZONE types in UTC.
           unless variables["timezone"]
-            if ActiveRecord::Base.default_timezone == :utc
+            if ActiveRecord.default_timezone == :utc
               variables["timezone"] = "UTC"
             elsif @local_tz
               variables["timezone"] = @local_tz

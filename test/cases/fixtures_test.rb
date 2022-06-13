@@ -20,6 +20,7 @@ require "models/treasure"
 
 module CockroachDB
   class FixturesTest < ActiveRecord::TestCase
+    include ConnectionHelper
     self.use_instantiated_fixtures = true
     self.use_transactional_tests = false
 
@@ -34,10 +35,14 @@ module CockroachDB
     # Drop and recreate the parrots and treasures tables so they use
     # primary key sequences. After recreating the tables, load their fixtures.
     def before_setup
-      parrots_redefine
-      treasures_redefine
-      parrots_pirates_redefine
-      parrots_treasures_redefine
+      conn = ActiveRecord::Base.connection
+
+      conn.disable_referential_integrity do
+        parrots_redefine
+        treasures_redefine
+        parrots_pirates_redefine
+        parrots_treasures_redefine
+      end
     end
 
     def teardown
@@ -239,6 +244,7 @@ module CockroachDB
       Parrot.connection.exec_query("
         CREATE TABLE parrots (
           id INT PRIMARY KEY DEFAULT nextval('parrots_id_seq'),
+          breed INT DEFAULT 0,
           name VARCHAR NULL,
           color VARCHAR NULL,
           parrot_sti_class VARCHAR NULL,
@@ -445,32 +451,124 @@ module CockroachDB
 
     def recreate_parrots
       conn = ActiveRecord::Base.connection
+      conn.disable_referential_integrity do
+        conn.drop_table :parrots_pirates, if_exists: true
+        conn.drop_table :parrots_treasures, if_exists: true
+        conn.drop_table :parrots, if_exists: true
 
-      conn.drop_table :parrots_pirates, if_exists: true
-      conn.drop_table :parrots_treasures, if_exists: true
-      conn.drop_table :parrots, if_exists: true
+        conn.create_table :parrots, force: :cascade do |t|
+          t.string :name
+          t.integer :breed, default: 0
+          t.string :color
+          t.string :parrot_sti_class
+          t.integer :killer_id
+          t.integer :updated_count, :integer, default: 0
+          t.datetime :created_at
+          t.datetime :created_on
+          t.datetime :updated_at
+          t.datetime :updated_on
+        end
 
-      conn.create_table :parrots, force: :cascade do |t|
-        t.string :name
-        t.string :color
-        t.string :parrot_sti_class
-        t.integer :killer_id
-        t.integer :updated_count, :integer, default: 0
-        t.datetime :created_at
-        t.datetime :created_on
-        t.datetime :updated_at
-        t.datetime :updated_on
-      end
+        conn.create_table :parrots_pirates, id: false, force: true do |t|
+          t.references :parrot, foreign_key: true
+          t.references :pirate, foreign_key: true
+        end
 
-      conn.create_table :parrots_pirates, id: false, force: true do |t|
-        t.references :parrot, foreign_key: true
-        t.references :pirate, foreign_key: true
-      end
-
-      conn.create_table :parrots_treasures, id: false, force: true do |t|
-        t.references :parrot, foreign_key: true
-        t.references :treasure, foreign_key: true
+        conn.create_table :parrots_treasures, id: false, force: true do |t|
+          t.references :parrot, foreign_key: true
+          t.references :treasure, foreign_key: true
+        end
       end
     end
+  end
+
+
+  class FkObjectToPointTo < ActiveRecord::Base
+    has_many :fk_pointing_to_non_existent_objects
+  end
+  class FkPointingToNonExistentObject < ActiveRecord::Base
+    belongs_to :fk_object_to_point_to
+  end
+
+  class FixturesWithForeignKeyViolationsTest < ActiveRecord::TestCase
+    # FIXME
+    # Spent a long time trying to debug why this only works when the activerecord fixtures_test is run first.
+    # The problem is that the fixture is defined in singular "fk_object_to_point_to"
+    # but most fixtures are plural (i.e. "parrots"). In the postgres adapter this is handled properly
+    # and it pluralizes the table name in the fixture creation step, but in this adapter that doesn't happen.
+    # I tried creating a new fixture that was just the pluralized version of this fk_object_to_point_to,
+    # but that still didn't work. I tried playing around with ActiveRecord pluralization
+    # settings and that didn't work, so for now I'm just going to skip this.
+    #
+    # Given that this works when the activerecord tests are run first, it's safe to assume
+    # this isn't a bug on our end, but it is flakey and will cause the CI to fail depending on the
+    # order of tests.
+    self.use_instantiated_fixtures = true
+    self.use_transactional_tests = false
+
+    def before_setup
+      skip("This test will pass only if the activerecord fixtures_test.rb file is run. When it's not run there's an issue where the fixture table name is not pluralized.")
+    end
+
+    fixtures :fk_object_to_point_to
+
+    def setup
+      # other tests in this file load the parrots fixture but not the treasure one (see `test_create_fixtures`).
+      # this creates FK violations since Parrot and ParrotTreasure records are created.
+      # those violations can cause false positives in these tests. since they aren't related to these tests we
+      # delete the irrelevant records here (this test is transactional so it's fine).
+      Parrot.all.each(&:destroy)
+    end
+
+    def test_raises_fk_violations
+      fk_pointing_to_non_existent_object = <<~FIXTURE
+      first:
+        fk_object_to_point_to: one
+      FIXTURE
+      File.write(FIXTURES_ROOT + "/fk_pointing_to_non_existent_object.yml", fk_pointing_to_non_existent_object)
+
+      with_verify_foreign_keys_for_fixtures do
+        if current_adapter?(:SQLite3Adapter, :PostgreSQLAdapter, :CockroachDBAdapter)
+          assert_raise RuntimeError do
+            ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, ["fk_pointing_to_non_existent_object"])
+          end
+        else
+          assert_nothing_raised do
+            ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, ["fk_pointing_to_non_existent_object"])
+          end
+        end
+      end
+
+    ensure
+      File.delete(FIXTURES_ROOT + "/fk_pointing_to_non_existent_object.yml")
+      ActiveRecord::FixtureSet.reset_cache
+    end
+
+    def test_does_not_raise_if_no_fk_violations
+      fk_pointing_to_valid_object = <<~FIXTURE
+      first:
+        fk_object_to_point_to_id: 1
+      FIXTURE
+      File.write(FIXTURES_ROOT + "/fk_pointing_to_non_existent_object.yml", fk_pointing_to_valid_object)
+
+      with_verify_foreign_keys_for_fixtures do
+        assert_nothing_raised do
+          ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, ["fk_pointing_to_non_existent_object"])
+        end
+      end
+
+    ensure
+      File.delete(FIXTURES_ROOT + "/fk_pointing_to_non_existent_object.yml")
+      ActiveRecord::FixtureSet.reset_cache
+    end
+
+    private
+      def with_verify_foreign_keys_for_fixtures
+        setting_was = ActiveRecord.verify_foreign_keys_for_fixtures
+        ActiveRecord.verify_foreign_keys_for_fixtures = true
+        yield
+      ensure
+        ActiveRecord.verify_foreign_keys_for_fixtures = setting_was
+      end
   end
 end

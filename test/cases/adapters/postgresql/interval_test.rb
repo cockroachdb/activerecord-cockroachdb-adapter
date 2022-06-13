@@ -8,10 +8,6 @@ module CockroachDB
     include SchemaDumpingHelper
 
     class IntervalDataType < ActiveRecord::Base
-      attribute :maximum_term, :interval
-      attribute :minimum_term, :interval, precision: 3
-      attribute :default_term, :interval
-      attribute :all_terms,    :interval, array: true
       attribute :legacy_term,  :string
     end
 
@@ -27,9 +23,6 @@ module CockroachDB
           t.interval "all_terms", array: true
           t.interval "legacy_term"
         end
-        @connection.create_table("deprecated_interval_data_types") do |t|
-          t.interval "duration"
-        end
       end
       @column_max = IntervalDataType.columns_hash["maximum_term"]
       @column_min = IntervalDataType.columns_hash["minimum_term"]
@@ -44,7 +37,6 @@ module CockroachDB
 
     teardown do
       @connection.execute "DROP TABLE IF EXISTS interval_data_types"
-      @connection.execute "DROP TABLE IF EXISTS deprecated_interval_data_types"
     end
 
     IntervalTestCase = Struct.new(:input, :expected)
@@ -121,12 +113,6 @@ module CockroachDB
       assert_equal "PT10H",  i.minimum_term.iso8601
     end
 
-    def test_interval_type_cast_from_numeric_with_fraction
-      i = IntervalDataType.create!(minimum_term: 36000.05)
-      i.reload
-      assert_equal "PT10H0.05S", i.minimum_term.iso8601
-    end
-
     def test_interval_type_cast_string_and_numeric_from_user
       i = IntervalDataType.new(maximum_term: "P1YT2M", minimum_term: "PT10H", legacy_term: "P1DT1H")
       assert i.maximum_term.is_a?(ActiveSupport::Duration)
@@ -136,10 +122,12 @@ module CockroachDB
       assert_equal "P1DT1H", i.legacy_term
     end
 
-    def test_deprecated_legacy_type
-      assert_deprecated do
-        DeprecatedIntervalDataType.new
-      end
+    def test_average_interval_type
+      IntervalDataType.create!([{ maximum_term: 6.years }, { maximum_term: 4.months }])
+      value = IntervalDataType.average(:maximum_term)
+
+      assert_equal 3.years + 2.months, value
+      assert_instance_of ActiveSupport::Duration, value
     end
 
     def test_schema_dump_with_default_value
