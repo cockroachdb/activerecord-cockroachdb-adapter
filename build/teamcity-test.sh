@@ -50,17 +50,12 @@ run_cockroach() {
   cockroach sql --insecure -e "SET CLUSTER SETTING jobs.registry.interval.gc = '30s';"
   cockroach sql --insecure -e "SET CLUSTER SETTING kv.range_split.by_load_merge_delay = '5s';"
 
-  # Enable when we test with v22.1.
-  # cockroach sql --insecure -e "SET CLUSTER SETTING sql.catalog.unsafe_skip_system_config_trigger.enabled = true;"
-
   # Enable experimental features.
   cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';"
-  cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.datestyle.enabled = true"
-  cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.intervalstyle.enabled = true;"
 }
 
 # Install ruby dependencies.
-gem install bundler:2.1.4
+gem install bundler:2.3.14
 bundle install
 
 run_cockroach
