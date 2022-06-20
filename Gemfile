@@ -54,10 +54,12 @@ end
 
 group :development do
   gem "byebug"
-  gem "minitest-excludes"
+  gem "minitest-excludes", "~> 2.0.1"
 
   # Gems used by the ActiveRecord test suite
-  gem "bcrypt"
-  gem "mocha"
-  gem "sqlite3"
+  gem "bcrypt", "~> 3.1.18"
+  gem "mocha", "~> 1.14.0"
+  gem "sqlite3", "~> 1.4.2"
+
+  gem "minitest", "~> 5.15.0"
 end
