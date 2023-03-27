@@ -47,7 +47,7 @@ else
     )
   end
 
-  # Get Rails from source beacause the gem doesn't include tests
+  # Get Rails from source because the gem doesn't include tests
   version = ENV['RAILS_VERSION'] || get_version_from_gemspec
   gem 'rails', git: "https://github.com/rails/rails.git", tag: "v#{version}"
 end

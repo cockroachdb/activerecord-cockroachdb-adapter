@@ -11,7 +11,6 @@ rm -f "$urlfile"
 # canceled on an agent.
 rm -rf $HOME/tmp/rails &
 # Start CockroachDB.
-cockroach quit --insecure || true
 cockroach start --insecure --host=localhost --listening-url-file="$urlfile" --store=path=$HOME/tmp/rails &
 trap "echo 'Exit routine: Killing CockroachDB.' && kill -9 $! &> /dev/null" EXIT
 for i in {0..3}
@@ -31,8 +30,3 @@ echo "Rebuilding database"
 (cd rails/activerecord && bundle exec rake db:cockroachdb:rebuild)
 echo "Starting tests"
 (cd rails/activerecord && bundle exec rake test:cockroachdb TESTFILES=$1)
-
-# Attempt a clean shutdown for good measure. We'll force-kill in the atexit
-# handler if this fails.
-cockroach quit --insecure
-trap - EXIT

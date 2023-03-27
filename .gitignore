@@ -8,3 +8,10 @@
 /spec/reports/
 /tmp/
 *.gem
+/debug.log
+/cockroach-url
+/cockroach-data/
+/cockroach-*.linux-amd64/
+/docker_root/
+/ruby-build/
+/test/db/

@@ -25,22 +25,39 @@ CREATE DATABASE activerecord_unittest2;
 ```
 
 It is best to have a Ruby environment manager installed, such as
-[rvm](https://rvm.io/), as Rails has varying Ruby version requirements.
-If you are using rvm, you then install and use the required Ruby
-version.  The current tests use Rails 5.2.0 beta and Ruby >= 2.2.2.
+[rbenv](https://github.com/rbenv/rbenv), as Rails has varying Ruby version
+requirements. If you are using rbenv, you then install and use the required
+Ruby version.
 
 (Alternatively, one can use `./docker.sh build/teamcity-test.sh` to run
-tests similarily to TeamCity. The database is destroyed between each
+tests similarly to TeamCity. The database is destroyed between each
 test file.)
 
+Install rbenv with ruby-build on MacOS:
 
 ```bash
-rvm install 2.2.5
-# This only makes Ruby 2.2.5 active for the length of the terminal session.
-rvm use 2.2.5
+brew install rbenv ruby-build
+echo 'eval "$(rbenv init - zsh)"' >> ~/.profile
 ```
 
-Using [bundler](http://bundler.io/), install the dependancies of Rails.
+Install rbenv with ruby-build on Ubuntu:
+
+```bash
+sudo apt-get install rbenv
+echo 'eval "$(rbenv init - zsh)"' >> ~/.profile
+
+git clone https://github.com/sstephenson/ruby-build.git ~/ruby-build
+sh ~/ruby-build/install.sh
+```
+
+Use rbenv to install version of Ruby specified by `.ruby-version`.
+
+```bash
+rbenv install
+rbenv rehash
+```
+
+Using [bundler](http://bundler.io/), install the dependencies of Rails.
 
 ```bash
 bundle install
@@ -52,13 +69,13 @@ Then, to run the full test suite with an active CockroachDB instance:
 bundle exec rake test
 ```
 
-To run specific ActiveRecord tests, set environemnt variable `TEST_FILES_AR`. For example, to run ActiveRecord tests `test/cases/associations_test.rb` and `test/cases/ar_schema_test.rb.rb`
+To run specific ActiveRecord tests, set environment variable `TEST_FILES_AR`. For example, to run ActiveRecord tests `test/cases/associations_test.rb` and `test/cases/ar_schema_test.rb.rb`
 
 ```bash
 TEST_FILES_AR="test/cases/associations_test.rb,test/cases/ar_schema_test.rb" bundle exec rake test
 ```
 
-To run specific CockroachDB Adapter tests, set environemnt variable `TEST_FILES`. For example, to run CockroachDB Adpater tests `test/cases/adapter_test.rb` and `test/cases/associations/left_outer_join_association_test.rb`
+To run specific CockroachDB Adapter tests, set environment variable `TEST_FILES`. For example, to run CockroachDB Adpater tests `test/cases/adapter_test.rb` and `test/cases/associations/left_outer_join_association_test.rb`
 
 ```bash
 TEST_FILES="test/cases/adapter_test.rb,test/cases/associations/left_outer_join_association_test.rb" bundle exec rake test
@@ -104,7 +121,7 @@ And the `activerecord_unittest` database will use the `RESTORE` command to load 
 ## Support past Rails versions
 
 Currently, only a beta version of Rails is tested. This means that the
-adapter has been modified in to accomodate unreleased changes. In order
+adapter has been modified in to accommodate unreleased changes. In order
 to run the tests for Rails 5.1 or 4.2, the test changes will need to be
 cherry-picked back. Conflicts are mostly only expected for tests that
 have not yet been added.
@@ -129,7 +146,7 @@ against different versions of CockroachDB.
 
 As CockroachDB improves, so do the features that can be supported in
 ActiveRecord. Many of them are gated by conditions the
-CockroachDBAdapter has overrided. As these features are completed, these
+CockroachDBAdapter has overridden. As these features are completed, these
 gates should be toggled. Something that would help this process would be
 linking those issues back to this adapter so that part of the feature
 completing includes updating the adapter.
@@ -231,10 +248,10 @@ need to be cleaned up.
 # Notes for the non-Rubyer
 
 rvm is an environment manager that lets you manage and swap between
-multiple verisons of Ruby and their dependancies.
+multiple versions of Ruby and their dependencies.
 
-bundle is dependancy manager that uses a projects `Gemfile` (and often
-`<project>.gemspec`) to manage and load dependancies and their required
+bundle is dependency manager that uses a projects `Gemfile` (and often
+`<project>.gemspec`) to manage and load dependencies and their required
 versions. When using projects commands are prefixed with
-`bundle exec ...`. Bundle will ensure that all depenedncies are fetched
+`bundle exec ...`. Bundle will ensure that all dependencies are fetched
 and used.
