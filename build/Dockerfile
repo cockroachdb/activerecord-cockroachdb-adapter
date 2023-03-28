@@ -8,10 +8,7 @@ RUN apt-get --allow-releaseinfo-change update -y && apt-get install -y \
   libxslt-dev \
   libxml2-dev \
   libsqlite3-dev \
+  rbenv \
   && rm -rf /var/lib/apt/lists/*
 
-# Ruby testing dependencies.
-RUN gem install bundle rake
-
-# Add global Gem binaries to the path.
-ENV PATH /usr/local/lib/ruby/gems/2.4.0::$PATH
+RUN rm -rf ~/ruby-build; git clone https://github.com/sstephenson/ruby-build.git ~/ruby-build; sh ~/ruby-build/install.sh
