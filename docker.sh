@@ -4,7 +4,7 @@
 
 set -euox pipefail
 
-DOCKER_IMAGE_TAG=cockroachdb/activerecord_test_container:20210914
+DOCKER_IMAGE_TAG=cockroachdb/activerecord_test_container:master
 
 # Absolute path to this repository.
 repo_root=$(cd "$(dirname "${0}")" && pwd)

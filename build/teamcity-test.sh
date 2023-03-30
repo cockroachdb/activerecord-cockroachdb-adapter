@@ -2,9 +2,17 @@
 
 set -euox pipefail
 
+eval "$(rbenv init -)"
+
+rbenv install --skip-existing --verbose
+
+rbenv rehash
+
+ruby -v
+
 # Download CockroachDB
-VERSION=v22.1.0
-wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar  xvz
+VERSION=v22.2.6
+wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar xvz
 readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
 
 # Make sure cockroach can be found on the path. This is required for the
@@ -16,9 +24,6 @@ run_cockroach() {
   # Start a CockroachDB server, wait for it to become ready, and arrange
   # for it to be force-killed when the script exits.
   rm -f "$urlfile"
-  # Clean out a past CockroachDB instance. This will clean out leftovers
-  # from the build agent, and also between CockroachDB runs.
-  cockroach quit --insecure || true
   rm -rf cockroach-data
   # Start CockroachDB.
   cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-$VERSION.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
@@ -54,8 +59,11 @@ run_cockroach() {
   cockroach sql --insecure -e "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';"
 }
 
+gem env
+
 # Install ruby dependencies.
-gem install bundler:2.3.14
+gem install bundler:2.4.9 rake:13.0.6
+
 bundle install
 
 run_cockroach
@@ -67,11 +75,6 @@ else
     echo "Tests passed"
     HAS_FAILED=0
 fi
-
-# Attempt a clean shutdown for good measure. We'll force-kill in the
-# exit trap if this script fails.
-cockroach quit --insecure
-trap - EXIT
 
 if [ $HAS_FAILED -eq 1 ]; then
   exit 1
