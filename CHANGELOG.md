@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.0.1 - 2023-03-24
+
+- Reconnect on retryable connection errors.
+
 ## 7.0.0 - 2022-06-02
 
 - Add support for Active Record 7.0.3
