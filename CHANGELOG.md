@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.2 - 2023-05-23
+
+- Fix default numbers test to expect the correct result after
+  https://github.com/cockroachdb/cockroach/pull/102299 was merged.
+
 ## 7.0.1 - 2023-03-24
 
 - Reconnect on retryable connection errors.
