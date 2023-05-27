@@ -11,7 +11,7 @@ rbenv rehash
 ruby -v
 
 # Download CockroachDB
-VERSION=v22.2.6
+VERSION=v23.1.2
 wget -qO- https://binaries.cockroachdb.com/cockroach-$VERSION.linux-amd64.tgz | tar xvz
 readonly COCKROACH=./cockroach-$VERSION.linux-amd64/cockroach
 
