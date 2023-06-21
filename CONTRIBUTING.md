@@ -15,12 +15,15 @@ override and monkey-patch functionality.
 
 ## Setup and running tests
 
-In CockroachDB, create two databases to be used by the ActiveRecord test suite:
+### CockroachDB
+
+First, You should setup a cockroachdb local instance. You can use the
+`bin/start-cockroachdb` to help you with that task. Otherwise, once setup,
+create two databases to be used by the ActiveRecord test suite:
 activerecord_unittest and activerecord_unittest2.
 
 ```sql
 CREATE DATABASE activerecord_unittest;
-
 CREATE DATABASE activerecord_unittest2;
 ```
 
