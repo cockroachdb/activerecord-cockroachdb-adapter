@@ -1,9 +1,6 @@
-# coding: utf-8
+# frozen_string_literal: true
 
-lib = File.expand_path('lib', __dir__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-
-require './lib/version.rb'
+require_relative 'lib/version'
 version = ActiveRecord::COCKROACH_DB_ADAPTER_VERSION
 
 Gem::Specification.new do |spec|

@@ -90,12 +90,6 @@ To run a specific test case, use minitest's `-n` option to run tests that match 
 TEST_FILES="test/cases/adapter_test.rb" TESTOPTS=`-n=/test_indexes/` bundle exec rake test
 ```
 
-By default, tests will be run from the bundled version of Rails. To run against a local copy, set environemnt variable `RAILS_SOURCE`. Running against a local copy of Rails can be helpful when try to debug issues.
-
-```bash
-RAILS_SOURCE="path/to/local_copy" bundle exec rake test
-```
-
 `test/config.yml` assumes CockroachDB will be running at localhost:26257 with a root user. Make changes to `test/config.yml` as needed.
 
 ### Run Tests from a Backup
