@@ -114,23 +114,6 @@ And the `activerecord_unittest` database will use the `RESTORE` command to load 
 
 # Improvements
 
-
-## Support past Rails versions
-
-Currently, only a beta version of Rails is tested. This means that the
-adapter has been modified in to accommodate unreleased changes. In order
-to run the tests for Rails 5.1 or 4.2, the test changes will need to be
-cherry-picked back. Conflicts are mostly only expected for tests that
-have not yet been added.
-
-Sadly, this does mean that we will have to have multiple versions of the
-driver for the multiple versions of Rails.
-
-A proposal for the CockroachDB adapter versioning would be to follow
-ActiveRecord minor versions. For example, if you use Rails 4.2.5, you
-would specify the CockroachDB version `~> 4.2.0`.
-
-
 ## Running CI automatically
 
 Currently the fork is set up to run using TeamCity only on the current
@@ -244,7 +227,7 @@ need to be cleaned up.
 
 # Notes for the non-Rubyer
 
-rvm is an environment manager that lets you manage and swap between
+rbenv is an environment manager that lets you manage and swap between
 multiple versions of Ruby and their dependencies.
 
 bundle is dependency manager that uses a projects `Gemfile` (and often
