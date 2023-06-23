@@ -2,9 +2,10 @@
 
 ## Ongoing
 
-- Add support for sql load in rake tasks (#275).
-- Add support for sql dump in rake tasks (#273).
-- Add support for table optimize hints (#266).
+- Fix Multiple Database connections ([#283](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
+- Add support for sql load in rake tasks ([#275](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
+- Add support for sql dump in rake tasks ([#273](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
+- Add support for table optimize hints ([#266](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
 
 ## 7.0.2 - 2023-05-23
 
