@@ -19,6 +19,12 @@ module ActiveRecord
         # converting to WKB, so this does it automatically.
         def quote(value)
           if value.is_a?(Numeric)
+            # NOTE: The fact that integers are quoted is important and helps
+            # mitigate a potential vulnerability.
+            #
+            # See
+            # - https://nvd.nist.gov/vuln/detail/CVE-2022-44566
+            # - https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/280#discussion_r1288692977
             "'#{quote_string(value.to_s)}'"
           elsif RGeo::Feature::Geometry.check_type(value)
             "'#{RGeo::WKRep::WKBGenerator.new(hex_format: true, type_format: :ewkb, emit_ewkb_srid: true).generate(value)}'"

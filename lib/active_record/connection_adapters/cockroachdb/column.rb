@@ -1,7 +1,7 @@
 module ActiveRecord
   module ConnectionAdapters
     module CockroachDB
-      module PostgreSQLColumnMonkeyPatch
+      class Column < PostgreSQLColumn
         # most functions taken from activerecord-postgis-adapter spatial_column
         # https://github.com/rgeo/activerecord-postgis-adapter/blob/master/lib/active_record/connection_adapters/postgis/spatial_column.rb
         def initialize(name, default, sql_type_metadata = nil, null = true,
@@ -92,10 +92,6 @@ module ActiveRecord
           end
         end
       end
-    end
-
-    class PostgreSQLColumn
-      prepend CockroachDB::PostgreSQLColumnMonkeyPatch
     end
   end
 end

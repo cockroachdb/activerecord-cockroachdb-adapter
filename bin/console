@@ -15,6 +15,7 @@ require "active_record/connection_adapters/cockroachdb/database_tasks"
 begin
   retried = false
   ActiveRecord::Base.establish_connection(
+    #Alternative version:  "cockroachdb://root@localhost:26257/ar_crdb_console"
     adapter: "cockroachdb",
     host: "localhost",
     port: 26257,
