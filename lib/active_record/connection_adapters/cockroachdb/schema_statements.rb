@@ -90,7 +90,7 @@ module ActiveRecord
           # {:dimension=>2, :has_m=>false, :has_z=>false, :name=>"latlon", :srid=>0, :type=>"GEOMETRY"}
           spatial = spatial_column_info(table_name).get(column_name, type_metadata.sql_type)
 
-          PostgreSQL::Column.new(
+          CockroachDB::Column.new(
             column_name,
             default_value,
             type_metadata,
@@ -112,7 +112,7 @@ module ActiveRecord
         # since type alone is not enough to format the column.
         # Ex. type_to_sql(:geography, limit: "Point,4326")
         # => "geography(Point,4326)"
-        # 
+        #
         def type_to_sql(type, limit: nil, precision: nil, scale: nil, array: nil, **) # :nodoc:
           sql = \
             case type.to_s
