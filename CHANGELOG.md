@@ -1,5 +1,9 @@
 # Changelog
 
+## Ongoing
+
+- Add support for table optimize hints (#266).
+
 ## 7.0.2 - 2023-05-23
 
 - Fix default numbers test to expect the correct result after
