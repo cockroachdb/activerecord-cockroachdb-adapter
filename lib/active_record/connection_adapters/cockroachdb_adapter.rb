@@ -23,6 +23,8 @@ require "active_record/connection_adapters/cockroachdb/arel_tosql"
 require_relative "../migration/cockroachdb/compatibility"
 require_relative "../../version"
 
+require_relative "../relation/query_methods_ext"
+
 # Run to ignore spatial tables that will break schemna dumper.
 # Defined in ./setup.rb
 ActiveRecord::ConnectionAdapters::CockroachDB.initial_setup
