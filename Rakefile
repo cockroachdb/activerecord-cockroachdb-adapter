@@ -26,7 +26,7 @@ end
 
 Rake::TestTask.new do |t|
   t.libs = ARTest::CockroachDB.test_load_paths
-  t.test_files = test_files
+  t.test_files = RakeHelpers.test_files
   t.warning = !!ENV["WARNING"]
   t.verbose = false
 end

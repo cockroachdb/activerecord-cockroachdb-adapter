@@ -1,4 +1,4 @@
-if defined?(Rails)
+if defined?(Rails::Railtie)
   module ActiveRecord
     module ConnectionAdapters
       class CockroachDBRailtie < ::Rails::Railtie

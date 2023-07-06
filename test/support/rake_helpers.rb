@@ -1,52 +1,38 @@
-COCKROACHDB_TEST_HELPER = 'test/cases/helper_cockroachdb.rb'
+# frozen_string_literal: true
 
-def test_files
-  env_activerecord_test_files ||
-    env_cockroachdb_test_files ||
-    only_activerecord_test_files ||
-    only_cockroachdb_test_files ||
-    all_test_files
-end
+module RakeHelpers
+  COCKROACHDB_TEST_HELPER = 'test/cases/helper_cockroachdb.rb'
 
-def env_activerecord_test_files
-  return unless ENV['TEST_FILES_AR'] && !ENV['TEST_FILES_AR'].empty?
+  module_function
 
-  @env_ar_test_files ||= ENV['TEST_FILES_AR'].
-    split(',').
-    map { |file| File.join ARTest::CockroachDB.root_activerecord, file.strip }.
-    sort.
-    prepend(COCKROACHDB_TEST_HELPER)
-end
+  # Look for TEST_FILES_AR or TEST_FILES env variables
+  # to set specific tests, otherwise load every tests
+  # from active_record and this adapter.
+  def test_files
+    ar_test_files = ENV.fetch('TEST_FILES_AR', '')
+    cr_test_files = ENV.fetch('TEST_FILES', '')
 
-def env_cockroachdb_test_files
-  return unless ENV['TEST_FILES'] && !ENV['TEST_FILES'].empty?
+    return all_test_file if ar_test_files.empty? && cr_test_files.empty?
 
-  @env_test_files ||= ENV['TEST_FILES'].split(',').map(&:strip)
-end
+    ar_test_files = ar_test_files.
+      split(',').
+      map { |file| File.join ARTest::CockroachDB.root_activerecord, file.strip }.
+      then { _1.prepend(COCKROACHDB_TEST_HELPER) unless _1.empty? }.
+      prepend(COCKROACHDB_TEST_HELPER)
 
-def only_activerecord_test_files
-  return unless ENV['ONLY_TEST_AR']
-  activerecord_test_files
-end
+    cr_test_files = cr_test_files.split(',').map(&:strip)
 
-def only_cockroachdb_test_files
-  return unless ENV['ONLY_TEST_COCKROACHDB']
-  cockroachdb_test_files
-end
+    ar_test_files + cr_test_files
+  end
 
-def all_test_files
-  activerecord_test_files + cockroachdb_test_files
-end
+  def all_test_files
+    activerecord_test_files = Dir.
+      glob("#{ARTest::CockroachDB.root_activerecord}/test/cases/**/*_test.rb").
+      reject { _1.match?(%r(/adapters/(?:mysql2|sqlite3)/) }.
+      prepend(COCKROACHDB_TEST_HELPER)
 
-def activerecord_test_files
-  Dir.
-    glob("#{ARTest::CockroachDB.root_activerecord}/test/cases/**/*_test.rb").
-    reject{ |x| x =~ /\/adapters\/mysql2\// }.
-    reject{ |x| x =~ /\/adapters\/sqlite3\// }.
-    sort.
-    prepend(COCKROACHDB_TEST_HELPER)
-end
+    cockroachdb_test_files = Dir.glob('test/cases/**/*_test.rb')
 
-def cockroachdb_test_files
-  Dir.glob('test/cases/**/*_test.rb')
+    activerecord_test_files + cockroachdb_test_files
+  end
 end
