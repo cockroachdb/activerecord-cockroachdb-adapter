@@ -1,5 +1,37 @@
 # Changelog
 
+## Ongoing
+
+- Add support for sql dump in rake tasks (#273).
+- Add support for table optimize hints (#266).
+
+## 7.0.2 - 2023-05-23
+
+- Fix default numbers test to expect the correct result after
+  https://github.com/cockroachdb/cockroach/pull/102299 was merged.
+
+## 7.0.1 - 2023-03-24
+
+- Reconnect on retryable connection errors.
+
+## 7.0.0 - 2022-06-02
+
+- Add support for Active Record 7.0.3
+
+## 6.1.10 - 2022-05-06
+
+- Disable supports_expression_index regardless of CockroachDB version until
+  `ON CONFLICT expression` is supported.
+
+  See https://github.com/cockroachdb/cockroach/issues/67893.
+
+## 6.1.9 - 2022-04-26
+
+- Fix bug where duplicate `rowid` columns would be created when loading
+  a schema dump of a table that was not created with an explicit primary key.
+- Support the NOT VISIBLE syntax from CockroachDB, by using the `hidden`
+  column modifier in the Rails schema.
+
 ## 6.1.8 - 2022-03-14
 
 - Add a test helper from https://github.com/rails/rails/pull/40822
@@ -32,7 +64,7 @@
 
 ## 6.1.1 - 2021-05-14
 
-- Fix a bug where starting the driver can result in a NoDatabaseError. 
+- Fix a bug where starting the driver can result in a NoDatabaseError.
 
 ## 6.1.0 - 2021-04-26
 
