@@ -17,8 +17,7 @@ module RakeHelpers
     ar_test_files = ar_test_files.
       split(',').
       map { |file| File.join ARTest::CockroachDB.root_activerecord, file.strip }.
-      then { _1.prepend(COCKROACHDB_TEST_HELPER) unless _1.empty? }.
-      prepend(COCKROACHDB_TEST_HELPER)
+      tap { _1.prepend(COCKROACHDB_TEST_HELPER) unless _1.empty? }
 
     cr_test_files = cr_test_files.split(',').map(&:strip)
 
@@ -28,7 +27,7 @@ module RakeHelpers
   def all_test_files
     activerecord_test_files = Dir.
       glob("#{ARTest::CockroachDB.root_activerecord}/test/cases/**/*_test.rb").
-      reject { _1.match?(%r(/adapters/(?:mysql2|sqlite3)/) }.
+      reject { _1.match?(%r(/adapters/(?:mysql2|sqlite3)/)) }.
       prepend(COCKROACHDB_TEST_HELPER)
 
     cockroachdb_test_files = Dir.glob('test/cases/**/*_test.rb')
