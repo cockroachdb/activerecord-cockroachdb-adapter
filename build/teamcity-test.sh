@@ -70,12 +70,7 @@ run_cockroach
 
 if ! (RUBYOPT="-W0" TESTOPTS="-v" bundle exec rake test); then
     echo "Tests failed"
-    HAS_FAILED=1
-else
-    echo "Tests passed"
-    HAS_FAILED=0
+    exit 1
 fi
 
-if [ $HAS_FAILED -eq 1 ]; then
-  exit 1
-fi
+echo "Tests passed"
