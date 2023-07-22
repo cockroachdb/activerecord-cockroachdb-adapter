@@ -36,6 +36,8 @@ Ruby version.
 tests similarly to TeamCity. The database is destroyed between each
 test file.)
 
+Note that the actual CI test suit is ran with [this script](https://github.com/cockroachdb/cockroach/blob/master/pkg/cmd/roachtest/tests/activerecord.go). And test failures are tracked [cockroach#97283](https://github.com/cockroachdb/cockroach/issues/97283)
+
 Install rbenv with ruby-build on MacOS:
 
 ```bash

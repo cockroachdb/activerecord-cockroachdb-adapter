@@ -284,22 +284,26 @@ module ActiveRecord
 
         def test_add_foreign_key_with_prefix
           ActiveRecord::Base.table_name_prefix = "p_"
+          puts "TEMP:1A: p_ set (#{__FILE__}:#{__LINE__ - 1})"
           migration = CreateSchoolsAndClassesMigration.new
           silence_stream($stdout) { migration.migrate(:up) }
           assert_equal 1, @connection.foreign_keys("p_classes").size
         ensure
           silence_stream($stdout) { migration.migrate(:down) }
           ActiveRecord::Base.table_name_prefix = nil
+          puts "TEMP:1B: p_ unset  (#{__FILE__}:#{__LINE__ - 1})"
         end
 
         def test_add_foreign_key_with_suffix
           ActiveRecord::Base.table_name_suffix = "_s"
+          puts "TEMP:2A: _s set (#{__FILE__}:#{__LINE__ - 1})"
           migration = CreateSchoolsAndClassesMigration.new
           silence_stream($stdout) { migration.migrate(:up) }
           assert_equal 1, @connection.foreign_keys("classes_s").size
         ensure
           silence_stream($stdout) { migration.migrate(:down) }
           ActiveRecord::Base.table_name_suffix = nil
+          puts "TEMP:2B: _s unset (#{__FILE__}:#{__LINE__ - 1})"
         end
 
         def test_remove_foreign_key_with_if_exists_not_set
