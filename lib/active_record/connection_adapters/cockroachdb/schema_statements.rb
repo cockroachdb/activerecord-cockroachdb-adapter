@@ -112,7 +112,7 @@ module ActiveRecord
         # since type alone is not enough to format the column.
         # Ex. type_to_sql(:geography, limit: "Point,4326")
         # => "geography(Point,4326)"
-        # 
+        #
         def type_to_sql(type, limit: nil, precision: nil, scale: nil, array: nil, **) # :nodoc:
           sql = \
             case type.to_s

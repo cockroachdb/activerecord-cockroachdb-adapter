@@ -15,7 +15,7 @@ module CockroachDB
       # See test/excludes/ActiveRecord/ConnectionAdapters/SchemaCacheTest.rb
       def test_yaml_loads_5_1_dump
         body = File.open(schema_dump_path).read
-        cache = YAML.load(body)
+        cache = YAML.unsafe_load(body)
 
         assert_no_queries do
           assert_equal 11, cache.columns("posts").size
@@ -32,7 +32,7 @@ module CockroachDB
       # See test/excludes/ActiveRecord/ConnectionAdapters/SchemaCacheTest.rb
       def test_yaml_loads_5_1_dump_without_indexes_still_queries_for_indexes
         body = File.open(schema_dump_path).read
-        @cache = YAML.load(body)
+        @cache = YAML.unsafe_load(body)
 
         # Simulate assignment in railtie after loading the cache.
         old_cache, @connection.schema_cache = @connection.schema_cache, @cache
@@ -51,7 +51,7 @@ module CockroachDB
       # See test/excludes/ActiveRecord/ConnectionAdapters/SchemaCacheTest.rb
       def test_yaml_loads_5_1_dump_without_database_version_still_queries_for_database_version
         body = File.open(schema_dump_path).read
-        @cache = YAML.load(body)
+        @cache = YAML.unsafe_load(body)
 
         # Simulate assignment in railtie after loading the cache.
         old_cache, @connection.schema_cache = @connection.schema_cache, @cache

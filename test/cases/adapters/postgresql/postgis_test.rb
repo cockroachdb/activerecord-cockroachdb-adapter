@@ -148,8 +148,10 @@ class PostGISTest < ActiveRecord::PostgreSQLTestCase
   def test_point_to_json
     obj = klass.new
     assert_match(/"latlon":null/, obj.to_json)
-    obj.latlon = factory.point(1.0, 2.0)
-    assert_match(/"latlon":"POINT\s\(1\.0\s2\.0\)"/, obj.to_json)
+    obj.latlon = factory.point(1.1, 2.0)
+    # NOTE: rgeo opiniated in trimming numbers (e.g 1.0 would be trimmed to 1).
+    #   We follow this convention here.
+    assert_match(/"latlon":"POINT\s\(1.1\s2\)"/, obj.to_json)
   end
 
   def test_custom_column
