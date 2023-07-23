@@ -14,7 +14,7 @@ module RailsTag
 
     def gemspec_requirement
       File
-        .foreach("activerecord-cockroachdb-adapter.gemspec", chomp: true)
+        .foreach(File.expand_path("activerecord-cockroachdb-adapter.gemspec", __dir__), chomp: true)
         .find { _1[/add_dependency\s.activerecord.,\s.(.*)./] }
 
       Gem::Requirement.new(Regexp.last_match(1))

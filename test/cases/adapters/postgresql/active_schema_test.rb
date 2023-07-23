@@ -64,8 +64,8 @@ module CockroachDB
     end
 
     private
-      def method_missing(method_symbol, *arguments)
-        ActiveRecord::Base.connection.send(method_symbol, *arguments)
+      def method_missing(...)
+        ActiveRecord::Base.connection.send(...)
       end
   end
 end

@@ -313,12 +313,13 @@ module CockroachDB
           firm_id bigint,
           firm_name character varying,
           credit_limit integer,
+          status string,
           #{'a' * max_identifier_length} integer
         )
       ")
 
       Company.connection.drop_table :companies, if_exists: true
-      Company.connection.exec_query("CREATE SEQUENCE companies_nonstd_seq")
+      Company.connection.exec_query("CREATE SEQUENCE IF NOT EXISTS companies_nonstd_seq")
       Company.connection.exec_query("
         CREATE TABLE companies (
           id BIGINT PRIMARY KEY DEFAULT nextval('companies_nonstd_seq'),
@@ -329,7 +330,8 @@ module CockroachDB
           client_of bigint,
           rating bigint,
           account_id integer,
-          description character varying
+          description character varying,
+          status integer
         )
       ")
 
@@ -361,6 +363,7 @@ module CockroachDB
         t.references :firm, index: false
         t.string  :firm_name
         t.integer :credit_limit
+        t.string :status
         t.integer "a" * max_identifier_length
       end
 
@@ -375,6 +378,7 @@ module CockroachDB
         t.bigint :rating, default: 1
         t.integer :account_id
         t.string :description, default: ""
+        t.integer :status, default: 0
         t.index [:name, :rating], order: :desc
         t.index [:name, :description], length: 10
         t.index [:firm_id, :type, :rating], name: "company_index", length: { type: 10 }, order: { rating: :desc }

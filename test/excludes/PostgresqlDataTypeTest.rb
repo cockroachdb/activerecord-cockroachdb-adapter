@@ -2,6 +2,5 @@ exclude :test_text_columns_are_limitless_the_upper_limit_is_one_GB, "Skipping un
 exclude :test_data_type_of_oid_types, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_update_oid, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_data_type_of_time_types, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
-exclude :test_update_time, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_oid_values, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_time_values, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"

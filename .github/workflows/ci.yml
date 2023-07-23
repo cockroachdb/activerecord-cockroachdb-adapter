@@ -1,0 +1,86 @@
+# Inspired from:
+# - https://github.com/cockroachdb/sqlalchemy-cockroachdb/blob/master/.github/workflows/ci.yml
+# - https://github.com/rgeo/activerecord-postgis-adapter/blob/master/.github/workflows/tests.yml
+name: Test
+
+on:
+  # Triggers the workflow on push or pull request events.
+  push:
+    # This should disable running the workflow on tags, according to the
+    # on.<push|pull_request>.<branches|tags> GitHub Actions docs.
+    branches:
+      - "*"
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# This allows a subsequently queued workflow run to interrupt previous runs.
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crdb: [v23.1.5]
+        ruby: [ruby-head]
+    name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
+    steps:
+      - name: Set Up Actions
+        uses: actions/checkout@v3
+      - name: Install GEOS
+        run: sudo apt-get install libgeos-dev
+      - name: Set Up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+           ruby-version: ${{ matrix.ruby }}
+           bundler-cache: true
+      - name: Install and Start Cockroachdb
+        run: |
+          # Download CockroachDB
+          wget -qO- https://binaries.cockroachdb.com/cockroach-${{ matrix.crdb }}.linux-amd64.tgz | tar xvz
+
+          export PATH=./cockroach-${{ matrix.crdb }}.linux-amd64/:$PATH
+          readonly urlfile=cockroach-url
+
+          # Start a CockroachDB server and wait for it to become ready.
+          rm -f "$urlfile"
+          rm -rf cockroach-data
+          # Start CockroachDB.
+          cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-${{ matrix.crdb }}.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
+          # Ensure CockroachDB is stopped on script exit.
+          # Wait until CockroachDB has started.
+          for i in {0..3}; do
+            [[ -f "$urlfile" ]] && break
+            backoff=$((2 ** i))
+            echo "server not yet available; sleeping for $backoff seconds"
+            sleep $backoff
+          done
+          cockroach sql --insecure -e "
+            CREATE DATABASE activerecord_unittest;
+            CREATE DATABASE activerecord_unittest2;
+            SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false;
+            SET CLUSTER SETTING sql.stats.histogram_collection.enabled = false;
+            SET CLUSTER SETTING jobs.retention_time = '180s';
+            SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = 'true';
+
+            ALTER RANGE default CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;
+            ALTER TABLE system.public.jobs CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;
+            ALTER RANGE meta CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;
+            ALTER RANGE system CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;
+            ALTER RANGE liveness CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;
+
+            SET CLUSTER SETTING kv.range_merge.queue_interval = '50ms';
+            SET CLUSTER SETTING kv.raft_log.disable_synchronization_unsafe = 'true';
+            SET CLUSTER SETTING jobs.registry.interval.cancel = '180s';
+            SET CLUSTER SETTING jobs.registry.interval.gc = '30s';
+            SET CLUSTER SETTING kv.range_split.by_load_merge_delay = '5s';
+
+            SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';
+          "
+      - name: Test
+        run: bundle exec rake test

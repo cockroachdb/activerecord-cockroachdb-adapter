@@ -321,7 +321,7 @@ p modified_fac.parse_wkt(wkt)
 #=>  #<RGeo::Geographic::SphericalPolygonImpl>
 ```
 
-Be careful when performing calculations on potentially invalid geometries, as the results might be nonsensical. For example, the area returned of an hourglass made of 2 equivalent triangles with a self-intersection in the middle is 0. 
+Be careful when performing calculations on potentially invalid geometries, as the results might be nonsensical. For example, the area returned of an hourglass made of 2 equivalent triangles with a self-intersection in the middle is 0.
 
 Note that when using the `spherical_factory`, there is a chance that valid geometries will be interpreted as invalid due to floating point issues with small geometries.
 

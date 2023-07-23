@@ -5,7 +5,6 @@ exclude :test_strings_with_null_strings, "Skipping until we can triage further. 
 exclude :test_attribute_for_inspect_for_array_field_for_large_array, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_column, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_default, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
-exclude :test_insert_fixtures, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_string_quoting_rules_match_pg_behavior, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_change_column_default_with_array, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_encoding_arrays_of_utf8_strings, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"

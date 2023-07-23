@@ -12,7 +12,7 @@ module RakeHelpers
     ar_test_files = ENV.fetch('TEST_FILES_AR', '')
     cr_test_files = ENV.fetch('TEST_FILES', '')
 
-    return all_test_file if ar_test_files.empty? && cr_test_files.empty?
+    return all_test_files if ar_test_files.empty? && cr_test_files.empty?
 
     ar_test_files = ar_test_files.
       split(',').

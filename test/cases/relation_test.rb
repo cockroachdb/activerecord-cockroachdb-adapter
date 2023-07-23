@@ -19,7 +19,7 @@ module ActiveRecord
 
       def test_relation_with_annotation_filters_sql_comment_delimiters
         post_with_annotation = Post.where(id: 1).annotate("**//foo//**")
-        assert_match %r{= '1' /\* foo \*/}, post_with_annotation.to_sql
+        assert_includes post_with_annotation.to_sql, "= '1' /* ** //foo// ** */"
       end
 
       def test_respond_to_for_non_selected_element
