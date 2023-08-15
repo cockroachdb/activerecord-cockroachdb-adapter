@@ -22,6 +22,14 @@ module Arel # :nodoc:
   module Visitors # :nodoc:
     class CockroachDB < PostgreSQL  # :nodoc:
       include RGeo::ActiveRecord::SpatialToSql
+
+      def visit_Arel_Nodes_JoinSource(o, collector)
+        super
+        if o.aost
+          collector << " AS OF SYSTEM TIME '#{o.aost.iso8601}'"
+        end
+        collector
+      end
     end
   end
 end

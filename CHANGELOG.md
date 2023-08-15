@@ -2,6 +2,8 @@
 
 ## Ongoing
 
+- Add support for [AOST](cockroachlabs.com/docs/stable/as-of-system-time) queries ([#284](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/284))
+
 ## 7.0.3 - 2023-08-23
 
 - Fix Multiple Database connections ([#283](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
