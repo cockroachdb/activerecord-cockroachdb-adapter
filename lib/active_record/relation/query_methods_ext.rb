@@ -3,6 +3,23 @@
 module ActiveRecord
   class Relation
     module QueryMethodsExt
+      def aost!(time) # :nodoc:
+        unless time.nil? || time.is_a?(Time)
+          raise ArgumentError, "Unsupported argument type: #{time} (#{time.class})"
+        end
+
+        @aost = time
+        self
+      end
+
+      # Set system time for the current query. Using
+      # `.aost(nil)` resets.
+      #
+      # See cockroachlabs.com/docs/stable/as-of-system-time
+      def aost(time)
+        spawn.aost!(time)
+      end
+
       def from!(...) # :nodoc:
         @force_index = nil
         @index_hint = nil
@@ -59,7 +76,19 @@ module ActiveRecord
         self
       end
 
+      # TODO: reset or no reset?
+
+      def show_create
+        connection.execute("show create table #{connection.quote_table_name self.table_name}").first["create_statement"]
+      end
+
       private
+
+      def build_arel(...)
+        arel = super
+        arel.aost(@aost) if @aost.present?
+        arel
+      end
 
       def from_clause_is_a_table_name?
         # if empty, we are just dealing with the current table.
@@ -94,5 +123,5 @@ module ActiveRecord
   # as ancestor. That is how active_record is doing is as well.
   #
   # @see https://github.com/rails/rails/blob/914130a9f/activerecord/lib/active_record/querying.rb#L23
-  Querying.delegate(:force_index, :index_hint, to: :all)
+  Querying.delegate(:force_index, :index_hint, :aost, to: :all)
 end

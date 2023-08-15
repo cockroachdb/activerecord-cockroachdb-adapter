@@ -1,5 +1,6 @@
 require "rgeo/active_record"
 
+require_relative "../../arel/nodes/join_source_ext"
 require "active_record/connection_adapters/postgresql_adapter"
 require "active_record/connection_adapters/cockroachdb/attribute_methods"
 require "active_record/connection_adapters/cockroachdb/column_methods"
