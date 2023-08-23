@@ -2,6 +2,8 @@
 
 ## Ongoing
 
+## 7.0.3 - 2023-08-23
+
 - Fix Multiple Database connections ([#283](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
 - Add support for sql load in rake tasks ([#275](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
 - Add support for sql dump in rake tasks ([#273](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
