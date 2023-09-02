@@ -1,38 +1,52 @@
-exclude :test_schema_names, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_create_schema, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_raise_create_schema_with_existing_schema, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_drop_schema, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_drop_schema_if_exists, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_habtm_table_name_with_schema, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_drop_schema_with_nonexisting_schema, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_raise_wrapped_exception_on_bad_prepare, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_schema_change_with_prepared_stmt, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_data_source_exists?, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_data_source_exists_when_on_schema_search_path, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_data_source_exists_when_not_on_schema_search_path, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_data_source_exists_wrong_schema, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_data_source_exists_quoted_names, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_data_source_exists_quoted_table, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_with_schema_prefixed_table_name, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_with_schema_prefixed_capitalized_table_name, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_with_schema_search_path, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_proper_encoding_of_table_name, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_classes_with_qualified_schema_name, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_raise_on_unquoted_schema_name, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_without_schema_search_path, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_ignore_nil_schema_search_path, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_index_name_exists, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_dump_indexes_for_schema_one, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_dump_indexes_for_schema_two, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_dump_indexes_for_schema_multiple_schemas_in_search_path, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_dump_indexes_for_table_with_scheme_specified_in_name, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_with_uppercase_index_name, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_remove_index_when_schema_specified, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_primary_key_with_schema_specified, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_primary_key_assuming_schema_search_path, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_pk_and_sequence_for_with_schema_specified, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_current_schema, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_prepared_statements_with_multiple_schemas, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_schema_exists?, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_reset_pk_sequence, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
-exclude :test_set_pk_sequence, "Custom schemas are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/26443."
+exclude :test_set_pk_sequence, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+exclude :test_pk_and_sequence_for_with_schema_specified, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
+
+# This hack allows us to redefine the
+# setup. We are using various weird
+# routes that might be simplified:
+# 1. We use `Ext` to prepend to the
+#    current class to be sure `#setup`
+#    is overriden.
+# 2. Current is a reference to self to
+#    access it in `Ext`
+# 3. const_missing is used to avoid
+#    having to rewrite every constant.
+Current = self
+module Ext
+  def self.const_missing(const)
+    Current.const_get(const)
+  end
+
+  def setup
+    @connection = ActiveRecord::Base.connection
+    @connection.execute "SET default_int_size = 4"
+    @connection.execute "SET serial_normalization = sql_sequence_cached"
+    @connection.execute "CREATE SCHEMA #{SCHEMA_NAME}"
+    @connection.execute "CREATE TABLE #{SCHEMA_NAME}.#{TABLE_NAME} (#{COLUMNS.join(',')})"
+    @connection.execute "CREATE TABLE #{SCHEMA_NAME}.\"#{TABLE_NAME}.table\" (#{COLUMNS.join(',')})"
+    @connection.execute "CREATE TABLE #{SCHEMA_NAME}.\"#{CAPITALIZED_TABLE_NAME}\" (#{COLUMNS.join(',')})"
+    @connection.execute "CREATE SCHEMA #{SCHEMA2_NAME}"
+    @connection.execute "CREATE TABLE #{SCHEMA2_NAME}.#{TABLE_NAME} (#{COLUMNS.join(',')})"
+    @connection.execute "CREATE INDEX #{INDEX_A_NAME} ON #{SCHEMA_NAME}.#{TABLE_NAME}  USING btree (#{INDEX_A_COLUMN});"
+    @connection.execute "CREATE INDEX #{INDEX_A_NAME} ON #{SCHEMA2_NAME}.#{TABLE_NAME}  USING btree (#{INDEX_A_COLUMN});"
+    @connection.execute "CREATE INDEX #{INDEX_B_NAME} ON #{SCHEMA_NAME}.#{TABLE_NAME}  USING btree (#{INDEX_B_COLUMN_S1});"
+    @connection.execute "CREATE INDEX #{INDEX_B_NAME} ON #{SCHEMA2_NAME}.#{TABLE_NAME}  USING btree (#{INDEX_B_COLUMN_S2});"
+    @connection.execute "CREATE INDEX #{INDEX_C_NAME} ON #{SCHEMA_NAME}.#{TABLE_NAME}  USING gin (#{INDEX_C_COLUMN});"
+    @connection.execute "CREATE INDEX #{INDEX_C_NAME} ON #{SCHEMA2_NAME}.#{TABLE_NAME}  USING gin (#{INDEX_C_COLUMN});"
+    @connection.execute "CREATE INDEX #{INDEX_D_NAME} ON #{SCHEMA_NAME}.#{TABLE_NAME}  USING btree (#{INDEX_D_COLUMN} DESC);"
+    @connection.execute "CREATE INDEX #{INDEX_D_NAME} ON #{SCHEMA2_NAME}.#{TABLE_NAME}  USING btree (#{INDEX_D_COLUMN} DESC);"
+    @connection.execute "CREATE INDEX #{INDEX_E_NAME} ON #{SCHEMA_NAME}.#{TABLE_NAME}  USING gin (#{INDEX_E_COLUMN});"
+    @connection.execute "CREATE INDEX #{INDEX_E_NAME} ON #{SCHEMA2_NAME}.#{TABLE_NAME}  USING gin (#{INDEX_E_COLUMN});"
+    @connection.execute "CREATE TABLE #{SCHEMA_NAME}.#{PK_TABLE_NAME} (id serial primary key)"
+    @connection.execute "CREATE TABLE #{SCHEMA2_NAME}.#{PK_TABLE_NAME} (id serial primary key)"
+    @connection.execute "CREATE SEQUENCE #{SCHEMA_NAME}.#{UNMATCHED_SEQUENCE_NAME}"
+    @connection.execute "CREATE TABLE #{SCHEMA_NAME}.#{UNMATCHED_PK_TABLE_NAME} (id integer NOT NULL DEFAULT nextval('#{SCHEMA_NAME}.#{UNMATCHED_SEQUENCE_NAME}'::regclass), CONSTRAINT unmatched_pkey PRIMARY KEY (id))"
+  end
+
+  def teardown
+    @connection.execute "SET default_int_size = DEFAULT"
+    @connection.execute "SET serial_normalization = DEFAULT"
+    super
+  end
+end
+prepend Ext

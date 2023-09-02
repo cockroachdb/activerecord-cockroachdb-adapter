@@ -517,14 +517,8 @@ module ActiveRecord
 
           # Use regex comparison because if a type is an array it will
           # have [] appended to the end of it.
-          target_types = [
-            /geometry/,
-            /geography/,
-            /interval/,
-            /numeric/
-          ]
+          re = /\A(?:geometry|geography|interval|numeric)/
 
-          re = Regexp.union(target_types)
           fields.map do |field|
             dtype = field[1]
             field[1] = crdb_fields[field[0]][2].downcase if re.match(dtype)
@@ -549,11 +543,14 @@ module ActiveRecord
         # precision, and scale information in the type.
         # Ex. geometry -> geometry(point, 4326)
         def crdb_column_definitions(table_name)
+          table_name = PostgreSQL::Utils.extract_schema_qualified_name(table_name)
+          table = table_name.identifier
+          with_schema = " AND c.table_schema = #{quote(table_name.schema)}" if table_name.schema
           fields = \
           query(<<~SQL, "SCHEMA")
             SELECT c.column_name, c.column_comment, c.crdb_sql_type, c.is_hidden::BOOLEAN
-              FROM information_schema.columns c
-            WHERE c.table_name = #{quote(table_name)}
+            FROM information_schema.columns c
+            WHERE c.table_name = #{quote(table)}#{with_schema}
           SQL
 
           fields.reduce({}) do |a, e|
