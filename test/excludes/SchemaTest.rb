@@ -1,6 +1,3 @@
-exclude :test_set_pk_sequence, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
-exclude :test_pk_and_sequence_for_with_schema_specified, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
-
 # This hack allows us to redefine the
 # setup. We are using various weird
 # routes that might be simplified:
