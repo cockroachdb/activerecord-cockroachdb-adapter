@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crdb: [v23.1.5]
+        crdb: [v23.1.11]
         ruby: [ruby-head]
     name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
     steps:
