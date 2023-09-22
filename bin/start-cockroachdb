@@ -20,8 +20,6 @@ cockroach start-single-node \
 	--insecure --store=type=mem,size=0.25 --advertise-addr=localhost --pid-file "$pid_file" \
 	&> "$log_file" &
 
-cockroach_pid=$!
-
 until [[ -f "$pid_file" ]]; do
 	sleep 1
 done
@@ -43,6 +41,4 @@ CREATE DATABASE activerecord_unittest;
 CREATE DATABASE activerecord_unittest2;
 SQL
 
-tail -f "$log_file"
-
-trap "kill $cockroach_pid" EXIT
+echo "CockroachDB started. PID: $(cat "$pid_file"). log: $log_file"
