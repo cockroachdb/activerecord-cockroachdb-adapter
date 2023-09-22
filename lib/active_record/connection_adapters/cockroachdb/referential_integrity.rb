@@ -11,6 +11,14 @@ module ActiveRecord
   module ConnectionAdapters
     module CockroachDB
       module ReferentialIntegrity
+        # CockroachDB will raise a `PG::ForeignKeyViolation` when re-enabling
+        # referential integrity (e.g: adding a foreign key with invalid data
+        # raises).
+        # So foreign keys should always be valid for that matter.
+        def all_foreign_keys_valid?
+          true
+        end
+
         def disable_referential_integrity
           foreign_keys = tables.map { |table| foreign_keys(table) }.flatten
 
