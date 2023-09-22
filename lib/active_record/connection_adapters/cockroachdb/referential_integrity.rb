@@ -29,7 +29,7 @@ module ActiveRecord
         # referential integrity (e.g: adding a foreign key with invalid data
         # raises).
         # So foreign keys should always be valid for that matter.
-        def check_all_foreign_keys_valid!
+        def all_foreign_keys_valid?
           true
         end
 
