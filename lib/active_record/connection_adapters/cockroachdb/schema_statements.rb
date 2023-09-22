@@ -36,16 +36,24 @@ module ActiveRecord
         # Modified version of the postgresql foreign_keys method.
         # Replaces t2.oid::regclass::text with t2.relname since this is
         # more efficient in CockroachDB.
+        # Also, CockroachDB does not append the schema name in relname,
+        # so we append it manually.
         def foreign_keys(table_name)
           scope = quoted_scope(table_name)
           fk_info = exec_query(<<~SQL, "SCHEMA")
-            SELECT t2.relname AS to_table, a1.attname AS column, a2.attname AS primary_key, c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid
+            SELECT CASE
+              WHEN n2.nspname = current_schema()
+              THEN ''
+              ELSE n2.nspname || '.'
+            END || t2.relname AS to_table,
+            a1.attname AS column, a2.attname AS primary_key, c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid, c.condeferrable AS deferrable, c.condeferred AS deferred
             FROM pg_constraint c
             JOIN pg_class t1 ON c.conrelid = t1.oid
             JOIN pg_class t2 ON c.confrelid = t2.oid
             JOIN pg_attribute a1 ON a1.attnum = c.conkey[1] AND a1.attrelid = t1.oid
             JOIN pg_attribute a2 ON a2.attnum = c.confkey[1] AND a2.attrelid = t2.oid
             JOIN pg_namespace t3 ON c.connamespace = t3.oid
+            JOIN pg_namespace n2 ON t2.relnamespace = n2.oid
             WHERE c.contype = 'f'
               AND t1.relname = #{scope[:name]}
               AND t3.nspname = #{scope[:schema]}
@@ -54,16 +62,19 @@ module ActiveRecord
 
           fk_info.map do |row|
             options = {
-              column: row["column"],
+              column: PostgreSQL::Utils.unquote_identifier(row["column"]),
               name: row["name"],
               primary_key: row["primary_key"]
             }
 
             options[:on_delete] = extract_foreign_key_action(row["on_delete"])
             options[:on_update] = extract_foreign_key_action(row["on_update"])
-            options[:validate] = row["valid"]
+            options[:deferrable] = extract_foreign_key_deferrable(row["deferrable"], row["deferred"])
 
-            ForeignKeyDefinition.new(table_name, row["to_table"], options)
+            options[:validate] = row["valid"]
+            to_table = PostgreSQL::Utils.unquote_identifier(row["to_table"])
+
+            ForeignKeyDefinition.new(table_name, to_table, options)
           end
         end
 

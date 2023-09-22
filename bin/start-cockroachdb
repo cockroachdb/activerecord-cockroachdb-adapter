@@ -21,8 +21,6 @@ cockroach start-single-node \
 	--insecure --store=type=mem,size=0.25 --advertise-addr=localhost --pid-file "$pid_file" \
 	&> "$log_file" &
 
-cockroach_pid=$!
-
 until [[ -f "$pid_file" ]]; do
 	sleep 1
 done
@@ -47,6 +45,4 @@ SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = 'true'
 SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';
 SQL
 
-tail -f "$log_file"
-
-trap "kill $cockroach_pid" EXIT
+echo "CockroachDB started. PID: $(cat "$pid_file"). log: $log_file"

@@ -3,6 +3,7 @@
 ## Ongoing
 
 - Add support for [AOST](cockroachlabs.com/docs/stable/as-of-system-time) queries ([#284](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/284))
+- Dump schema name in foreign keys ([#289](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/289))
 
 ## 7.0.3 - 2023-08-23
 
