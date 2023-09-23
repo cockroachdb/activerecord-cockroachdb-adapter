@@ -194,10 +194,12 @@ def clean_up_connection_handler
   end
 end
 
-def load_schema
-  # silence verbose schema loading
-  original_stdout = $stdout
-  $stdout = StringIO.new
+def load_schema(shush = true)
+  if shush
+    # silence verbose schema loading
+    original_stdout = $stdout
+    $stdout = StringIO.new
+  end
 
   adapter_name = ActiveRecord::Base.connection.adapter_name.downcase
   adapter_specific_schema_file = SCHEMA_ROOT + "/#{adapter_name}_specific_schema.rb"
@@ -210,7 +212,7 @@ def load_schema
 
   ActiveRecord::FixtureSet.reset_cache
 ensure
-  $stdout = original_stdout
+  $stdout = original_stdout if shush
 end
 
 if ENV['COCKROACH_LOAD_FROM_TEMPLATE'].nil? && ENV['COCKROACH_SKIP_LOAD_SCHEMA'].nil?
