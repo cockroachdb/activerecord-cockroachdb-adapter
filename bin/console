@@ -12,39 +12,23 @@ require "active_record"
 #       structure_load(Post.connection_db_config, "awesome-file.sql")
 require "active_record/connection_adapters/cockroachdb/database_tasks"
 
-begin
-  retried = false
-  ActiveRecord::Base.establish_connection(
-    #Alternative version:  "cockroachdb://root@localhost:26257/ar_crdb_console"
-    adapter: "cockroachdb",
-    host: "localhost",
-    port: 26257,
-    user: "root",
-    database: "ar_crdb_console"
-  )
-  ActiveRecord::Base.connection
-rescue ActiveRecord::NoDatabaseError
-  raise if retried
-  system("cockroach sql --insecure --host=localhost:26257 --execute='create database ar_crdb_console'",
-    exception: true)
-  retried = true
-  retry
-end
+schema_kind = ENV.fetch("SCHEMA_KIND", "default")
 
-class Post < ActiveRecord::Base
-end
+system("cockroach sql --insecure --host=localhost:26257 --execute='drop database if exists ar_crdb_console'",
+  exception: true)
+system("cockroach sql --insecure --host=localhost:26257 --execute='create database ar_crdb_console'",
+  exception: true)
 
-unless Post.table_exists?
-  migration = Class.new(ActiveRecord::Migration::Current) do
-    def up
-      create_table("posts") do |t|
-        t.string :title
-        t.text :body
-      end
-    end
-  end
-  migration.migrate(:up)
-end
+ActiveRecord::Base.establish_connection(
+  #Alternative version:  "cockroachdb://root@localhost:26257/ar_crdb_console"
+  adapter: "cockroachdb",
+  host: "localhost",
+  port: 26257,
+  user: "root",
+  database: "ar_crdb_console"
+)
+
+load "#{__dir__}/console_schemas/#{schema_kind}.rb"
 
 require "irb"
 IRB.start(__FILE__)
