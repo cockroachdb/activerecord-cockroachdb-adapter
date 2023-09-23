@@ -9,6 +9,7 @@ pid_file="$root_dir/tmp/cockroach.pid"
 log_file="$root_dir/tmp/cockroachdb.log"
 
 mkdir -p "$root_dir/tmp"
+[[ -f "$pid_file" ]] && kill -9 $(cat "$pid_file")
 rm -f "$pid_file"
 
 if ! (( ${+commands[cockroach]} )); then
@@ -41,6 +42,9 @@ ALTER DATABASE system CONFIGURE ZONE USING "gc.ttlseconds" = 600;
 
 CREATE DATABASE activerecord_unittest;
 CREATE DATABASE activerecord_unittest2;
+
+SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = 'true';
+SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';
 SQL
 
 tail -f "$log_file"
