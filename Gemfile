@@ -10,6 +10,11 @@ module RailsTag
     def call
       req = gemspec_requirement
       "v" + all_activerecord_versions.find { req.satisfied_by?(_1) }.version
+    rescue => e
+      warn "Unable to determine Rails version. Using last used. Error: #{e.message}"
+      lockfile = File.expand_path("Gemfile.lock", __dir__)
+      File.foreach(lockfile, chomp: true).find { _1[/tag: (.*)$/] }
+      Regexp.last_match(1)
     end
 
     def gemspec_requirement
