@@ -83,7 +83,7 @@ module CockroachDB
         end
       ensure
         migration.migrate(:down)
-        # $stdout = original
+        $stdout = original
       end
 
       def test_timestamps_schema_dump_before_rails_7_with_timestamptz_setting
@@ -119,7 +119,7 @@ module CockroachDB
         end
       ensure
         migration.migrate(:down)
-        # $stdout = original
+        $stdout = original
       end
 
       def test_schema_dump_with_correct_timestamp_types_via_add_column_before_rails_7_with_timestamptz_setting
@@ -153,7 +153,7 @@ module CockroachDB
         end
       ensure
         migration.migrate(:down)
-        # $stdout = original
+        $stdout = original
       end
 
       def test_schema_dump_when_changing_datetime_type_for_an_existing_app
