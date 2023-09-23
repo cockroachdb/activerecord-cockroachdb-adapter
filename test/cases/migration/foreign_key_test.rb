@@ -284,21 +284,25 @@ module ActiveRecord
 
         def test_add_foreign_key_with_prefix
           ActiveRecord::Base.table_name_prefix = "p_"
+          puts "\n--t--1A: setting prefix"
           migration = CreateSchoolsAndClassesMigration.new
-          silence_stream($stdout) { migration.migrate(:up) }
+          silence_stream(StringIO.new) { migration.migrate(:up) }
           assert_equal 1, @connection.foreign_keys("p_classes").size
         ensure
-          silence_stream($stdout) { migration.migrate(:down) }
+          silence_stream(StringIO.new) { migration.migrate(:down) }
           ActiveRecord::Base.table_name_prefix = nil
+          puts "\n--t--1B: setting prefix"
         end
 
         def test_add_foreign_key_with_suffix
           ActiveRecord::Base.table_name_suffix = "_s"
+          puts "\n--t--2A: setting suffix"
           migration = CreateSchoolsAndClassesMigration.new
-          silence_stream($stdout) { migration.migrate(:up) }
+          silence_stream(StringIO.new) { migration.migrate(:up) }
           assert_equal 1, @connection.foreign_keys("classes_s").size
         ensure
-          silence_stream($stdout) { migration.migrate(:down) }
+          silence_stream(StringIO.new) { migration.migrate(:down) }
+          puts "\n--t--2B: unsetting suffix"
           ActiveRecord::Base.table_name_suffix = nil
         end
 
