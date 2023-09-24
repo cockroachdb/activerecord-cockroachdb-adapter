@@ -52,5 +52,6 @@ group :development, :test do
   gem "mocha", "~> 1.14.0"
   gem "sqlite3", "~> 1.4.4"
 
+  gem "minitest-github_action_reporter", github: "BuonOmo/minitest-github_action_reporter", require: "minitest/github_action_reporter_plugin"
   gem "minitest", "~> 5.15.0"
 end
