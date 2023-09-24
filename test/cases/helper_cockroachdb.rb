@@ -2,12 +2,29 @@ require 'bundler'
 Bundler.setup
 
 require "minitest/excludes"
+require "minitest/github_action_reporter"
 
 # Turn on debugging for the test environment
 ENV['DEBUG_COCKROACHDB_ADAPTER'] = "1"
 
 # Load ActiveRecord test helper
 require "cases/helper"
+
+# Allow the GithubAction reporter to link to both
+# our codebase and the Rails codebase.
+module Minitest
+  module GithubActionReporterExt
+    def gh_link(loc)
+      return super unless loc.include?("/gems/")
+
+      path, _, line = loc[%r(/(?:test|spec)/.*)][1..].rpartition(":")
+
+      rails_version = "v#{ActiveRecord::VERSION::STRING}"
+      "#{ENV["GITHUB_SERVER_URL"]}/rails/rails/blob/#{rails_version}/activerecord/#{path}#L#{line}"
+    end
+  end
+  GithubActionReporter.prepend(GithubActionReporterExt)
+end
 
 # Load the CockroachDB specific schema. It replaces ActiveRecord's PostgreSQL
 # specific schema.
