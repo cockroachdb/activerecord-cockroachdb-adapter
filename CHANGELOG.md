@@ -3,6 +3,7 @@
 ## Ongoing
 
 - Add support for [AOST](cockroachlabs.com/docs/stable/as-of-system-time) queries ([#284](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/284))
+- Add support for datetime with given precision ([#294](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/294))
 
 ## 7.0.3 - 2023-08-23
 
