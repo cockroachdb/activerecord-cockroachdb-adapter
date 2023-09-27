@@ -418,11 +418,32 @@ module ActiveRecord
           # 10: is_hidden
           fields.map do |field|
             dtype = field[1]
-            field[1] = crdb_fields[field[0]][2].downcase if re.match(dtype)
-            field[7] = crdb_fields[field[0]][1]&.gsub!(/^\'|\'?$/, '')
-            field[10] = true if crdb_fields[field[0]][3]
+            column_name, column_comment, crdb_sql_type, is_hidden, datetime_precision = crdb_fields[field[0]]
+            # 1: format_type(atttypid, atttypmod)
+            field[1] = crdb_sql_type.downcase if re.match(dtype)
+            # 5: atttypmod
+            field[5] = datetime_precision if datetime_precision
+            # 7: comment
+            field[7] = column_comment&.gsub!(/^\'|\'?$/, '')
+            # 10: is_hidden
+            field[10] = true if is_hidden
+
+            # HACK: This, as well as the atttypmod overriding is done
+            #   expecting that CRDB internal will change to address
+            #   the `atttypmod` not referencing the datetime precision.
+            #   If that is not the case, we could consider refactoring
+            #   the whole method to run one single query (including
+            #   information_schema.columns information).
+            if field[1].start_with?("timestamp") && datetime_precision
+              l = "timestamp".length
+              p field[1] if datetime_precision != 6
+              field[1] = "timestamp(#{datetime_precision})#{field[1][l..]}"
+              p field[1] if datetime_precision != 6
+            end
+
             field
           end
+
           fields.delete_if do |field|
             # Don't include rowid column if it is hidden and the primary key
             # is not defined (meaning CRDB implicitly created it).
@@ -445,15 +466,12 @@ module ActiveRecord
           with_schema = " AND c.table_schema = #{quote(table_name.schema)}" if table_name.schema
           fields = \
           query(<<~SQL, "SCHEMA")
-            SELECT c.column_name, c.column_comment, c.crdb_sql_type, c.is_hidden::BOOLEAN
+            SELECT c.column_name, c.column_comment, c.crdb_sql_type, c.is_hidden::BOOLEAN, c.datetime_precision
             FROM information_schema.columns c
             WHERE c.table_name = #{quote(table)}#{with_schema}
           SQL
 
-          fields.reduce({}) do |a, e|
-            a[e[0]] = e
-            a
-          end
+          fields.to_h { [_1[0], _1] }
         end
 
         # override

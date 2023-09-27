@@ -6,3 +6,17 @@ BaseCompatibilityTest.descendants.each { _1.use_transactional_tests = false }
 
 exclude :test_add_index_errors_on_too_long_name_7_0, "The max length in CRDB is 128, not 64."
 exclude :test_create_table_add_index_errors_on_too_long_name_7_0, "The max length in CRDB is 128, not 64."
+
+module ::DefaultPrecisionImplicitTestCases
+  def precision_implicit_default
+    { precision: 6 }
+  end
+end
+
+module Ext
+  def precision_implicit_default
+    { precision: 6 }
+  end
+end
+
+prepend Ext

@@ -2,6 +2,8 @@
 
 ## Ongoing
 
+- Add support for datetime with given precision ([#294](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/294))
+
 ## 7.1.1 - 2024-05-01
 
 - Enable precision support ([#318](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/318))
