@@ -17,6 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Since the name of the matrix job depends on the version, we define another job with a more stable name.
+  test_results:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: Test Results
+    needs: [test]
+    steps:
+      - run: |
+          result="${{ needs.test.result }}"
+          if [[ $result == "success" || $result == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
+
   test:
     runs-on: ubuntu-22.04
     strategy:
