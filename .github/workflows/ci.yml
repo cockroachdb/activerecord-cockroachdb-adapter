@@ -4,12 +4,7 @@
 name: Test
 
 on:
-  # Triggers the workflow on push or pull request events.
-  push:
-    # This should disable running the workflow on tags, according to the
-    # on.<push|pull_request>.<branches|tags> GitHub Actions docs.
-    branches:
-      - "*"
+  # Triggers the workflow on pull request events.
   pull_request:
     types: [opened, reopened, synchronize]
 
@@ -18,7 +13,7 @@ on:
 
 # This allows a subsequently queued workflow run to interrupt previous runs.
 concurrency:
-  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  group: "${{ github.workflow }} @ ${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
