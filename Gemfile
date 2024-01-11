@@ -48,6 +48,9 @@ group :development, :test do
   # a specific rails codebase.
   gem "rails", github: "rails/rails", tag: RailsTag.call
 
+  # Needed before rails update for ruby 3.4
+  gem "mutex_m"
+
   gem "rake"
   gem "byebug"
   gem "minitest-excludes", "~> 2.0.1"
