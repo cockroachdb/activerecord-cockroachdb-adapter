@@ -1,10 +1,31 @@
 require 'bundler'
 Bundler.setup
 
+CRDB_VALIDATE_BUG = "CockcroachDB bug, see https://github.com/cockroachdb/cockroach/blob/dd1e0e0164cb3d5859ea4bb23498863d1eebc0af/pkg/sql/alter_table.go#L458-L467"
 require "minitest/excludes"
+require "minitest/github_action_reporter"
+
+# This gives great visibility on schema dump related tests, but
+# some rails specific messages are then ignored.
+Minitest::Test.make_my_diffs_pretty! if ENV['VERBOSE']
 
 # Turn on debugging for the test environment
 ENV['DEBUG_COCKROACHDB_ADAPTER'] = "1"
+
+# Override the load_schema_helper for the
+# two ENV variables COCKROACH_LOAD_FROM_TEMPLATE
+# and COCKROACH_SKIP_LOAD_SCHEMA that can
+# skip this step
+require "support/load_schema_helper"
+module LoadSchemaHelperExt
+  def load_schema
+    return if ENV['COCKROACH_LOAD_FROM_TEMPLATE']
+    return if ENV['COCKROACH_SKIP_LOAD_SCHEMA']
+
+    super
+  end
+end
+LoadSchemaHelper.prepend(LoadSchemaHelperExt)
 
 # Load ActiveRecord test helper
 require "cases/helper"
@@ -117,3 +138,41 @@ module ARTestCaseHelper
 end
 
 ActiveRecord::TestCase.include(ARTestCaseHelper)
+
+module Minitest
+  module GithubActionReporterExt
+    def gh_link(loc)
+      return super unless loc.include?("/gems/")
+
+      path, _, line = loc[%r(/(?:test|spec|lib)/.*)][1..].rpartition(":")
+
+      rails_version = "v#{ActiveRecord::VERSION::STRING}"
+      "#{ENV["GITHUB_SERVER_URL"]}/rails/rails/blob/#{rails_version}/activerecord/#{path}#L#{line}"
+    rescue
+      warn "Failed to generate link for #{loc}"
+      super
+    end
+  end
+  GithubActionReporter.prepend(GithubActionReporterExt)
+end
+
+if ENV['AR_LOG']
+  ActiveRecord::Base.logger = Logger.new(STDOUT)
+  ActiveRecord::Base.logger.level = Logger::DEBUG
+  ActiveRecord::Base.logger.formatter = proc { |severity, time, progname, msg|
+    th = Thread.current[:name]
+    th = "THREAD=#{th}" if th
+    Logger::Formatter.new.call(severity, time, progname || th, msg)
+  }
+end
+
+# Remove the header from the schema dump to clarify tests outputs.
+module NoHeaderExt
+  def header(stream)
+    with_comments = StringIO.new
+    super(with_comments)
+    stream.print with_comments.string.gsub(/^(:?#.*)?\n/, '')
+  end
+end
+
+ActiveRecord::SchemaDumper.prepend(NoHeaderExt)

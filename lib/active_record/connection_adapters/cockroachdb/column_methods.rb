@@ -45,6 +45,14 @@ module ActiveRecord
         def st_polygon(name, options = {})
           column(name, :st_polygon, **options)
         end
+
+        private
+
+        def valid_column_definition_options
+          spatial = [:srid, :has_z, :has_m, :geographic, :spatial_type]
+          crdb = [:hidden]
+          super + spatial + crdb
+        end
       end
     end
 

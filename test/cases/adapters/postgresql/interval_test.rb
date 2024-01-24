@@ -30,9 +30,6 @@ module CockroachDB
       assert(@column_min.is_a?(ActiveRecord::ConnectionAdapters::PostgreSQLColumn))
       assert_nil @column_max.precision
       assert_equal 3, @column_min.precision
-
-      crdb_version = @connection.instance_variable_get(:@crdb_version)
-      @iso8601_enabled = crdb_version >= 2120
     end
 
     teardown do
@@ -94,11 +91,7 @@ module CockroachDB
       assert_equal "P3Y",                i.default_term.iso8601
       assert_equal %w[ P1M P1Y PT1H ],   i.all_terms.map(&:iso8601)
 
-      if @iso8601_enabled
-        assert_equal "P33Y",             i.legacy_term
-      else
-        assert_equal "33 years",         i.legacy_term
-      end
+      assert_equal "P33Y",             i.legacy_term
     end
 
     def test_interval_type_cast_from_invalid_string

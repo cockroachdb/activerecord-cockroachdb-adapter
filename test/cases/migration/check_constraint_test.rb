@@ -37,6 +37,23 @@ if ActiveRecord::Base.connection.supports_check_constraints?
             end
           end
 
+          # CRDB_VALIDATE_BUG
+          # def test_schema_dumping_with_validate_false
+          #   @connection.add_check_constraint :trades, "quantity > 0", name: "quantity_check", validate: false
+
+          #   output = dump_table_schema "trades"
+
+          #   assert_match %r{\s+t.check_constraint "(quantity > 0)", name: "quantity_check", validate: false$}, output
+          # end
+
+          def test_schema_dumping_with_validate_true
+            @connection.add_check_constraint :trades, "quantity > 0", name: "quantity_check", validate: true
+
+            output = dump_table_schema "trades"
+
+            assert_match %r{\s+t.check_constraint "\(quantity > 0\)", name: "quantity_check"$}, output
+          end
+
           # keep
           def test_remove_check_constraint
             @connection.add_check_constraint :trades, "price > 0", name: "price_check"

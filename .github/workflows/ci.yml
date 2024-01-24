@@ -15,7 +15,7 @@ on:
 
 # This allows a subsequently queued workflow run to interrupt previous runs.
 concurrency:
-  group: '${{ github.workflow }} @ ${{ github.ref }}'
+  group: "${{ github.workflow }} @ ${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         crdb: [v23.1.11]
-        ruby: [ruby-head]
+        ruby: [head]
     name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
     steps:
       - name: Set Up Actions
@@ -49,8 +49,8 @@ jobs:
       - name: Set Up Ruby
         uses: ruby/setup-ruby@v1
         with:
-           ruby-version: ${{ matrix.ruby }}
-           bundler-cache: true
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
       - name: Install and Start Cockroachdb
         run: |
           # Download CockroachDB
@@ -95,4 +95,4 @@ jobs:
             SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';
           "
       - name: Test
-        run: bundle exec rake test
+        run: bundle exec rake test TESTOPTS='--profile=3'

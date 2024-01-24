@@ -48,12 +48,13 @@ group :development, :test do
   # a specific rails codebase.
   gem "rails", github: "rails/rails", tag: RailsTag.call
 
-  # Needed before rails update for ruby 3.4
-  gem "mutex_m"
+  # Needed for the test suite
+  gem "msgpack", ">= 1.7.0"
 
   gem "rake"
-  gem "byebug"
+  gem "debug"
   gem "minitest-excludes", "~> 2.0.1"
+  gem "minitest-github_action_reporter", github: "BuonOmo/minitest-github_action_reporter", require: "minitest/github_action_reporter_plugin"
 
   # Gems used by the ActiveRecord test suite
   gem "bcrypt", "~> 3.1.18"

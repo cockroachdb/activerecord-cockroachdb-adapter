@@ -36,8 +36,6 @@ module ActiveRecord
           returns: ["accounts", "articles"]
         ) do
           ActiveRecord::Tasks::DatabaseTasks.structure_dump(config, @filename)
-
-          read = File.read(@filename)
         end
       ensure
         ActiveRecord::Base.connection.execute(<<~SQL)

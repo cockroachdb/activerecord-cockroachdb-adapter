@@ -1,0 +1,1 @@
+exclude :test_transaction_instrumentation_with_restart_parent_transaction_on_rollback, "CRDB doesn't support ROLLBACK AND CHAIN"

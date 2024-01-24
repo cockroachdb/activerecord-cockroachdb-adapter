@@ -50,7 +50,7 @@ module CockroachDB
         Post.aost(time).limit(2).find_each(batch_size: 1).to_a
       }
       queries.each do
-        assert_match /FROM \"posts\" AS OF SYSTEM TIME '#{Regexp.quote time.iso8601}'/, _1
+        assert_match %r(FROM "posts" AS OF SYSTEM TIME '#{Regexp.quote time.iso8601}'), _1
       end
     end
   end

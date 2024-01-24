@@ -17,6 +17,7 @@ module CockroachDB
       Reminder.reset_column_information
       @verbose_was, ActiveRecord::Migration.verbose = ActiveRecord::Migration.verbose, false
       @schema_migration = ActiveRecord::Base.connection.schema_migration
+      @internal_metadata = ActiveRecord::Base.connection.internal_metadata
       ActiveRecord::Base.connection.schema_cache.clear!
     end
 
@@ -24,8 +25,8 @@ module CockroachDB
       ActiveRecord::Base.table_name_prefix = ""
       ActiveRecord::Base.table_name_suffix = ""
 
-      ActiveRecord::SchemaMigration.create_table
-      ActiveRecord::SchemaMigration.delete_all
+      @schema_migration.create_table
+      @schema_migration.delete_all_versions
 
       %w(things awesome_things prefix_things_suffix p_awesome_things_s).each do |table|
         Thing.connection.drop_table(table) rescue nil
@@ -72,12 +73,12 @@ module CockroachDB
         end
       }.new
 
-      ActiveRecord::Migrator.new(:up, [migration_a], @schema_migration, 100).migrate
+      ActiveRecord::Migrator.new(:up, [migration_a], @schema_migration, @internal_metadata, 100).migrate
       assert_column Person, :last_name, "migration_a should have added the last_name column on people"
 
-      ActiveRecord::Migrator.new(:up, [migration_b], @schema_migration, 101).migrate
+      ActiveRecord::Migrator.new(:up, [migration_b], @schema_migration, @internal_metadata, 101).migrate
       assert_no_column Person, :last_name, "migration_b should have dropped the last_name column on people"
-      migrator = ActiveRecord::Migrator.new(:up, [migration_c], @schema_migration, 102)
+      migrator = ActiveRecord::Migrator.new(:up, [migration_c], @schema_migration, @internal_metadata, 102)
 
       error = assert_raises do
         migrator.migrate
@@ -91,6 +92,7 @@ module CockroachDB
 
   class BulkAlterTableMigrationsTest < ActiveRecord::TestCase
     def setup
+      @original_test = ::BulkAlterTableMigrationsTest.new(name)
       @connection = Person.connection
       @connection.create_table(:delete_me, force: true) { |t| }
       Person.reset_column_information
@@ -101,76 +103,38 @@ module CockroachDB
       Person.connection.drop_table(:delete_me) rescue nil
     end
 
-    def test_adding_multiple_columns
-      classname = ActiveRecord::Base.connection.class.name[/[^:]*$/]
-      expected_query_count = {
-        "CockroachDBAdapter" => 8, # 5 new explicit columns, 2 for created_at/updated_at, 1 comment
-      }.fetch(classname) {
-          raise "need an expected query count for #{classname}"
-        }
-
-        assert_queries(expected_query_count) do
-          with_bulk_change_table do |t|
-            t.column :name, :string
-            t.string :qualification, :experience
-            t.integer :age, default: 0
-            t.date :birthdate, comment: "This is a comment"
-            t.timestamps null: true
-          end
+    %i(
+      test_adding_indexes
+      test_removing_index
+      test_adding_multiple_columns
+      test_changing_index
+    ).each do |method_name|
+      file, line = ::BulkAlterTableMigrationsTest.instance_method(method_name).source_location
+      iter = File.foreach(file)
+      (line - 1).times { iter.next }
+      indent = iter.next[/\A\s*/]
+      content = +""
+      content << iter.next until iter.peek == indent + "end\n"
+      content['"PostgreSQLAdapter" =>'] = '"CockroachDBAdapter" =>'
+      eval(<<-RUBY, binding, __FILE__, __LINE__ + 1)
+        def #{method_name}
+          #{content}
         end
-
-        assert_equal 8, columns.size
-        [:name, :qualification, :experience].each { |s| assert_equal :string, column(s).type }
-        assert_equal "0", column(:age).default
-        assert_equal "This is a comment", column(:birthdate).comment
-    end
-
-    def test_adding_indexes
-      with_bulk_change_table do |t|
-        t.string :username
-        t.string :name
-        t.integer :age
-      end
-
-      classname = ActiveRecord::Base.connection.class.name[/[^:]*$/]
-      expected_query_count = {
-        "CockroachDBAdapter" => 2,
-      }.fetch(classname) {
-          raise "need an expected query count for #{classname}"
-        }
-
-        assert_queries(expected_query_count) do
-          with_bulk_change_table do |t|
-            t.index :username, unique: true, name: :awesome_username_index
-            t.index [:name, :age]
-          end
-        end
+      RUBY
     end
 
     private
-      def with_bulk_change_table
-        # Reset columns/indexes cache as we're changing the table
-        @columns = @indexes = nil
 
-        Person.connection.change_table(:delete_me, bulk: true) do |t|
-          yield t
-        end
+    %i[
+      with_bulk_change_table
+      column
+      columns
+      index
+      indexes
+    ].each do |method|
+      define_method(method) do |*args, &block|
+        @original_test.send(method, *args, &block)
       end
-
-      def column(name)
-        columns.detect { |c| c.name == name.to_s }
-      end
-
-      def columns
-        @columns ||= Person.connection.columns("delete_me")
-      end
-
-      def index(name)
-        indexes.detect { |i| i.name == name.to_s }
-      end
-
-      def indexes
-        @indexes ||= Person.connection.indexes("delete_me")
-      end
+    end
   end
 end
