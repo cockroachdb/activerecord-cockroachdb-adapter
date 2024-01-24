@@ -25,11 +25,11 @@ module CockroachDB
       end
 
       def test_database_exists_returns_false_when_the_database_does_not_exist
-        db_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
-        config = db_config.configuration_hash.dup
-        config[:database] = "non_extant_database"
-        assert_not ActiveRecord::ConnectionAdapters::CockroachDBAdapter.database_exists?(config),
-                   "expected database #{config[:database]} to not exist"
+        [ { database: "non_extant_database", adapter: "postgresql" },
+          { database: "non_extant_database", adapter: "cockroachdb" } ].each do |config|
+          assert_not ActiveRecord::ConnectionAdapters::CockroachDBAdapter.database_exists?(config),
+                    "expected database #{config[:database]} to not exist"
+        end
       end
 
       def test_database_exists_returns_true_when_the_database_exists
@@ -63,23 +63,34 @@ module CockroachDB
         assert conn_config[:use_follower_reads_for_type_introspection]
       end
 
-      def test_only_reload_type_map_once_for_every_unrecognized_type
-        reset_connection
-        connection = ActiveRecord::Base.connection
-
-        silence_stream($stdout) do
-          assert_queries 2, ignore_none: true do
-            connection.select_all "select 'pg_catalog.pg_class'::regclass"
-          end
-          assert_queries 1, ignore_none: true do
-            connection.select_all "select 'pg_catalog.pg_class'::regclass"
-          end
-          assert_queries 2, ignore_none: true do
-            connection.select_all "SELECT NULL::anyarray"
-          end
+      # OVERRIDE: CockroachDB adds parentheses around the WHERE clause's content.
+      def test_partial_index_on_column_named_like_keyword
+        with_example_table('id serial primary key, number integer, "primary" boolean') do
+          @connection.add_index "ex", "id", name: "partial", where: "primary" # "primary" is a keyword
+          index = @connection.indexes("ex").find { |idx| idx.name == "partial" }
+          assert_equal '("primary")', index.where
         end
-      ensure
-        reset_connection
+      end
+
+      # OVERRIDE: Different behaviour between PostgreSQL and CockroachDB.
+      def test_invalid_index
+        with_example_table do
+          @connection.exec_query("INSERT INTO ex (number) VALUES (1), (1)")
+          error = assert_raises(ActiveRecord::RecordNotUnique) do
+            @connection.add_index(:ex, :number, unique: true, algorithm: :concurrently, name: :invalid_index)
+          end
+          assert_match(/duplicate key value violates unique constraint/, error.message)
+          assert_equal @connection.pool, error.connection_pool
+
+          # In CRDB this tests won't create the index at all.
+          assert_not @connection.index_exists?(:ex, :number, name: :invalid_index)
+        end
+      end
+
+      private
+
+      def with_example_table(definition = "id serial primary key, number integer, data character varying(255)", &block)
+        super(@connection, "ex", definition, &block)
       end
     end
   end

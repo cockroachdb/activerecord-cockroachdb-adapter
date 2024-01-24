@@ -310,6 +310,8 @@ module CockroachDB
       Account.connection.exec_query("
         CREATE TABLE accounts (
           id BIGINT PRIMARY KEY DEFAULT nextval('accounts_id_seq'),
+          created_at timestamp NULL,
+          updated_at timestamp NULL,
           firm_id bigint,
           firm_name character varying,
           credit_limit integer,
@@ -360,6 +362,7 @@ module CockroachDB
       Account.connection.drop_table :accounts, if_exists: true
       Account.connection.exec_query("DROP SEQUENCE IF EXISTS accounts_id_seq")
       Account.connection.create_table :accounts, force: true do |t|
+        t.timestamps null: true
         t.references :firm, index: false
         t.string  :firm_name
         t.integer :credit_limit
@@ -370,7 +373,7 @@ module CockroachDB
       Company.connection.drop_table :companies, if_exists: true
       Company.connection.exec_query("DROP SEQUENCE IF EXISTS companies_nonstd_seq")
       Company.connection.create_table :companies, force: true do |t|
-        t.string  :type
+        t.string :type
         t.references :firm, index: false
         t.string  :firm_name
         t.string  :name
@@ -383,15 +386,17 @@ module CockroachDB
         t.index [:name, :description], length: 10
         t.index [:firm_id, :type, :rating], name: "company_index", length: { type: 10 }, order: { rating: :desc }
         t.index [:firm_id, :type], name: "company_partial_index", where: "(rating > 10)"
+        t.index [:firm_id], name: "company_nulls_not_distinct", nulls_not_distinct: true
         t.index :name, name: "company_name_index", using: :btree
-        t.index "(CASE WHEN rating > 0 THEN lower(name) END)", name: "company_expression_index" if Company.connection.supports_expression_index?
+        t.index "(CASE WHEN rating > 0 THEN lower(name) END) DESC", name: "company_expression_index" if Company.connection.supports_expression_index?
+        t.index [:firm_id, :type], name: "company_include_index", include: [:name, :account_id]
       end
 
       Course.connection.drop_table :courses, if_exists: true
       Course.connection.exec_query("DROP SEQUENCE IF EXISTS courses_id_seq")
       Course.connection.create_table :courses, force: true do |t|
         t.column :name, :string, null: false
-        t.column :college_id, :integer
+        t.column :college_id, :integer, index: true
       end
 
       recreate_parrots

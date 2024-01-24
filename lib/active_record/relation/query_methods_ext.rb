@@ -123,5 +123,5 @@ module ActiveRecord
   # as ancestor. That is how active_record is doing is as well.
   #
   # @see https://github.com/rails/rails/blob/914130a9f/activerecord/lib/active_record/querying.rb#L23
-  Querying.delegate(:force_index, :index_hint, :aost, to: :all)
+  Querying.delegate(:force_index, :index_hint, :aost, :show_create, to: :all)
 end

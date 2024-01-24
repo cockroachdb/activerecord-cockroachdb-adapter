@@ -15,7 +15,7 @@ module ActiveRecord
         # referential integrity (e.g: adding a foreign key with invalid data
         # raises).
         # So foreign keys should always be valid for that matter.
-        def all_foreign_keys_valid?
+        def check_all_foreign_keys_valid!
           true
         end
 
@@ -39,16 +39,12 @@ module ActiveRecord
 
           begin
             foreign_keys.each do |foreign_key|
-              begin
-                add_foreign_key(foreign_key.from_table, foreign_key.to_table, **foreign_key.options)
-              rescue ActiveRecord::StatementInvalid => error
-                if error.cause.class == PG::DuplicateObject
-                  # This error is safe to ignore because the yielded caller
-                  # already re-added the foreign key constraint.
-                else
-                  raise error
-                end
-              end
+              # Avoid having PG:DuplicateObject error if a test is ran in transaction.
+              # TODO: verify that there is no cache issue related to running this (e.g: fk
+              #   still in cache but not in db)
+              next if foreign_key_exists?(foreign_key.from_table, name: foreign_key.options[:name])
+
+              add_foreign_key(foreign_key.from_table, foreign_key.to_table, **foreign_key.options)
             end
           ensure
             ActiveRecord::Base.table_name_prefix = old_prefix

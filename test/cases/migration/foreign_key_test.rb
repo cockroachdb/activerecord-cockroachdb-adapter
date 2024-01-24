@@ -232,13 +232,6 @@ module ActiveRecord
           assert_match %r{\s+add_foreign_key "astronauts", "rockets"$}, output
         end
 
-        def test_schema_dumping_on_delete_and_on_update_options
-          @connection.add_foreign_key :astronauts, :rockets, column: "rocket_id", on_delete: :nullify, on_update: :cascade
-
-          output = dump_table_schema "astronauts"
-          assert_match %r{\s+add_foreign_key "astronauts",.+on_update: :cascade,.+on_delete: :nullify$}, output
-        end
-
         class CreateCitiesAndHousesMigration < ActiveRecord::Migration::Current
           def change
             create_table("cities") { |t| }
@@ -363,6 +356,36 @@ module ActiveRecord
           assert_nothing_raised do
             @connection.add_foreign_key :astronauts, :rockets, if_not_exists: true
           end
+        end
+      end
+
+      class CompositeForeignKeyTest < ActiveRecord::TestCase
+        include SchemaDumpingHelper
+
+        setup do
+          @connection = ActiveRecord::Base.connection
+          @connection.create_table :rockets, primary_key: [:tenant_id, :id], force: true do |t|
+            t.integer :tenant_id
+            t.integer :id
+          end
+          @connection.create_table :astronauts, force: true do |t|
+            t.integer :rocket_id
+            t.integer :rocket_tenant_id
+          end
+        end
+
+        teardown do
+          @connection.drop_table :astronauts, if_exists: true rescue nil
+          @connection.drop_table :rockets, if_exists: true rescue nil
+        end
+
+        # OVERRIDE: CockroachDB does not quote the table name.
+        def test_add_composite_foreign_key_raises_without_options
+          error = assert_raises(ActiveRecord::StatementInvalid) do
+            @connection.add_foreign_key :astronauts, :rockets
+          end
+
+          assert_match(/there is no unique constraint matching given keys for referenced table rockets/, error.message)
         end
       end
     end

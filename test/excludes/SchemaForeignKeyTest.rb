@@ -1,0 +1,1 @@
+exclude :test_dump_foreign_key_targeting_different_schema, CRDB_VALIDATE_BUG

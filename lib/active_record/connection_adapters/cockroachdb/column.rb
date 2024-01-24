@@ -1,11 +1,11 @@
 module ActiveRecord
   module ConnectionAdapters
     module CockroachDB
-      class Column < PostgreSQLColumn
+      class Column < PostgreSQL::Column
         # most functions taken from activerecord-postgis-adapter spatial_column
         # https://github.com/rgeo/activerecord-postgis-adapter/blob/master/lib/active_record/connection_adapters/postgis/spatial_column.rb
         def initialize(name, default, sql_type_metadata = nil, null = true,
-                       default_function = nil, collation: nil, comment: nil,
+                       default_function = nil, collation: nil, comment: nil, identity: nil,
                        serial: nil, spatial: nil, generated: nil, hidden: nil)
           @sql_type_metadata = sql_type_metadata
           @geographic = !!(sql_type_metadata.sql_type =~ /geography\(/i)
@@ -30,7 +30,7 @@ module ActiveRecord
             build_from_sql_type(sql_type_metadata.sql_type)
           end
           super(name, default, sql_type_metadata, null, default_function,
-            collation: collation, comment: comment, serial: serial, generated: generated)
+            collation: collation, comment: comment, serial: serial, generated: generated, identity: identity)
           if spatial? && @srid
             @limit = { srid: @srid, type: to_type_name(geometric_type) }
             @limit[:has_z] = true if @has_z
@@ -51,10 +51,6 @@ module ActiveRecord
 
         def limit
           spatial? ? @limit : super
-        end
-
-        def virtual?
-          @generated.present?
         end
 
         def hidden?

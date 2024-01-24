@@ -161,7 +161,7 @@ module ActiveRecord
       end
 
       def supports_bulk_alter?
-        false
+        true
       end
 
       def supports_json?
@@ -182,7 +182,15 @@ module ActiveRecord
       end
 
       def supports_partial_index?
-        @crdb_version >= 2020
+        true
+      end
+
+      def supports_index_include?
+        false
+      end
+
+      def supports_exclusion_constraints?
+        false
       end
 
       def supports_expression_index?
@@ -197,7 +205,7 @@ module ActiveRecord
       end
 
       def supports_comments?
-        @crdb_version >= 2010
+        true
       end
 
       def supports_comments_in_create?
@@ -209,11 +217,11 @@ module ActiveRecord
       end
 
       def supports_virtual_columns?
-        @crdb_version >= 2110
+        true
       end
 
       def supports_string_to_array_coercion?
-        @crdb_version >= 2020
+        true
       end
 
       def supports_partitioned_indexes?
@@ -239,62 +247,30 @@ module ActiveRecord
       alias index_name_length max_identifier_length
       alias table_alias_length max_identifier_length
 
-      def initialize(connection, logger, conn_params, config)
-        super(connection, logger, conn_params, config)
+      # NOTE: This commented bit of code allows to have access to crdb version,
+      # which can be useful for feature detection. However, we currently don't
+      # need, hence we avoid the extra queries.
+      #
+      #   def initialize(connection, logger, conn_params, config)
+      #     super(connection, logger, conn_params, config)
 
-        # crdb_version is the version of the binary running on the node. We
-        # really want to use `SHOW CLUSTER SETTING version` to get the cluster
-        # version, but that is only available to admins. Instead, we can use
-        # crdb_internal.is_at_least_version, but that's only available in 22.1.
-        crdb_version_string = query_value("SHOW crdb_version")
-        if crdb_version_string.include? "v22.1"
-          version_num = query_value(<<~SQL, "VERSION")
-            SELECT
-              CASE
-              WHEN crdb_internal.is_at_least_version('22.2') THEN 2220
-              WHEN crdb_internal.is_at_least_version('22.1') THEN 2210
-              ELSE 2120
-              END;
-          SQL
-        else
-          # This branch can be removed once the dialect stops supporting v21.2
-          # and earlier.
-          if crdb_version_string.include? "v1."
-            version_num = 1
-          elsif crdb_version_string.include? "v2."
-            version_num 2
-          elsif crdb_version_string.include? "v19.1."
-            version_num = 1910
-          elsif crdb_version_string.include? "v19.2."
-            version_num = 1920
-          elsif crdb_version_string.include? "v20.1."
-            version_num = 2010
-          elsif crdb_version_string.include? "v20.2."
-            version_num = 2020
-          elsif crdb_version_string.include? "v21.1."
-            version_num = 2110
-          else
-            version_num = 2120
-          end
-        end
-        @crdb_version = version_num.to_i
-
-        # NOTE: this is normally in configure_connection, but that is run
-        # before crdb_version is determined. Once all supported versions
-        # of CockroachDB support SET intervalstyle it can safely be moved
-        # back.
-        # Set interval output format to ISO 8601 for ease of parsing by ActiveSupport::Duration.parse
-        if @crdb_version >= 2120
-          begin
-            execute("SET intervalstyle_enabled = true", "SCHEMA")
-            execute("SET intervalstyle = iso_8601", "SCHEMA")
-          rescue
-            # Ignore any error. This can happen with a cluster that has
-            # not yet finalized the v21.2 upgrade. v21.2 does not have
-            # a way to tell if the upgrade was finalized (see comment above).
-          end
-        end
-      end
+      #     # crdb_version is the version of the binary running on the node. We
+      #     # really want to use `SHOW CLUSTER SETTING version` to get the cluster
+      #     # version, but that is only available to admins. Instead, we can use
+      #     # crdb_internal.is_at_least_version, but that's only available in 22.1.
+      #     crdb_version_string = query_value("SHOW crdb_version")
+      #     if crdb_version_string.include? "v22.1"
+      #       version_num = query_value(<<~SQL, "VERSION")
+      #         SELECT
+      #           CASE
+      #           WHEN crdb_internal.is_at_least_version('22.2') THEN 2220
+      #           WHEN crdb_internal.is_at_least_version('22.1') THEN 2210
+      #           ELSE 2120
+      #           END;
+      #       SQL
+      #     end
+      #     @crdb_version = version_num.to_i
+      #   end
 
       def self.database_exists?(config)
         !!ActiveRecord::Base.cockroachdb_connection(config)
@@ -307,12 +283,12 @@ module ActiveRecord
       # (DO $$) that CockroachDB does not support.
       #
       # Given a name and an array of values, creates an enum type.
-      def create_enum(name, values)
-        sql_values = values.map { |s| "'#{s}'" }.join(", ")
+      def create_enum(name, values, **options)
+        sql_values = values.map { |s| quote(s) }.join(", ")
         query = <<~SQL
-          CREATE TYPE IF NOT EXISTS \"#{name}\" AS ENUM (#{sql_values});
+          CREATE TYPE IF NOT EXISTS #{quote_table_name(name)} AS ENUM (#{sql_values});
         SQL
-        exec_query(query)
+        internal_exec_query(query).tap { reload_type_map }
       end
 
       class << self
@@ -369,56 +345,6 @@ module ActiveRecord
       end
 
       private
-
-        # Configures the encoding, verbosity, schema search path, and time zone of the connection.
-        # This is called by #connect and should not be called manually.
-        #
-        # NOTE(joey): This was cradled from postgresql_adapter.rb. This
-        # was due to needing to override configuration statements.
-        def configure_connection
-          if @config[:encoding]
-            @connection.set_client_encoding(@config[:encoding])
-          end
-          self.client_min_messages = @config[:min_messages] || "warning"
-          self.schema_search_path = @config[:schema_search_path] || @config[:schema_order]
-
-          # Use standard-conforming strings so we don't have to do the E'...' dance.
-          set_standard_conforming_strings
-
-          variables = @config.fetch(:variables, {}).stringify_keys
-
-          # If using Active Record's time zone support configure the connection to return
-          # TIMESTAMP WITH ZONE types in UTC.
-          unless variables["timezone"]
-            if ActiveRecord.default_timezone == :utc
-              variables["timezone"] = "UTC"
-            elsif @local_tz
-              variables["timezone"] = @local_tz
-            end
-          end
-
-          # NOTE(joey): This is a workaround as CockroachDB 1.1.x
-          # supports SET TIME ZONE <...> and SET "time zone" = <...> but
-          # not SET timezone = <...>.
-          if variables.key?("timezone")
-            tz = variables.delete("timezone")
-            execute("SET TIME ZONE #{quote(tz)}", "SCHEMA")
-          end
-
-          # SET statements from :variables config hash
-          # https://www.postgresql.org/docs/current/static/sql-set.html
-          variables.map do |k, v|
-            if v == ":default" || v == :default
-              # Sets the value to the global or compile default
-
-              # NOTE(joey): I am not sure if simply commenting this out
-              # is technically correct.
-              # execute("SET #{k} = DEFAULT", "SCHEMA")
-            elsif !v.nil?
-              execute("SET SESSION #{k} = #{quote(v)}", "SCHEMA")
-            end
-          end
-        end
 
         # Override extract_value_from_default because the upstream definition
         # doesn't handle the variations in CockroachDB's behavior.
@@ -503,7 +429,8 @@ module ActiveRecord
               SELECT a.attname, format_type(a.atttypid, a.atttypmod),
                      pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod,
                      c.collname, NULL AS comment,
-                     #{supports_virtual_columns? ? 'attgenerated' : quote('')} as attgenerated,
+                     attidentity,
+                     attgenerated,
                      NULL as is_hidden
                 FROM pg_attribute a
                 LEFT JOIN pg_attrdef d ON a.attrelid = d.adrelid AND a.attnum = d.adnum
@@ -520,18 +447,29 @@ module ActiveRecord
           # have [] appended to the end of it.
           re = /\A(?:geometry|geography|interval|numeric)/
 
+          # 0: attname
+          # 1: type
+          # 2: default
+          # 3: attnotnull
+          # 4: atttypid
+          # 5: atttypmod
+          # 6: collname
+          # 7: comment
+          # 8: attidentity
+          # 9: attgenerated
+          # 10: is_hidden
           fields.map do |field|
             dtype = field[1]
             field[1] = crdb_fields[field[0]][2].downcase if re.match(dtype)
             field[7] = crdb_fields[field[0]][1]&.gsub!(/^\'|\'?$/, '')
-            field[9] = true if crdb_fields[field[0]][3]
+            field[10] = true if crdb_fields[field[0]][3]
             field
           end
           fields.delete_if do |field|
             # Don't include rowid column if it is hidden and the primary key
             # is not defined (meaning CRDB implicitly created it).
             if field[0] == CockroachDBAdapter::DEFAULT_PRIMARY_KEY
-              field[9] && !primary_key(table_name)
+              field[10] && !primary_key(table_name)
             else
               false # Keep this entry.
             end
@@ -592,21 +530,10 @@ module ActiveRecord
         def load_additional_types(oids = nil)
           if @config[:use_follower_reads_for_type_introspection]
             initializer = OID::TypeMapInitializer.new(type_map)
-
-            query = <<~SQL
-              SELECT t.oid, t.typname, t.typelem, t.typdelim, t.typinput, r.rngsubtype, t.typtype, t.typbasetype
-              FROM pg_type as t
-              LEFT JOIN pg_range as r ON oid = rngtypid AS OF SYSTEM TIME '-10s'
-            SQL
-
-            if oids
-              query += "WHERE t.oid IN (%s)" % oids.join(", ")
-            else
-              query += initializer.query_conditions_for_initial_load
-            end
-
-            execute_and_clear(query, "SCHEMA", []) do |records|
-              initializer.run(records)
+            load_types_queries_with_aost(initializer, oids) do |query|
+              execute_and_clear(query, "SCHEMA", [], allow_retry: true, materialize_transactions: false) do |records|
+                initializer.run(records)
+              end
             end
           else
             super
@@ -615,6 +542,21 @@ module ActiveRecord
           raise e unless e.cause.is_a? PG::InvalidCatalogName
           # use original if database is younger than 10s
           super
+        end
+
+        def load_types_queries_with_aost(initializer, oids)
+          query = <<~SQL
+            SELECT t.oid, t.typname, t.typelem, t.typdelim, t.typinput, r.rngsubtype, t.typtype, t.typbasetype
+            FROM pg_type as t
+            LEFT JOIN pg_range as r ON oid = rngtypid AS OF SYSTEM TIME '-10s'
+          SQL
+          if oids
+            yield query + "WHERE t.oid IN (%s)" % oids.join(", ")
+          else
+            yield query + initializer.query_conditions_for_known_type_names
+            yield query + initializer.query_conditions_for_known_type_types
+            yield query + initializer.query_conditions_for_array_types
+          end
         end
 
         # override
@@ -647,15 +589,13 @@ module ActiveRecord
               WHERE t.typname IN (%s)
             SQL
 
-            coders = execute_and_clear(query, "SCHEMA", []) do |result|
-              result
-                .map { |row| construct_coder(row, coders_by_name[row["typname"]]) }
-                .compact
+            coders = execute_and_clear(query, "SCHEMA", [], allow_retry: true, materialize_transactions: false) do |result|
+              result.filter_map { |row| construct_coder(row, coders_by_name[row["typname"]]) }
             end
 
             map = PG::TypeMapByOid.new
             coders.each { |coder| map.add_coder(coder) }
-            @connection.type_map_for_results = map
+            @raw_connection.type_map_for_results = map
 
             @type_map_for_results = PG::TypeMapByOid.new
             @type_map_for_results.default_type_map = map

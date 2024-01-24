@@ -46,7 +46,8 @@ module ActiveRecord
               THEN ''
               ELSE n2.nspname || '.'
             END || t2.relname AS to_table,
-            a1.attname AS column, a2.attname AS primary_key, c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid, c.condeferrable AS deferrable, c.condeferred AS deferred
+            a1.attname AS column, a2.attname AS primary_key, c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid, c.condeferrable AS deferrable, c.condeferred AS deferred,
+            c.conkey, c.confkey, c.conrelid, c.confrelid
             FROM pg_constraint c
             JOIN pg_class t1 ON c.conrelid = t1.oid
             JOIN pg_class t2 ON c.confrelid = t2.oid
@@ -61,15 +62,26 @@ module ActiveRecord
           SQL
 
           fk_info.map do |row|
-            options = {
-              column: PostgreSQL::Utils.unquote_identifier(row["column"]),
-              name: row["name"],
-              primary_key: row["primary_key"]
-            }
+            to_table = PostgreSQL::Utils.unquote_identifier(row["to_table"])
+            conkey = row["conkey"].scan(/\d+/).map(&:to_i)
+            confkey = row["confkey"].scan(/\d+/).map(&:to_i)
 
+            if conkey.size > 1
+              column = column_names_from_column_numbers(row["conrelid"], conkey)
+              primary_key = column_names_from_column_numbers(row["confrelid"], confkey)
+            else
+              column = PostgreSQL::Utils.unquote_identifier(row["column"])
+              primary_key = row["primary_key"]
+            end
+
+            options = {
+              column: column,
+              name: row["name"],
+              primary_key: primary_key
+            }
             options[:on_delete] = extract_foreign_key_action(row["on_delete"])
             options[:on_update] = extract_foreign_key_action(row["on_update"])
-            options[:deferrable] = extract_foreign_key_deferrable(row["deferrable"], row["deferred"])
+            options[:deferrable] = extract_constraint_deferrable(row["deferrable"], row["deferred"])
 
             options[:validate] = row["valid"]
             to_table = PostgreSQL::Utils.unquote_identifier(row["to_table"])
@@ -87,16 +99,20 @@ module ActiveRecord
 
         # override
         # https://github.com/rails/rails/blob/6-0-stable/activerecord/lib/active_record/connection_adapters/postgresql/schema_statements.rb#L624
-        def new_column_from_field(table_name, field)
-          column_name, type, default, notnull, oid, fmod, collation, comment, generated, hidden = field
+        def new_column_from_field(table_name, field, _definition)
+          column_name, type, default, notnull, oid, fmod, collation, comment, identity, attgenerated, hidden = field
           type_metadata = fetch_type_metadata(column_name, type, oid.to_i, fmod.to_i)
           default_value = extract_value_from_default(default)
-          default_function = extract_default_function(default_value, default)
 
-          serial =
-            if (match = default_function&.match(/\Anextval\('"?(?<sequence_name>.+_(?<suffix>seq\d*))"?'::regclass\)\z/))
-              sequence_name_from_parts(table_name, column_name, match[:suffix]) == match[:sequence_name]
-            end
+          if attgenerated.present?
+            default_function = default
+          else
+            default_function = extract_default_function(default_value, default)
+          end
+
+          if match = default_function&.match(/\Anextval\('"?(?<sequence_name>.+_(?<suffix>seq\d*))"?'::regclass\)\z/)
+            serial = sequence_name_from_parts(table_name, column_name, match[:suffix]) == match[:sequence_name]
+          end
 
           # {:dimension=>2, :has_m=>false, :has_z=>false, :name=>"latlon", :srid=>0, :type=>"GEOMETRY"}
           spatial = spatial_column_info(table_name).get(column_name, type_metadata.sql_type)
@@ -110,8 +126,9 @@ module ActiveRecord
             collation: collation,
             comment: comment.presence,
             serial: serial,
+            identity: identity.presence,
             spatial: spatial,
-            generated: generated,
+            generated: attgenerated,
             hidden: hidden
           )
         end
