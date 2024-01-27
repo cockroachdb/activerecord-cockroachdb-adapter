@@ -55,6 +55,63 @@ module ActiveRecord
           end
         end
 
+        # OVERRIDE: Added `unique_rowid` to the last line of the second query.
+        #   This is a CockroachDB-specific function used for primary keys.
+        #
+        # Returns a table's primary key and belonging sequence.
+        def pk_and_sequence_for(table) # :nodoc:
+          # First try looking for a sequence with a dependency on the
+          # given table's primary key.
+          result = query(<<~SQL, "SCHEMA")[0]
+            SELECT attr.attname, nsp.nspname, seq.relname
+            FROM pg_class      seq,
+                 pg_attribute  attr,
+                 pg_depend     dep,
+                 pg_constraint cons,
+                 pg_namespace  nsp
+            WHERE seq.oid           = dep.objid
+              AND seq.relkind       = 'S'
+              AND attr.attrelid     = dep.refobjid
+              AND attr.attnum       = dep.refobjsubid
+              AND attr.attrelid     = cons.conrelid
+              AND attr.attnum       = cons.conkey[1]
+              AND seq.relnamespace  = nsp.oid
+              AND cons.contype      = 'p'
+              AND dep.classid       = 'pg_class'::regclass
+              AND dep.refobjid      = #{quote(quote_table_name(table))}::regclass
+          SQL
+
+          if result.nil? || result.empty?
+            result = query(<<~SQL, "SCHEMA")[0]
+              SELECT attr.attname, nsp.nspname,
+                CASE
+                  WHEN pg_get_expr(def.adbin, def.adrelid) !~* 'nextval' THEN NULL
+                  WHEN split_part(pg_get_expr(def.adbin, def.adrelid), '''', 2) ~ '.' THEN
+                    substr(split_part(pg_get_expr(def.adbin, def.adrelid), '''', 2),
+                           strpos(split_part(pg_get_expr(def.adbin, def.adrelid), '''', 2), '.')+1)
+                  ELSE split_part(pg_get_expr(def.adbin, def.adrelid), '''', 2)
+                END
+              FROM pg_class       t
+              JOIN pg_attribute   attr ON (t.oid = attrelid)
+              JOIN pg_attrdef     def  ON (adrelid = attrelid AND adnum = attnum)
+              JOIN pg_constraint  cons ON (conrelid = adrelid AND adnum = conkey[1])
+              JOIN pg_namespace   nsp  ON (t.relnamespace = nsp.oid)
+              WHERE t.oid = #{quote(quote_table_name(table))}::regclass
+                AND cons.contype = 'p'
+                AND pg_get_expr(def.adbin, def.adrelid) ~* 'nextval|uuid_generate|gen_random_uuid|unique_rowid'
+            SQL
+          end
+
+          pk = result.shift
+          if result.last
+            [pk, PostgreSQL::Name.new(*result)]
+          else
+            [pk, nil]
+          end
+        rescue
+          nil
+        end
+
         # override
         # Modified version of the postgresql foreign_keys method.
         # Replaces t2.oid::regclass::text with t2.relname since this is
