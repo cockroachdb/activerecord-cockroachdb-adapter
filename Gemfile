@@ -56,6 +56,9 @@ group :development, :test do
   gem "minitest-excludes", "~> 2.0.1"
   gem "minitest-github_action_reporter", github: "BuonOmo/minitest-github_action_reporter", require: "minitest/github_action_reporter_plugin"
 
+  # Gems used for tests meta-programming.
+  gem "parser"
+
   # Gems used by the ActiveRecord test suite
   gem "bcrypt", "~> 3.1.18"
   gem "mocha", "~> 1.14.0"

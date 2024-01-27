@@ -17,6 +17,8 @@ exclude :test_invalid_index, "The error message differs from PostgreSQL."
 exclude :test_partial_index_on_column_named_like_keyword, "CockroachDB adds parentheses around the WHERE definition."
 exclude :test_only_check_for_insensitive_comparison_capability_once, "the DROP DOMAIN syntax is not supported by CRDB"
 
+exclude :test_pk_and_sequence_for, "The test needs a little rework since the sequence is empty in CRDB"
+exclude :test_pk_and_sequence_for_with_non_standard_primary_key, "The test needs a little rework since the sequence is empty in CRDB"
 
 plpgsql_needed = "Will be testable with CRDB 23.2, introducing PL-PGSQL"
 exclude :test_ignores_warnings_when_behaviour_ignore, plpgsql_needed
