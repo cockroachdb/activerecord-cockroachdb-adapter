@@ -43,7 +43,7 @@ jobs:
     name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
     steps:
       - name: Set Up Actions
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install GEOS
         run: sudo apt-get install libgeos-dev
       - name: Set Up Ruby
