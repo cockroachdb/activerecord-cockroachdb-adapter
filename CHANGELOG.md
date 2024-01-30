@@ -5,6 +5,10 @@
 - Add support for [AOST](cockroachlabs.com/docs/stable/as-of-system-time) queries ([#284](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/284))
 - Dump schema name in foreign keys ([#289](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/289))
 
+## 7.1.0 - 2024-01-30
+
+- Add support for Rails 7.1 ([#300](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/300)).
+
 ## 7.0.3 - 2023-08-23
 
 - Fix Multiple Database connections ([#283](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/)).
