@@ -26,6 +26,7 @@ module ActiveRecord
             old_search_path = conn.schema_search_path
             conn.schema_search_path = search_path
             File.open(filename, "w") do |file|
+              # NOTE: There is no issue with the crdb_internal schema, it is ignored by SHOW CREATE.
               %w(SCHEMAS TYPES).each do |object_kind|
                 ActiveRecord::Base.connection.execute("SHOW CREATE ALL #{object_kind}").each_row { file.puts _1 }
               end
@@ -44,7 +45,7 @@ module ActiveRecord
 
                 file.puts sql
               end
-              file.puts "SET seach_path TO #{conn.schema_search_path};\n\n"
+              file.puts "SET search_path TO #{conn.schema_search_path};\n\n"
             end
           ensure
             conn.schema_search_path = old_search_path

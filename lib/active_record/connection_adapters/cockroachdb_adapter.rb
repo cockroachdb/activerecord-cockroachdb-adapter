@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rgeo/active_record"
 
 require_relative "../../arel/nodes/join_source_ext"
@@ -101,7 +103,7 @@ module ActiveRecord
     ConnectionPool.prepend(CockroachDBConnectionPool)
 
     class CockroachDBAdapter < PostgreSQLAdapter
-      ADAPTER_NAME = "CockroachDB".freeze
+      ADAPTER_NAME = "CockroachDB"
       DEFAULT_PRIMARY_KEY = "rowid"
 
       SPATIAL_COLUMN_OPTIONS =

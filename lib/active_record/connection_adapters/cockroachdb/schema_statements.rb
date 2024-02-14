@@ -4,6 +4,13 @@ module ActiveRecord
       module SchemaStatements
         include ActiveRecord::ConnectionAdapters::PostgreSQL::SchemaStatements
 
+        # OVERRIDE: We do not want to see the crdb_internal schema in the names.
+        #
+        # Returns an array of schema names.
+        def schema_names
+          super - ["crdb_internal"]
+        end
+
         def add_index(table_name, column_name, **options)
           super
         rescue ActiveRecord::StatementInvalid => error

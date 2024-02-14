@@ -4,6 +4,10 @@ require 'cases/helper_cockroachdb'
 require 'models/building'
 
 class SchemaStatementsTest < ActiveRecord::PostgreSQLTestCase
+  def test_no_crdb_internal_in_schema_names
+    assert_not_includes Building.connection.schema_names, "crdb_internal"
+  end
+
   def test_initialize_type_map
     initialized_types = Building.connection.send(:type_map).keys
 

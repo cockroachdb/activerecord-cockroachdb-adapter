@@ -3,6 +3,7 @@
 ## Ongoing
 
 - Support arbitrary max identifier length ([#317](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/317)).
+- Fix `#schema_names` not to return `crdb_internal` ([#316](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/316))
 
 ## 7.1.0 - 2024-01-30
 
