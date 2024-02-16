@@ -6,3 +6,6 @@ exclude :test_timestamps_sets_default_precision_on_create_table, "See https://gi
 ::DefaultPrecisionImplicitTestCases.undef_method(:test_datetime_doesnt_set_precision_on_change_column)
 ::DefaultPrecisionSixTestCases.undef_method(:test_datetime_sets_precision_6_on_change_column)
 BaseCompatibilityTest.descendants.each { _1.use_transactional_tests = false }
+
+exclude :test_add_index_errors_on_too_long_name_7_0, "The max length in CRDB is 128, not 64."
+exclude :test_create_table_add_index_errors_on_too_long_name_7_0, "The max length in CRDB is 128, not 64."
