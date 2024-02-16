@@ -232,21 +232,6 @@ module ActiveRecord
         false
       end
 
-      # This is hardcoded to 63 (as previously was in ActiveRecord 5.0) to aid in
-      # migration from PostgreSQL to CockroachDB. In practice, this limitation
-      # is arbitrary since CockroachDB supports index name lengths and table alias
-      # lengths far greater than this value. For the time being though, we match
-      # the original behavior for PostgreSQL to simplify migrations.
-      #
-      # Note that in the migration to ActiveRecord 5.1, this was changed in
-      # PostgreSQLAdapter to use `SHOW max_identifier_length` (which does not
-      # exist in CockroachDB). Therefore, we have to redefine this here.
-      def max_identifier_length
-        63
-      end
-      alias index_name_length max_identifier_length
-      alias table_alias_length max_identifier_length
-
       # NOTE: This commented bit of code allows to have access to crdb version,
       # which can be useful for feature detection. However, we currently don't
       # need, hence we avoid the extra queries.
