@@ -16,7 +16,6 @@ require "active_record/connection_adapters/cockroachdb/type"
 require "active_record/connection_adapters/cockroachdb/column"
 require "active_record/connection_adapters/cockroachdb/spatial_column_info"
 require "active_record/connection_adapters/cockroachdb/setup"
-require "active_record/connection_adapters/cockroachdb/oid/type_map_initializer"
 require "active_record/connection_adapters/cockroachdb/oid/spatial"
 require "active_record/connection_adapters/cockroachdb/oid/interval"
 require "active_record/connection_adapters/cockroachdb/oid/date_time"
@@ -155,18 +154,21 @@ module ActiveRecord
         @max_transaction_retries ||= @config.fetch(:max_transaction_retries, 3)
       end
 
-      # CockroachDB 20.1 can run queries that work against PostgreSQL 10+.
-      def postgresql_version
-        100000
+      def get_database_version
+        major, minor, patch = query_value("SHOW crdb_version").match(/v(\d+).(\d+).(\d+)/)[1..].map(&:to_i)
+        major * 100 * 100 + minor * 100 + patch
+      end
+      undef :postgresql_version
+      alias :cockroachdb_version :database_version
+
+      def supports_datetime_with_precision?
+        # https://github.com/cockroachdb/cockroach/pull/111400
+        database_version >= 23_01_13
       end
 
-      def supports_bulk_alter?
-        true
-      end
-
-      def supports_json?
-        # FIXME(joey): Add a version check.
-        true
+      def supports_nulls_not_distinct?
+        # https://github.com/cockroachdb/cockroach/issues/115836
+        false
       end
 
       def supports_ddl_transactions?
@@ -179,10 +181,6 @@ module ActiveRecord
 
       def supports_materialized_views?
         false
-      end
-
-      def supports_partial_index?
-        true
       end
 
       def supports_index_include?
@@ -198,14 +196,6 @@ module ActiveRecord
         # but activerecord requires "ON CONFLICT expression" support.
         # See https://github.com/cockroachdb/cockroach/issues/67893
         false
-      end
-
-      def supports_datetime_with_precision?
-        false
-      end
-
-      def supports_comments?
-        true
       end
 
       def supports_comments_in_create?

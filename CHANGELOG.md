@@ -2,6 +2,7 @@
 
 ## Ongoing
 
+- Enable precision support ([#318](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/318))
 - Support arbitrary max identifier length ([#317](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/317)).
 
 ## 7.1.0 - 2024-01-30
