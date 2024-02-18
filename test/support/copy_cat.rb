@@ -3,6 +3,18 @@
 require "parser/current"
 
 module CopyCat
+  module NoWarnRewrite
+    def warn(message, category: nil, **kwargs)
+      if /method redefined; discarding old|previous definition of/.match?(message) &&
+         caller_locations.any? { _1.path["test/support/copy_cat.rb"] && _1.label["copy_methods"] }
+        # ignore
+      else
+        super
+      end
+    end
+  end
+  ::Warning.singleton_class.prepend NoWarnRewrite
+
   extend self
 
   # Copy methods from The original rails class to our adapter.
@@ -44,7 +56,7 @@ module CopyCat
         puts "=" * 80
       end
       location = caller_locations(3, 1).first
-      new_klass.class_eval(code, location.absolute_path, location.lineno)
+      new_klass.class_eval(code, location.absolute_path || location.path, location.lineno)
     end
   end
 

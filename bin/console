@@ -12,7 +12,7 @@ require "active_record"
 #       structure_load(Post.connection_db_config, "awesome-file.sql")
 require "active_record/connection_adapters/cockroachdb/database_tasks"
 
-schema_kind = ENV.fetch("SCHEMA_KIND", "default")
+schema_kind = ENV.fetch("SCHEMA_KIND", ENV.fetch("SCHEMA", "default"))
 
 system("cockroach sql --insecure --host=localhost:26257 --execute='drop database if exists ar_crdb_console'",
   exception: true)
