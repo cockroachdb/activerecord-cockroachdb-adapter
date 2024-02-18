@@ -9,7 +9,7 @@ pid_file="$root_dir/tmp/cockroach.pid"
 log_file="$root_dir/tmp/cockroachdb.log"
 
 mkdir -p "$root_dir/tmp"
-[[ -f "$pid_file" ]] && kill -9 $(cat "$pid_file")
+[[ -f "$pid_file" ]] && kill -9 $(cat "$pid_file") || true
 rm -f "$pid_file"
 
 if ! (( ${+commands[cockroach]} )); then
@@ -18,7 +18,9 @@ See https://www.cockroachlabs.com/docs/stable/install-cockroachdb.html'
 fi
 
 cockroach start-single-node \
-	--insecure --store=type=mem,size=0.25 --advertise-addr=localhost --pid-file "$pid_file" \
+	--insecure --store=type=mem,size=0.25 --advertise-addr=localhost \
+	--spatial-libs="$(geos-config --includes)" \
+	--pid-file "$pid_file" \
 	&> "$log_file" &
 
 cockroach_pid=$!
@@ -28,24 +30,7 @@ until [[ -f "$pid_file" ]]; do
 done
 
 
-cat <<-SQL | cockroach sql --insecure --host=localhost:26257 > /dev/null
--- https://www.cockroachlabs.com/docs/stable/local-testing.html
-SET CLUSTER SETTING kv.raft_log.disable_synchronization_unsafe = true;
-SET CLUSTER SETTING kv.range_merge.queue_interval = '50ms';
-SET CLUSTER SETTING jobs.registry.interval.gc = '30s';
-SET CLUSTER SETTING jobs.registry.interval.cancel = '180s';
-SET CLUSTER SETTING jobs.retention_time = '15s';
-SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false;
-SET CLUSTER SETTING kv.range_split.by_load_merge_delay = '5s';
-ALTER RANGE default CONFIGURE ZONE USING "gc.ttlseconds" = 600;
-ALTER DATABASE system CONFIGURE ZONE USING "gc.ttlseconds" = 600;
-
-CREATE DATABASE activerecord_unittest;
-CREATE DATABASE activerecord_unittest2;
-
-SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = 'true';
-SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';
-SQL
+cat "$root_dir/setup.sql" | cockroach sql --insecure --host=localhost:26257 > /dev/null
 
 tail -f "$log_file"
 
