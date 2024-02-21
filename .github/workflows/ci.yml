@@ -61,6 +61,7 @@ jobs:
             puts YAML.safe_load(Net::HTTP.get(URI(link))).reverse.find {
               _1["major_version"] == "${{ matrix.crdb }}" &&
                 _1["release_type"] == "Production" &&
+                _1["linux"] && _1["linux"]["linux_intel_fips"] &&
                 !_1["cloud_only"] &&
                 !_1["withdrawn"] &&
                 !_1["release_name"].include?("-") # Pre-release
