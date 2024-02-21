@@ -56,23 +56,29 @@ jobs:
       - name: Install and Start Cockroachdb
         run: |
           # Download CockroachDB
-          readonly patch=$(
-            ruby -rnet/http -ruri -e 'puts Net::HTTP.get(
-              URI("https://www.cockroachlabs.com/docs/releases/${{ matrix.crdb }}")
-            )[%r(https://binaries.cockroachdb.com/cockroach-${{ matrix.crdb }}.(\d+).linux-amd64.tgz), 1]'
-          )
+          readonly full_version=$(ruby -rnet/http -ruri -ryaml -e '
+            link = "https://raw.githubusercontent.com/cockroachdb/docs/main/src/current/_data/releases.yml"
+            puts YAML.safe_load(Net::HTTP.get(URI(link))).reverse.find {
+              _1["major_version"] == "${{ matrix.crdb }}" &&
+                _1["release_type"] == "Production" &&
+                _1["linux"] && _1["linux"]["linux_intel_fips"] &&
+                !_1["cloud_only"] &&
+                !_1["withdrawn"] &&
+                !_1["release_name"].include?("-") # Pre-release
+            }["release_name"]
+          ')
 
-          echo "Downloading ${{ matrix.crdb }}.$patch"
-          wget -qO- "https://binaries.cockroachdb.com/cockroach-${{ matrix.crdb }}.$patch.linux-amd64.tgz" | tar xvz
+          echo "Downloading $full_version..."
+          wget -qO- "https://binaries.cockroachdb.com/cockroach-$full_version.linux-amd64.tgz" | tar xvz
 
-          export PATH=./cockroach-${{ matrix.crdb }}.$patch.linux-amd64/:$PATH
+          export PATH=./cockroach-$full_version.linux-amd64/:$PATH
           readonly urlfile=cockroach-url
 
           # Start a CockroachDB server and wait for it to become ready.
           rm -f "$urlfile"
           rm -rf cockroach-data
           # Start CockroachDB.
-          cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-${{ matrix.crdb }}.$patch.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
+          cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-$full_version.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
           # Ensure CockroachDB is stopped on script exit.
           # Wait until CockroachDB has started.
           for i in {0..3}; do
