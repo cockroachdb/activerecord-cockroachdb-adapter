@@ -326,7 +326,6 @@ module ActiveRecord
         def extract_value_from_default(default)
           super ||
             extract_escaped_string_from_default(default) ||
-            extract_time_from_default(default) ||
             extract_empty_array_from_default(default) ||
             extract_decimal_from_default(default)
         end
@@ -342,32 +341,6 @@ module ActiveRecord
 
           # String#undump doesn't account for escaped single quote characters
           "\"#{$1}\"".undump.gsub("\\'".freeze, "'".freeze)
-        end
-
-        # This method exists to extract the correct time and date defaults for a
-        # couple of reasons.
-        # 1) There's a bug in CockroachDB where the date type is missing from
-        # the column info query.
-        # https://github.com/cockroachdb/cockroach/issues/47285
-        # 2) PostgreSQL's timestamp without time zone type maps to CockroachDB's
-        # TIMESTAMP type. TIMESTAMP includes a UTC time zone while timestamp
-        # without time zone doesn't.
-        # https://www.cockroachlabs.com/docs/v19.2/timestamp.html#variants
-        def extract_time_from_default(default)
-          return unless default =~ /\A'(.*)'\z/
-
-          # If default has a UTC time zone, we'll drop the time zone information
-          # so it acts like PostgreSQL's timestamp without time zone. Then, try
-          # to parse the resulting string to verify if it's a time.
-          time = if default =~ /\A'(.*)(\+00:00)'\z/
-            $1
-          else
-            default
-          end
-
-          Time.parse(time).to_s
-        rescue
-          nil
         end
 
         # CockroachDB stores default values for arrays in the `ARRAY[...]` format.
