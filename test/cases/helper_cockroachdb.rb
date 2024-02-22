@@ -176,3 +176,14 @@ module NoHeaderExt
 end
 
 ActiveRecord::SchemaDumper.prepend(NoHeaderExt)
+
+
+ActiveSupport::Notifications.subscribe 'sql.active_record' do |*args|
+  event = ActiveSupport::Notifications::Event.new(*args)
+  sql = event.payload[:sql]
+  duration = event.duration # ms
+
+  File.open("sql.ljson", "a") do |f|
+    f.puts JSON.dump({sql: sql, duration: duration})
+  end
+end
