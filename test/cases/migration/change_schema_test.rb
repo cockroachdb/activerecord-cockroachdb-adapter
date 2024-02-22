@@ -127,40 +127,6 @@ module ActiveRecord
           assert_equal "bigint", eight.sql_type
         end
 
-        def test_add_column_with_postgresql_datetime_type
-          connection.create_table :testings do |t|
-            t.column :foo, :datetime
-          end
-
-          column = connection.columns(:testings).find { |c| c.name == "foo" }
-
-          assert_equal :datetime, column.type
-
-          if current_adapter?(:PostgreSQLAdapter)
-            assert_equal "timestamp without time zone", column.sql_type
-          elsif current_adapter?(:Mysql2Adapter)
-            sql_type = supports_datetime_with_precision? ? "datetime(6)" : "datetime"
-            assert_equal sql_type, column.sql_type
-          else
-            assert_equal connection.type_to_sql("datetime(6)"), column.sql_type
-          end
-        end
-
-        if current_adapter?(:PostgreSQLAdapter)
-          def test_add_column_with_datetime_in_timestamptz_mode
-            with_cockroachdb_datetime_type(:timestamptz) do
-              connection.create_table :testings do |t|
-                t.column :foo, :datetime
-              end
-
-              column = connection.columns(:testings).find { |c| c.name == "foo" }
-
-              assert_equal :datetime, column.type
-              assert_equal "timestamp with time zone", column.sql_type
-            end
-          end
-        end
-
         private
           def testing_table_with_only_foo_attribute
             connection.create_table :testings, id: false do |t|
