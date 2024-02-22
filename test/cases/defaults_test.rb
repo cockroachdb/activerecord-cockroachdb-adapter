@@ -15,10 +15,10 @@ module CockroachDB
       output = dump_table_schema("defaults")
 
       assert_match %r/t\.date\s+"modified_date",\s+default: -> { \"current_date\(\)\" }/, output
-      assert_match %r/t\.datetime\s+"modified_time",\s+precision: nil,\s+default: -> { "current_timestamp\(\)" }/, output
+      assert_match %r/t\.datetime\s+"modified_time",\s+default: -> { "current_timestamp\(\)" }/, output
 
       assert_match %r/t\.date\s+"modified_date_function",\s+default: -> { "now\(\)" }/, output
-      assert_match %r/t\.datetime\s+"modified_time_function",\s+precision: nil,\s+default: -> { "now\(\)" }/, output
+      assert_match %r/t\.datetime\s+"modified_time_function",\s+default: -> { "now\(\)" }/, output
     end
   end
 
