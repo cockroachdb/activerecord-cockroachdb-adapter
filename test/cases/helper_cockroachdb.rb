@@ -123,8 +123,8 @@ module ActiveSupport
   end
 end
 
-module ARTestCaseHelper
-  def with_cockroachdb_datetime_type(type)
+module SetDatetimeInCockroachDBAdapter
+  def with_postgresql_datetime_type(type)
     adapter = ActiveRecord::ConnectionAdapters::CockroachDBAdapter
     adapter.remove_instance_variable(:@native_database_types) if adapter.instance_variable_defined?(:@native_database_types)
     datetime_type_was = adapter.datetime_type
@@ -135,9 +135,10 @@ module ARTestCaseHelper
     adapter.datetime_type = datetime_type_was
     adapter.remove_instance_variable(:@native_database_types) if adapter.instance_variable_defined?(:@native_database_types)
   end
+  alias :with_cockroachdb_datetime_type :with_postgresql_datetime_type
 end
 
-ActiveRecord::TestCase.include(ARTestCaseHelper)
+ActiveRecord::TestCase.prepend(SetDatetimeInCockroachDBAdapter)
 
 module Minitest
   module GithubActionReporterExt
@@ -154,6 +155,29 @@ module Minitest
     end
   end
   GithubActionReporter.prepend(GithubActionReporterExt)
+end
+
+if ENV['TRACE_LIB']
+  module TraceLibPlugin
+    def after_setup
+      super
+      @tl_plugin__already_showed = {}
+      @tl_plugin__trace = TracePoint.new(:call) do |tp|
+          next unless tp.path.include?("activerecord-cockroachdb-adapter/lib")
+          full_path = "#{tp.path}:#{tp.lineno}"
+          next if @tl_plugin__already_showed[full_path]
+          @tl_plugin__already_showed[full_path] = true
+          puts "==> #{tp.defined_class}##{tp.method_id} at #{full_path}"
+      end
+      @tl_plugin__trace.enable
+    end
+
+    def before_teardown
+      @tl_plugin__trace.disable
+      super
+    end
+  end
+  MiniTest::Test.include(TraceLibPlugin)
 end
 
 if ENV['AR_LOG']
