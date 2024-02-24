@@ -27,6 +27,18 @@ module LoadSchemaHelperExt
 end
 LoadSchemaHelper.prepend(LoadSchemaHelperExt)
 
+require "active_record"
+require "active_record/connection_adapters"
+require "active_record/connection_adapters/postgresql/schema_statements"
+require "active_record/connection_adapters/cockroachdb/schema_statements"
+
+# Disable foreign_keys altogether.
+ActiveRecord::ConnectionAdapters::CockroachDB::SchemaStatements.prepend(Module.new do
+  def add_foreign_key(*)
+  end
+end)
+
+
 # Load ActiveRecord test helper
 require "cases/helper"
 
