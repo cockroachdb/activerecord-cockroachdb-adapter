@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crdb: [v23.1.11]
+        crdb: [v23.1.15]
         ruby: [head]
     name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
     steps:
@@ -95,4 +95,12 @@ jobs:
             SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';
           "
       - name: Test
-        run: bundle exec rake test TESTOPTS='--profile=3'
+        run: bundle exec rake test TESTOPTS='--profile=3 --stackprof --profile-setup'
+      - name: Save timing artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance
+          path: |
+            sql.ljson
+            stackprof-minitest-*.dump

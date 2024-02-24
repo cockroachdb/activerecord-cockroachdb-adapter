@@ -4,6 +4,7 @@ source "https://rubygems.org"
 
 gemspec
 
+gem "minitest-stackprof"
 
 module RailsTag
   class << self

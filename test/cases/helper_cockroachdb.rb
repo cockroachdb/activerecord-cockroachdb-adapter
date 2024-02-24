@@ -27,6 +27,17 @@ module LoadSchemaHelperExt
 end
 LoadSchemaHelper.prepend(LoadSchemaHelperExt)
 
+require "active_record"
+require "active_record/connection_adapters"
+require "active_record/connection_adapters/postgresql/schema_statements"
+require "active_record/connection_adapters/cockroachdb/schema_statements"
+
+# Disable foreign_keys altogether.
+ActiveRecord::ConnectionAdapters::CockroachDB::SchemaStatements.prepend(Module.new do
+  def use_foreign_keys?; false; end
+end)
+
+
 # Load ActiveRecord test helper
 require "cases/helper"
 
@@ -176,3 +187,14 @@ module NoHeaderExt
 end
 
 ActiveRecord::SchemaDumper.prepend(NoHeaderExt)
+
+
+ActiveSupport::Notifications.subscribe 'sql.active_record' do |*args|
+  event = ActiveSupport::Notifications::Event.new(*args)
+  sql = event.payload[:sql]
+  duration = event.duration # ms
+
+  File.open("sql.ljson", "a") do |f|
+    f.puts JSON.dump({sql: sql, duration: duration})
+  end
+end

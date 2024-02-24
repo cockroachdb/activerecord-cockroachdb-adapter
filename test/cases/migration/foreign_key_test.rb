@@ -281,8 +281,11 @@ module ActiveRecord
           silence_stream($stdout) { migration.migrate(:up) }
           assert_equal 1, @connection.foreign_keys("p_classes").size
         ensure
-          silence_stream($stdout) { migration.migrate(:down) }
-          ActiveRecord::Base.table_name_prefix = nil
+          begin
+            silence_stream($stdout) { migration.migrate(:down) }
+          ensure
+            ActiveRecord::Base.table_name_prefix = nil
+          end
         end
 
         def test_add_foreign_key_with_suffix
@@ -291,8 +294,11 @@ module ActiveRecord
           silence_stream($stdout) { migration.migrate(:up) }
           assert_equal 1, @connection.foreign_keys("classes_s").size
         ensure
-          silence_stream($stdout) { migration.migrate(:down) }
-          ActiveRecord::Base.table_name_suffix = nil
+          begin
+            silence_stream($stdout) { migration.migrate(:down) }
+          ensure
+            ActiveRecord::Base.table_name_suffix = nil
+          end
         end
 
         def test_remove_foreign_key_with_if_exists_not_set
