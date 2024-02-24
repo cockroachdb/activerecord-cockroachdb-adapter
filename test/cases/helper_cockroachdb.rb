@@ -34,8 +34,7 @@ require "active_record/connection_adapters/cockroachdb/schema_statements"
 
 # Disable foreign_keys altogether.
 ActiveRecord::ConnectionAdapters::CockroachDB::SchemaStatements.prepend(Module.new do
-  def add_foreign_key(*)
-  end
+  def use_foreign_keys?; false; end
 end)
 
 
