@@ -76,10 +76,9 @@ module ActiveRecord
         self
       end
 
-      # TODO: reset or no reset?
-
       def show_create
-        connection.execute("show create table #{connection.quote_table_name self.table_name}").first["create_statement"]
+        quoted_table = connection.quote_table_name self.table_name
+        connection.select_one("show create table #{quoted_table}")["create_statement"]
       end
 
       private
