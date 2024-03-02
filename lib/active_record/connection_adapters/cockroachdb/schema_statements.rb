@@ -47,7 +47,7 @@ module ActiveRecord
         # so we append it manually.
         def foreign_keys(table_name)
           scope = quoted_scope(table_name)
-          fk_info = exec_query(<<~SQL, "SCHEMA")
+          fk_info = internal_exec_query(<<~SQL, "SCHEMA")
             SELECT CASE
               WHEN n2.nspname = current_schema()
               THEN ''
