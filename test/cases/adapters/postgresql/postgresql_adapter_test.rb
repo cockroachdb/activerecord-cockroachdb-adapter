@@ -2,6 +2,7 @@ require "cases/helper_cockroachdb"
 require "cases/helper"
 require "support/ddl_helper"
 require "support/connection_helper"
+require "support/copy_cat"
 
 module CockroachDB
   module ConnectionAdapters
@@ -12,7 +13,6 @@ module CockroachDB
 
       def setup
         @connection = ActiveRecord::Base.connection
-        @connection_handler = ActiveRecord::Base.connection_handler
       end
 
       def teardown
@@ -87,11 +87,27 @@ module CockroachDB
         end
       end
 
+      # OVERRIDE: the `default_sequence_name` is `nil`, let's `to_s` it
+      #   for a fair comparison.
+      CopyCat.copy_methods(self, ActiveRecord::ConnectionAdapters::PostgreSQLAdapterTest,
+        :test_pk_and_sequence_for,
+        :test_pk_and_sequence_for_with_non_standard_primary_key
+      ) do
+        attr_accessor :already_updated
+        def on_send(node)
+          return super unless node in [:send, _, :default_sequence_name, [:str, "ex"], [:str, "id"|"code"]]
+
+          raise "The source code must have changed" if already_updated
+          already_updated ||= :yes
+          insert_after(node.loc.expression, ".to_s")
+        end
+      end
+
       private
 
-      def with_example_table(definition = "id serial primary key, number integer, data character varying(255)", &block)
-        super(@connection, "ex", definition, &block)
-      end
+      CopyCat.copy_methods(self, ActiveRecord::ConnectionAdapters::PostgreSQLAdapterTest,
+        :with_example_table
+      )
     end
   end
 end

@@ -1,5 +1,6 @@
 require "cases/helper_cockroachdb"
 require "models/person"
+require "support/copy_cat"
 
 class Reminder < ActiveRecord::Base; end unless Object.const_defined?(:Reminder)
 class Thing < ActiveRecord::Base; end unless Object.const_defined?(:Thing)
@@ -92,7 +93,6 @@ module CockroachDB
 
   class BulkAlterTableMigrationsTest < ActiveRecord::TestCase
     def setup
-      @original_test = ::BulkAlterTableMigrationsTest.new(name)
       @connection = Person.connection
       @connection.create_table(:delete_me, force: true) { |t| }
       Person.reset_column_information
@@ -103,38 +103,28 @@ module CockroachDB
       Person.connection.drop_table(:delete_me) rescue nil
     end
 
-    %i(
-      test_adding_indexes
-      test_removing_index
-      test_adding_multiple_columns
-      test_changing_index
-    ).each do |method_name|
-      file, line = ::BulkAlterTableMigrationsTest.instance_method(method_name).source_location
-      iter = File.foreach(file)
-      (line - 1).times { iter.next }
-      indent = iter.next[/\A\s*/]
-      content = +""
-      content << iter.next until iter.peek == indent + "end\n"
-      content['"PostgreSQLAdapter" =>'] = '"CockroachDBAdapter" =>'
-      eval(<<-RUBY, binding, __FILE__, __LINE__ + 1)
-        def #{method_name}
-          #{content}
-        end
-      RUBY
+    # Change expected query count from PostgreSQLAdapter to CockroachDBAdapter.
+    CopyCat.copy_methods(self, ::BulkAlterTableMigrationsTest,
+      :test_adding_indexes,
+      :test_removing_index,
+      :test_adding_multiple_columns,
+      :test_changing_index
+    ) do
+      def on_str(node)
+        return unless node in [:str, "PostgreSQLAdapter"]
+
+        replace(node.loc.expression, '"CockroachDBAdapter"')
+      end
     end
 
     private
 
-    %i[
-      with_bulk_change_table
-      column
-      columns
-      index
-      indexes
-    ].each do |method|
-      define_method(method) do |*args, &block|
-        @original_test.send(method, *args, &block)
-      end
-    end
+    CopyCat.copy_methods(self, ::BulkAlterTableMigrationsTest,
+      :with_bulk_change_table,
+      :column,
+      :columns,
+      :index,
+      :indexes
+    )
   end
 end
