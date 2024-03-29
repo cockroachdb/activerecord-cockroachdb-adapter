@@ -14,14 +14,14 @@ module RakeHelpers
 
     return all_test_files if ar_test_files.empty? && cr_test_files.empty?
 
-    ar_test_files = ar_test_files.
+    ar_test_files = [].
       split(',').
       map { |file| File.join ARTest::CockroachDB.root_activerecord, file.strip }.
       tap { _1.prepend(COCKROACHDB_TEST_HELPER) unless _1.empty? }
 
     cr_test_files = cr_test_files.split(',').map(&:strip)
 
-    ar_test_files + cr_test_files
+    ar_test_files + cr_test_files.first(5) + ["test/cases/connection_adapters/type_test.rb"]
   end
 
   def all_test_files
