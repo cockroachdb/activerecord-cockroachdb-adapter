@@ -32,35 +32,15 @@ require_relative "../relation/query_methods_ext"
 ActiveRecord::ConnectionAdapters::CockroachDB.initial_setup
 
 module ActiveRecord
+  # TODO: once in rails 7.2, remove this and replace with a `#register` call.
+  # See: https://github.com/rails/rails/commit/22a26d7f74ea8f0d5f7c4169531ae38441cfd5e5#diff-2468c670eb10c24bd2823e42708489a336d6f21c6efc7e3c4a574166fa77bb22
   module ConnectionHandling
+    def cockroachdb_adapter_class
+      ConnectionAdapters::CockroachDBAdapter
+    end
+
     def cockroachdb_connection(config)
-      # This is copied from the PostgreSQL adapter.
-      conn_params = config.symbolize_keys.compact
-
-      # Map ActiveRecords param names to PGs.
-      conn_params[:user] = conn_params.delete(:username) if conn_params[:username]
-      conn_params[:dbname] = conn_params.delete(:database) if conn_params[:database]
-
-      # Forward only valid config params to PG::Connection.connect.
-      valid_conn_param_keys = PG::Connection.conndefaults_hash.keys + [:requiressl]
-      conn_params.slice!(*valid_conn_param_keys)
-
-      ConnectionAdapters::CockroachDBAdapter.new(
-        ConnectionAdapters::CockroachDBAdapter.new_client(conn_params),
-        logger,
-        conn_params,
-        config
-      )
-    # This rescue flow appears in new_client, but it is needed here as well
-    # since Cockroach will sometimes not raise until a query is made.
-    rescue ActiveRecord::StatementInvalid => error
-      no_db_err_check1 = conn_params && conn_params[:dbname] && error.cause.message.include?(conn_params[:dbname])
-      no_db_err_check2 = conn_params && conn_params[:dbname] && error.cause.message.include?("pg_type")
-      if no_db_err_check1 || no_db_err_check2
-        raise ActiveRecord::NoDatabaseError
-      else
-        raise ActiveRecord::ConnectionNotEstablished, error.message
-      end
+      cockroachdb_adapter_class.new(config)
     end
   end
 end
@@ -253,6 +233,21 @@ module ActiveRecord
         !!ActiveRecord::Base.cockroachdb_connection(config)
       rescue ActiveRecord::NoDatabaseError
         false
+      end
+
+      def initialize(...)
+        super
+
+      # This rescue flow appears in new_client, but it is needed here as well
+      # since Cockroach will sometimes not raise until a query is made.
+      rescue ActiveRecord::StatementInvalid => error
+        no_db_err_check1 = @connection_parameters && @connection_parameters[:dbname] && error.cause.message.include?(@connection_parameters[:dbname])
+        no_db_err_check2 = @connection_parameters && @connection_parameters[:dbname] && error.cause.message.include?("pg_type")
+        if no_db_err_check1 || no_db_err_check2
+          raise ActiveRecord::NoDatabaseError
+        else
+          raise ActiveRecord::ConnectionNotEstablished, error.message
+        end
       end
 
       # override
