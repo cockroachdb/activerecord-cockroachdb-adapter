@@ -229,12 +229,6 @@ module ActiveRecord
       #     @crdb_version = version_num.to_i
       #   end
 
-      def self.database_exists?(config)
-        !!ActiveRecord::Base.cockroachdb_connection(config)
-      rescue ActiveRecord::NoDatabaseError
-        false
-      end
-
       # override
       # The PostgreSQLAdapter uses syntax for an anonymous function
       # (DO $$) that CockroachDB does not support.
