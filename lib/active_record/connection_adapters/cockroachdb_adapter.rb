@@ -235,21 +235,6 @@ module ActiveRecord
         false
       end
 
-      def initialize(...)
-        super
-
-      # This rescue flow appears in new_client, but it is needed here as well
-      # since Cockroach will sometimes not raise until a query is made.
-      rescue ActiveRecord::StatementInvalid => error
-        no_db_err_check1 = @connection_parameters && @connection_parameters[:dbname] && error.cause.message.include?(@connection_parameters[:dbname])
-        no_db_err_check2 = @connection_parameters && @connection_parameters[:dbname] && error.cause.message.include?("pg_type")
-        if no_db_err_check1 || no_db_err_check2
-          raise ActiveRecord::NoDatabaseError
-        else
-          raise ActiveRecord::ConnectionNotEstablished, error.message
-        end
-      end
-
       # override
       # The PostgreSQLAdapter uses syntax for an anonymous function
       # (DO $$) that CockroachDB does not support.
