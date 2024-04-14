@@ -2,6 +2,7 @@ require "cases/helper_cockroachdb"
 require "cases/helper"
 require "support/ddl_helper"
 require "support/connection_helper"
+require "support/copy_cat"
 
 module CockroachDB
   module ConnectionAdapters
@@ -24,12 +25,21 @@ module CockroachDB
         ActiveRecord::Base.establish_connection(database_config)
       end
 
-      def test_database_exists_returns_false_when_the_database_does_not_exist
-        [ { database: "non_extant_database", adapter: "postgresql" },
-          { database: "non_extant_database", adapter: "cockroachdb" } ].each do |config|
-          assert_not ActiveRecord::ConnectionAdapters::CockroachDBAdapter.database_exists?(config),
-                    "expected database #{config[:database]} to not exist"
-        end
+      CopyCat.copy_methods(self,
+        ActiveRecord::ConnectionAdapters::PostgreSQLAdapterTest,
+        :test_database_exists_returns_false_when_the_database_does_not_exist,
+      ) do
+          def on_str(node)
+            return unless node.children[0] == "postgresql"
+
+            replace(node.loc.expression, "\"cockroachdb\"")
+          end
+
+          def on_const(node)
+            return unless node.children[-1] == :PostgreSQLAdapter
+
+            replace(node.loc.name, "CockroachDBAdapter")
+          end
       end
 
       def test_database_exists_returns_true_when_the_database_exists
