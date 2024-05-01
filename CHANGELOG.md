@@ -2,6 +2,8 @@
 
 ## Ongoing
 
+## 7.1.1 - 2024-05-01
+
 - Enable precision support ([#318](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/318))
 - Support arbitrary max identifier length ([#317](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/317)).
 - Fix `#schema_names` not to return `crdb_internal` ([#316](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/316))
