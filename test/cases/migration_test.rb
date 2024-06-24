@@ -50,28 +50,6 @@ module CockroachDB
       ActiveRecord::Migration.verbose = @verbose_was
     end
 
-    def test_create_table_with_query
-      Person.connection.create_table :table_from_query_testings, as: "SELECT id FROM people WHERE id = 1"
-
-      columns = Person.connection.columns(:table_from_query_testings)
-      assert_equal [1], Person.connection.select_values("SELECT * FROM table_from_query_testings")
-      assert_equal 2, columns.length # columns.length equals 1 in PG since this query does not create a primary key
-      assert_equal "id", columns.first.name
-    ensure
-      Person.connection.drop_table :table_from_query_testings rescue nil
-    end
-
-    def test_create_table_with_query_from_relation
-      Person.connection.create_table :table_from_query_testings, as: Person.select(:id).where(id: 1)
-
-      columns = Person.connection.columns(:table_from_query_testings)
-      assert_equal [1], Person.connection.select_values("SELECT * FROM table_from_query_testings")
-      assert_equal 2, columns.length # columns.length equals 1 in PG since this query does not create a primary key
-      assert_equal "id", columns.first.name
-    ensure
-      Person.connection.drop_table :table_from_query_testings rescue nil
-    end
-
     def test_remove_column_with_if_not_exists_not_set
       migration_a = Class.new(ActiveRecord::Migration::Current) {
         def version; 100 end
