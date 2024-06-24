@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.1.11 - 2024-06-24
+
+- Add support for sql dump in rake tasks.
+
 ## 6.1.10 - 2022-05-06
 
 - Disable supports_expression_index regardless of CockroachDB version until
