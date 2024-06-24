@@ -1,23 +1,5 @@
 # Changelog
 
-## Ongoing
-
-- Add support for sql dump in rake tasks (#273).
-- Add support for table optimize hints (#266).
-
-## 7.0.2 - 2023-05-23
-
-- Fix default numbers test to expect the correct result after
-  https://github.com/cockroachdb/cockroach/pull/102299 was merged.
-
-## 7.0.1 - 2023-03-24
-
-- Reconnect on retryable connection errors.
-
-## 7.0.0 - 2022-06-02
-
-- Add support for Active Record 7.0.3
-
 ## 6.1.10 - 2022-05-06
 
 - Disable supports_expression_index regardless of CockroachDB version until
