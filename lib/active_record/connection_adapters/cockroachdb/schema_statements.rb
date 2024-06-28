@@ -57,6 +57,7 @@ module ActiveRecord
 
         # OVERRIDE: Added `unique_rowid` to the last line of the second query.
         #   This is a CockroachDB-specific function used for primary keys.
+        #   Also make sure we don't consider `NOT VISIBLE` columns.
         #
         # Returns a table's primary key and belonging sequence.
         def pk_and_sequence_for(table) # :nodoc:
@@ -68,7 +69,11 @@ module ActiveRecord
                  pg_attribute  attr,
                  pg_depend     dep,
                  pg_constraint cons,
-                 pg_namespace  nsp
+                 pg_namespace  nsp,
+                 -- TODO: use the pg_catalog.pg_attribute(attishidden) column when
+                 --   it is added instead of joining on crdb_internal.
+                 --   See https://github.com/cockroachdb/cockroach/pull/126397
+                 crdb_internal.table_columns tc
             WHERE seq.oid           = dep.objid
               AND seq.relkind       = 'S'
               AND attr.attrelid     = dep.refobjid
@@ -76,6 +81,9 @@ module ActiveRecord
               AND attr.attrelid     = cons.conrelid
               AND attr.attnum       = cons.conkey[1]
               AND seq.relnamespace  = nsp.oid
+              AND attr.attrelid     = tc.descriptor_id
+              AND attr.attname      = tc.column_name
+              AND tc.hidden         = false
               AND cons.contype      = 'p'
               AND dep.classid       = 'pg_class'::regclass
               AND dep.refobjid      = #{quote(quote_table_name(table))}::regclass
@@ -96,7 +104,12 @@ module ActiveRecord
               JOIN pg_attrdef     def  ON (adrelid = attrelid AND adnum = attnum)
               JOIN pg_constraint  cons ON (conrelid = adrelid AND adnum = conkey[1])
               JOIN pg_namespace   nsp  ON (t.relnamespace = nsp.oid)
+              -- TODO: use the pg_catalog.pg_attribute(attishidden) column when
+              --   it is added instead of joining on crdb_internal.
+              --   See https://github.com/cockroachdb/cockroach/pull/126397
+              JOIN crdb_internal.table_columns tc ON (attr.attrelid = tc.descriptor_id AND attr.attname = tc.column_name)
               WHERE t.oid = #{quote(quote_table_name(table))}::regclass
+                AND tc.hidden = false
                 AND cons.contype = 'p'
                 AND pg_get_expr(def.adbin, def.adrelid) ~* 'nextval|uuid_generate|gen_random_uuid|unique_rowid'
             SQL
