@@ -88,4 +88,4 @@ jobs:
           done
           cat ${{ github.workspace }}/setup.sql | cockroach sql --insecure
       - name: Test
-        run: bundle exec rake test TESTOPTS='--profile=3'
+        run: bundle exec rake test TESTOPTS='--profile=3' --trace
