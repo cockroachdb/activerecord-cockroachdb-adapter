@@ -200,3 +200,13 @@ module NoHeaderExt
 end
 
 ActiveRecord::SchemaDumper.prepend(NoHeaderExt)
+
+
+puts ?= * 100
+puts "Encoding.find(\"external\")\t=>\t#{Encoding.find("external")}"
+puts "Encoding.default_external\t=>\t#{Encoding.default_external}"
+puts "Encoding.find(\"internal\")\t=>\t#{Encoding.find("internal")}"
+puts "Encoding.default_internal\t=>\t#{Encoding.default_internal}"
+puts "Encoding.find(\"filesystem\")\t=>\t#{Encoding.find("filesystem")}"
+puts "Encoding.find(\"locale\")\t=>\t#{Encoding.find("locale")}"
+puts ?= * 100
