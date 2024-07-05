@@ -200,3 +200,16 @@ module NoHeaderExt
 end
 
 ActiveRecord::SchemaDumper.prepend(NoHeaderExt)
+
+def bugmsg(header, stdout)
+  bugged = begin; print; rescue IOError; "💥 "; end
+  STDOUT.puts "🤞#{header.rjust(17)}: stdout=#{stdout.inspect} " \
+    "#{bugged}(at #{caller_locations(2, 1).first})"
+end
+
+trace_var :$stdout, (proc { bugmsg("$stdout=", _1) })
+
+TracePoint.trace(:a_return) do |tp|
+  next unless tp.method_id == :reopen && tp.self == $stdout
+  bugmsg("$stdout#reopen", $stdout)
+end
