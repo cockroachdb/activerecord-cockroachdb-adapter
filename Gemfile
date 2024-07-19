@@ -62,7 +62,6 @@ group :development, :test do
 
   # Gems used by the ActiveRecord test suite
   gem "bcrypt", "~> 3.1.18"
-  gem "mocha", "~> 1.14.0"
   gem "sqlite3", "~> 1.4.4"
 
   gem "minitest", "~> 5.15.0"
