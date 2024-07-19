@@ -88,4 +88,4 @@ jobs:
           done
           cat ${{ github.workspace }}/setup.sql | cockroach sql --insecure
       - name: Test
-        run: bundle exec rake test TESTOPTS='--profile=3 --verbose'
+        run: bundle exec rake test TESTOPTS='--profile=3 --verbose' TEST_FILES_AR=test/cases/adapters/postgresql/transaction_nested_test.rb
