@@ -8,7 +8,7 @@
 # See discussion: https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/333
 message = "SERIALIZABLE transactions are different in CockroachDB."
 
-# exclude :test_deadlock_raises_Deadlocked_inside_nested_SavepointTransaction, message
-# exclude :test_unserializable_transaction_raises_SerializationFailure_inside_nested_SavepointTransaction, message
+exclude :test_deadlock_raises_Deadlocked_inside_nested_SavepointTransaction, message
+exclude :test_unserializable_transaction_raises_SerializationFailure_inside_nested_SavepointTransaction, message
 exclude :test_SerializationFailure_inside_nested_SavepointTransaction_is_recoverable, message
 exclude :test_deadlock_inside_nested_SavepointTransaction_is_recoverable, message

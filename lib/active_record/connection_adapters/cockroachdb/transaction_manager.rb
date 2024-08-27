@@ -25,7 +25,6 @@ module ActiveRecord
         def within_new_transaction(isolation: nil, joinable: true, attempts: 0)
           super(isolation: isolation, joinable: joinable)
         rescue ActiveRecord::ConnectionNotEstablished => error
-          puts "IN RETRY CASE ! " * 5
           raise unless retryable? error
           raise if attempts >= @connection.max_transaction_retries
 
@@ -38,7 +37,6 @@ module ActiveRecord
 
           within_new_transaction(isolation: isolation, joinable: joinable, attempts: attempts + 1) { yield }
         rescue ActiveRecord::StatementInvalid => error
-          puts "IN RETRY CASE ! " * 5
           raise unless retryable? error
           raise if attempts >= @connection.max_transaction_retries
 
@@ -48,8 +46,6 @@ module ActiveRecord
         end
 
         def retryable?(error)
-          puts "========> In a serialization failure" if error.is_a? ActiveRecord::SerializationFailure
-          puts "========> In a serialization error" if serialization_error?(error)
           return true if serialization_error?(error)
           return true if error.is_a? ActiveRecord::SerializationFailure
           return retryable? error.cause if error.cause
