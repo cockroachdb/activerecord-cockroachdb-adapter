@@ -243,12 +243,6 @@ module ActiveRecord
       #     @crdb_version = version_num.to_i
       #   end
 
-      def self.database_exists?(config)
-        !!ActiveRecord::Base.cockroachdb_connection(config)
-      rescue ActiveRecord::NoDatabaseError
-        false
-      end
-
       def initialize(...)
         super
 
