@@ -17,7 +17,7 @@ module CockroachDB
     # See test/excludes/InheritanceComputeTypeTest.rb
     def test_inheritance_new_with_subclass_as_default
       original_type = Company.columns_hash["type"].default
-      ActiveRecord::Base.connection.change_column_default :companies, :type, "Firm"
+      ActiveRecord::Base.lease_connection.change_column_default :companies, :type, "Firm"
       Company.reset_column_information
 
       # Instead of using an unsaved Company record, persist one and fetch it
@@ -35,7 +35,7 @@ module CockroachDB
       assert_equal "Client", firm.type
       assert_instance_of Client, firm
     ensure
-      ActiveRecord::Base.connection.change_column_default :companies, :type, original_type
+      ActiveRecord::Base.lease_connection.change_column_default :companies, :type, original_type
       Company.reset_column_information
     end
   end

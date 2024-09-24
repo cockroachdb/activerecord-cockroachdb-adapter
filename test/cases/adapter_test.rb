@@ -9,7 +9,7 @@ module CockroachDB
     self.use_transactional_tests = false
 
     def setup
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
     end
 
     # This replaces the same test that's been excluded from
@@ -29,7 +29,7 @@ module CockroachDB
       assert !indexes.first.unique
       assert_equal ["firm_id"], indexes.first.columns
     ensure
-      @connection.remove_index(:accounts, name: idx_name) rescue nil
+      @connection.remove_index(:accounts, name: idx_name, if_exists: true)
     end
 
     # This replaces the same test that's been excluded from
@@ -70,7 +70,7 @@ module CockroachDB
     fixtures :fk_test_has_pk
 
     def before_setup
-      conn = ActiveRecord::Base.connection
+      conn = ActiveRecord::Base.lease_connection
 
       conn.drop_table :fk_test_has_fk, if_exists: true
       conn.drop_table :fk_test_has_pk, if_exists: true
@@ -87,7 +87,7 @@ module CockroachDB
     end
 
     def setup
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
     end
 
     def test_foreign_key_violations_are_translated_to_specific_exception_with_validate_false
@@ -149,7 +149,7 @@ module CockroachDB
     end
 
     def setup
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
     end
 
     teardown do

@@ -25,7 +25,7 @@ module ActiveRecord
       end
 
       def setup
-        @connection = ActiveRecord::Base.connection
+        @connection = ActiveRecord::Base.lease_connection
         ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.create_unlogged_tables = false
       end
 

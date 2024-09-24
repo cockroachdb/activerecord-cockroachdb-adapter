@@ -10,7 +10,7 @@ module CockroachDB
     class PostgresqlSerial < ActiveRecord::Base; end
 
     setup do
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
       @connection.create_table "postgresql_serials", force: true do |t|
         t.serial :seq
 
@@ -76,7 +76,7 @@ module CockroachDB
     class PostgresqlBigSerial < ActiveRecord::Base; end
 
     setup do
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
       @connection.create_table "postgresql_big_serials", force: true do |t|
         t.bigserial :seq
 
@@ -138,7 +138,7 @@ module CockroachDB
       include SchemaDumpingHelper
 
       def setup
-        @connection = ActiveRecord::Base.connection
+        @connection = ActiveRecord::Base.lease_connection
         @connection.create_table :foo_bar, force: true do |t|
           t.serial :baz_id
         end
@@ -171,7 +171,7 @@ module CockroachDB
 
       def setup
         @table_name = "long_table_name_to_test_sequence_name_detection_for_serial_cols"
-        @connection = ActiveRecord::Base.connection
+        @connection = ActiveRecord::Base.lease_connection
         @connection.create_table @table_name, force: true do |t|
           t.serial :seq
           t.bigserial :bigseq

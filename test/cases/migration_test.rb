@@ -10,17 +10,7 @@ module CockroachDB
 
     fixtures :people
 
-    def setup
-      super
-      %w(reminders people_reminders prefix_reminders_suffix p_things_s).each do |table|
-        Reminder.connection.drop_table(table) rescue nil
-      end
-      Reminder.reset_column_information
-      @verbose_was, ActiveRecord::Migration.verbose = ActiveRecord::Migration.verbose, false
-      @schema_migration = ActiveRecord::Base.connection.schema_migration
-      @internal_metadata = ActiveRecord::Base.connection.internal_metadata
-      ActiveRecord::Base.connection.schema_cache.clear!
-    end
+    CopyCat.copy_methods(self, ::MigrationTest, :setup)
 
     teardown do
       ActiveRecord::Base.table_name_prefix = ""
@@ -30,23 +20,23 @@ module CockroachDB
       @schema_migration.delete_all_versions
 
       %w(things awesome_things prefix_things_suffix p_awesome_things_s).each do |table|
-        Thing.connection.drop_table(table) rescue nil
+        Thing.lease_connection.drop_table(table, if_exists: true)
       end
       Thing.reset_column_information
 
       %w(reminders people_reminders prefix_reminders_suffix).each do |table|
-        Reminder.connection.drop_table(table) rescue nil
+        Reminder.lease_connection.drop_table(table, if_exists: true)
       end
       Reminder.reset_table_name
       Reminder.reset_column_information
 
       %w(last_name key bio age height wealth birthday favorite_day
        moment_of_truth male administrator funny).each do |column|
-        Person.connection.remove_column("people", column) rescue nil
+        Person.lease_connection.remove_column("people", column, if_exists: true)
       end
-      Person.connection.remove_column("people", "first_name") rescue nil
-      Person.connection.remove_column("people", "middle_name") rescue nil
-      Person.connection.add_column("people", "first_name", :string)
+      Person.lease_connection.remove_column("people", "first_name", if_exists: true)
+      Person.lease_connection.remove_column("people", "middle_name", if_exists: true)
+      Person.lease_connection.add_column("people", "first_name", :string)
       Person.reset_column_information
 
       ActiveRecord::Migration.verbose = @verbose_was
@@ -93,14 +83,14 @@ module CockroachDB
 
   class BulkAlterTableMigrationsTest < ActiveRecord::TestCase
     def setup
-      @connection = Person.connection
+      @connection = Person.lease_connection
       @connection.create_table(:delete_me, force: true) { |t| }
       Person.reset_column_information
       Person.reset_sequence_name
     end
 
     teardown do
-      Person.connection.drop_table(:delete_me) rescue nil
+      Person.lease_connection.drop_table(:delete_me, if_exists: true)
     end
 
     # Change expected query count from PostgreSQLAdapter to CockroachDBAdapter.

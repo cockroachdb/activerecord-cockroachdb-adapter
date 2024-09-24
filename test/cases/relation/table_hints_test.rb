@@ -11,16 +11,16 @@ module CockroachDB
       force_index = ->(q) { q.force_index("index_posts_on_author_id") }
       index_hint = ->(q) { q.index_hint("NO_FULL_SCAN") }
 
-      assert_sql(/"posts"@\{FORCE_INDEX=index_posts_on_author_id\}/) do
+      assert_queries_match(/"posts"@\{FORCE_INDEX=index_posts_on_author_id\}/) do
         Post.then(&force_index).take
       end
 
-      assert_sql(/"posts"@\{NO_FULL_SCAN\}/) do
+      assert_queries_match(/"posts"@\{NO_FULL_SCAN\}/) do
         Post.then(&index_hint).take
       end
 
       [force_index, index_hint].permutation do |procs|
-        assert_sql(/"posts"@\{NO_FULL_SCAN,FORCE_INDEX=index_posts_on_author_id\}/) do
+        assert_queries_match(/"posts"@\{NO_FULL_SCAN,FORCE_INDEX=index_posts_on_author_id\}/) do
           Post.then(&procs.reduce(:<<)).take
         end
       end
@@ -28,13 +28,13 @@ module CockroachDB
 
     def test_choose_index_order
       idx = "index_posts_on_author_id"
-      assert_sql(/"posts"@\{FORCE_INDEX=#{idx},ASC\}/) do
+      assert_queries_match(/"posts"@\{FORCE_INDEX=#{idx},ASC\}/) do
         Post.force_index(idx, direction: "ASC").take
       end
-      assert_sql(/"posts"@\{FORCE_INDEX=#{idx},DESC\}/) do
+      assert_queries_match(/"posts"@\{FORCE_INDEX=#{idx},DESC\}/) do
         Post.force_index(idx, direction: "DESC").take
       end
-      assert_sql(/"posts"@\{NO_FULL_SCAN,FORCE_INDEX=#{idx},DESC\}/) do
+      assert_queries_match(/"posts"@\{NO_FULL_SCAN,FORCE_INDEX=#{idx},DESC\}/) do
         Post.force_index(idx, direction: "DESC").index_hint("NO_FULL_SCAN").take
       end
     end
@@ -44,16 +44,16 @@ module CockroachDB
       index_hint = ->(q) { q.index_hint("NO_FULL_SCAN") }
       post_from = Post.select(:id).from("subscribers")
 
-      assert_sql(/subscribers@\{FORCE_INDEX=index_subscribers_on_nick\}/) do
+      assert_queries_match(/subscribers@\{FORCE_INDEX=index_subscribers_on_nick\}/) do
         post_from.then(&force_index).take
       end
 
-      assert_sql(/subscribers@\{NO_FULL_SCAN\}/) do
+      assert_queries_match(/subscribers@\{NO_FULL_SCAN\}/) do
         post_from.then(&index_hint).take
       end
 
       [force_index, index_hint].permutation do |procs|
-        assert_sql(/subscribers@\{NO_FULL_SCAN,FORCE_INDEX=index_subscribers_on_nick\}/) do
+        assert_queries_match(/subscribers@\{NO_FULL_SCAN,FORCE_INDEX=index_subscribers_on_nick\}/) do
           post_from.then(&procs.reduce(:<<)).take
         end
       end

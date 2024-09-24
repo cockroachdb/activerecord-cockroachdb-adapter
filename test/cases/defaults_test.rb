@@ -26,7 +26,7 @@ module CockroachDB
     class DefaultNumber < ActiveRecord::Base; end
 
     setup do
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
       @connection.create_table :default_numbers do |t|
         t.decimal :decimal_number, precision: 32, scale: 16, default: 0
       end

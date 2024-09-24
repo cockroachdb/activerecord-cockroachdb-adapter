@@ -14,7 +14,7 @@ module CockroachDB
     class DeprecatedIntervalDataType < ActiveRecord::Base; end
 
     def setup
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
       @connection.transaction do
         @connection.create_table("interval_data_types") do |t|
           t.interval "maximum_term"

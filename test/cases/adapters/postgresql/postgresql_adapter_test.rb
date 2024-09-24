@@ -12,7 +12,7 @@ module CockroachDB
       include ConnectionHelper
 
       def setup
-        @connection = ActiveRecord::Base.connection
+        @connection = ActiveRecord::Base.lease_connection
       end
 
       def teardown
@@ -25,8 +25,10 @@ module CockroachDB
       end
 
       def test_database_exists_returns_false_when_the_database_does_not_exist
-        [ { database: "non_extant_database", adapter: "postgresql" },
-          { database: "non_extant_database", adapter: "cockroachdb" } ].each do |config|
+        config_base = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary").configuration_hash
+        [ config_base.merge(database: "non_extant_database", adapter: "cockroachdb"),
+          config_base.merge(database: "non_extant_database", adapter: "postgresql")
+          ].each do |config|
           assert_not ActiveRecord::ConnectionAdapters::CockroachDBAdapter.database_exists?(config),
                     "expected database #{config[:database]} to not exist"
         end
@@ -45,7 +47,7 @@ module CockroachDB
         database_config[:disable_cockroachdb_telemetry] = false
 
         ActiveRecord::Base.establish_connection(database_config)
-        conn = ActiveRecord::Base.connection
+        conn = ActiveRecord::Base.lease_connection
         conn_config = conn.instance_variable_get("@config")
 
         assert_equal(false, conn_config[:disable_cockroachdb_telemetry])
@@ -57,7 +59,7 @@ module CockroachDB
         database_config.update(ar_config.configuration_hash)
 
         ActiveRecord::Base.establish_connection(database_config)
-        conn = ActiveRecord::Base.connection
+        conn = ActiveRecord::Base.lease_connection
         conn_config = conn.instance_variable_get("@config")
 
         assert conn_config[:use_follower_reads_for_type_introspection]

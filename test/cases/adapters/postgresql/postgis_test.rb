@@ -5,7 +5,7 @@ require "models/building"
 
 class PostGISTest < ActiveRecord::PostgreSQLTestCase
   def setup
-    @connection = ActiveRecord::Base.connection
+    @connection = ActiveRecord::Base.lease_connection
     spatial_factory_store.default = nil
     spatial_factory_store.clear
   end

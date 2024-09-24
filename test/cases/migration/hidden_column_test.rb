@@ -19,7 +19,7 @@ module ActiveRecord
         end
 
         setup do
-          @connection = ActiveRecord::Base.connection
+          @connection = ActiveRecord::Base.lease_connection
           @connection.create_table "rockets", force: true do |t|
             t.string :name
           end

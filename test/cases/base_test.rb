@@ -5,7 +5,7 @@ module CockroachDB
     # This replaces the same test that's been excluded from BasicsTest. It's
     # exactly the same, except badchar has an entry for CockroachDBAdapter.
     def test_column_names_are_escaped
-      conn      = ActiveRecord::Base.connection
+      conn      = ActiveRecord::Base.lease_connection
       classname = conn.class.name[/[^:]*$/]
       badchar   = {
         "SQLite3Adapter"    => '"',

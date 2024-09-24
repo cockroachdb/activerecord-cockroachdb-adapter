@@ -6,7 +6,7 @@ require "support/schema_dumping_helper"
 # Copy of comment_test from ActiveRecord with all but two tests removed.
 # We can get these tests to pass by enabling an experimental feature in
 # setup, so we exclude them from the AR test cases and run them here.
-if ActiveRecord::Base.connection.supports_comments?
+if ActiveRecord::Base.lease_connection.supports_comments?
   module CockroachDB
     class CommentTest < ActiveRecord::TestCase
       include SchemaDumpingHelper
@@ -18,8 +18,8 @@ if ActiveRecord::Base.connection.supports_comments?
       end
 
       setup do
-        @connection = ActiveRecord::Base.connection
-        
+        @connection = ActiveRecord::Base.lease_connection
+
         @connection.create_table("commenteds", comment: "A table with comment", force: true) do |t|
           t.string  "name",    comment: "Comment should help clarify the column purpose"
           t.boolean "obvious", comment: "Question is: should you comment obviously named objects?"

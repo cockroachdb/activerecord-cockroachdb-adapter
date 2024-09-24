@@ -3,8 +3,6 @@ exclude :test_bulk_insert_with_a_multi_statement_query_in_a_nested_transaction, 
 exclude :test_clean_fixtures, "Skipping the PostgreSQL test, but reimplemented for CockroachDB in test/cases/fixtures_test.rb"
 exclude :test_auto_value_on_primary_key, "Skipping the PostgreSQL test, but reimplemented for CockroachDB in test/cases/fixtures_test.rb"
 exclude :test_create_fixtures, "Skipping the PostgreSQL test, but reimplemented for CockroachDB in test/cases/fixtures_test.rb"
-exclude :test_yaml_file_with_symbol_columns, "Skipping the PostgreSQL test, but reimplemented for CockroachDB in test/cases/fixtures_test.rb"
-exclude :test_bulk_insert, "Skipping the PostgreSQL test, but reimplemented for CockroachDB in test/cases/fixtures_test.rb"
 exclude :test_multiple_clean_fixtures, "Skipping the PostgreSQL test, but reimplemented for CockroachDB in test/cases/fixtures_test.rb"
 exclude :test_bulk_insert_with_a_multi_statement_query_raises_an_exception_when_any_insert_fails, "Skipping the PostgreSQL test, but reimplemented for CockroachDB in test/cases/fixtures_test.rb"
 exclude :test_inserts_with_pre_and_suffix, "Skipping the PostgreSQL test, but reimplemented for CockroachDB in test/cases/fixtures_test.rb"

@@ -16,7 +16,7 @@ module CockroachDB
       child_class = Class.new(Topic)
       child_class.new # force schema to load
 
-      ActiveRecord::Base.connection.add_column(:topics, :foo, :string)
+      ActiveRecord::Base.lease_connection.add_column(:topics, :foo, :string)
       Topic.reset_column_information
 
       # this should redefine attribute methods
@@ -26,7 +26,7 @@ module CockroachDB
       assert child_class.instance_methods.include?(:foo_changed?)
       assert_equal "bar", child_class.new(foo: :bar).foo
     ensure
-      ActiveRecord::Base.connection.remove_column(:topics, :foo)
+      ActiveRecord::Base.lease_connection.remove_column(:topics, :foo)
       Topic.reset_column_information
     end
   end

@@ -40,8 +40,8 @@ jobs:
       fail-fast: false
       matrix:
         # https://www.cockroachlabs.com/docs/releases/release-support-policy
-        crdb: [v22.2, v23.1, v23.2]
-        ruby: [head]
+        crdb: [v23.2, v24.1, v24.2]
+        ruby: ["3.3"]
     name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
     steps:
       - name: Set Up Actions
@@ -88,4 +88,4 @@ jobs:
           done
           cat ${{ github.workspace }}/setup.sql | cockroach sql --insecure
       - name: Test
-        run: bundle exec rake test TESTOPTS='--profile=3'
+        run: bundle exec rake test TESTOPTS='--profile=5'

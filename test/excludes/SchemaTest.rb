@@ -15,7 +15,7 @@ module Ext
   end
 
   def setup
-    @connection = ActiveRecord::Base.connection
+    @connection = ActiveRecord::Base.lease_connection
     @connection.execute "SET default_int_size = 4"
     @connection.execute "SET serial_normalization = sql_sequence_cached"
     @connection.execute "CREATE SCHEMA #{SCHEMA_NAME}"

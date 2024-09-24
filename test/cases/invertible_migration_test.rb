@@ -33,8 +33,8 @@ module CockroachDB
 
     teardown do
       %w[horses new_horses].each do |table|
-        if ActiveRecord::Base.connection.table_exists?(table)
-          ActiveRecord::Base.connection.drop_table(table)
+        if ActiveRecord::Base.lease_connection.table_exists?(table)
+          ActiveRecord::Base.lease_connection.drop_table(table)
         end
       end
       ActiveRecord::Migration.verbose = @verbose_was

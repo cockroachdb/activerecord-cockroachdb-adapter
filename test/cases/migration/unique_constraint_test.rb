@@ -10,7 +10,7 @@ module ActiveRecord
       class UniqueConstraintTest < ActiveRecord::TestCase
 
         setup do
-          @connection = ActiveRecord::Base.connection
+          @connection = ActiveRecord::Base.lease_connection
           @connection.create_table "sections", force: true do |t|
             t.integer "position", null: false
           end
