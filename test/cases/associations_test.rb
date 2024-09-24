@@ -25,7 +25,7 @@ module CockroachDB
       assert_not_predicate log, :empty?
       assert_predicate log.select { |query| query.match?(%r{/\*}) }, :empty?
 
-      assert_sql(%r{/\* that tells jokes \*/}) do
+      assert_queries_match(%r{/\* that tells jokes \*/}) do
         pirate.parrot_with_annotation
       end
     end
@@ -40,7 +40,7 @@ module CockroachDB
       assert_not_predicate log, :empty?
       assert_predicate log.select { |query| query.match?(%r{/\*}) }, :empty?
 
-      assert_sql(%r{/\* that are very colorful \*/}) do
+      assert_queries_match(%r{/\* that are very colorful \*/}) do
         pirate.parrots_with_annotation.first
       end
     end
@@ -55,7 +55,7 @@ module CockroachDB
       assert_not_predicate log, :empty?
       assert_predicate log.select { |query| query.match?(%r{/\*}) }, :empty?
 
-      assert_sql(%r{/\* that is a rocket \*/}) do
+      assert_queries_match(%r{/\* that is a rocket \*/}) do
         pirate.ship_with_annotation
       end
     end
@@ -70,7 +70,7 @@ module CockroachDB
       assert_not_predicate log, :empty?
       assert_predicate log.select { |query| query.match?(%r{/\*}) }, :empty?
 
-      assert_sql(%r{/\* that are also parrots \*/}) do
+      assert_queries_match(%r{/\* that are also parrots \*/}) do
         pirate.birds_with_annotation.first
       end
     end
@@ -85,7 +85,7 @@ module CockroachDB
       assert_not_predicate log, :empty?
       assert_predicate log.select { |query| query.match?(%r{/\*}) }, :empty?
 
-      assert_sql(%r{/\* yarrr \*/}) do
+      assert_queries_match(%r{/\* yarrr \*/}) do
         pirate.treasure_estimates_with_annotation.first
       end
     end
@@ -100,7 +100,7 @@ module CockroachDB
       assert_not_predicate log, :empty?
       assert_predicate log.select { |query| query.match?(%r{/\*}) }, :empty?
 
-      assert_sql(%r{/\* yarrr \*/}) do
+      assert_queries_match(%r{/\* yarrr \*/}) do
         SpacePirate.includes(:treasure_estimates_with_annotation, :treasures).first
       end
     end

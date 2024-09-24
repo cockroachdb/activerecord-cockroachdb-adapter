@@ -36,15 +36,15 @@ module TemplateCreator
   end
 
   def template_db_exists?
-    ActiveRecord::Base.connection.select_value("SELECT 1 FROM pg_database WHERE datname='#{template_db_name}'") == 1
+    ActiveRecord::Base.lease_connection.select_value("SELECT 1 FROM pg_database WHERE datname='#{template_db_name}'") == 1
   end
 
   def drop_template_db
-    ActiveRecord::Base.connection.execute("DROP DATABASE #{template_db_name}")
+    ActiveRecord::Base.lease_connection.execute("DROP DATABASE #{template_db_name}")
   end
 
   def create_template_db
-    ActiveRecord::Base.connection.execute("CREATE DATABASE #{template_db_name}")
+    ActiveRecord::Base.lease_connection.execute("CREATE DATABASE #{template_db_name}")
   end
 
   def load_schema
@@ -67,7 +67,7 @@ module TemplateCreator
     load_schema
 
     # create BACKUP to restore from
-    ActiveRecord::Base.connection.execute("BACKUP DATABASE #{template_db_name} TO '#{version_backup_path}'")
+    ActiveRecord::Base.lease_connection.execute("BACKUP DATABASE #{template_db_name} TO '#{version_backup_path}'")
   end
 
   def restore_from_template
@@ -75,14 +75,14 @@ module TemplateCreator
     raise "The TemplateDB does not exist. Run 'rake db:create_test_template' first." unless template_db_exists?
 
     begin
-      ActiveRecord::Base.connection.execute("DROP DATABASE activerecord_unittest")
+      ActiveRecord::Base.lease_connection.execute("DROP DATABASE activerecord_unittest")
     rescue ActiveRecord::StatementInvalid => e
       unless e.cause.class == PG::InvalidCatalogName
         raise e
       end
     end
-    ActiveRecord::Base.connection.execute("CREATE DATABASE activerecord_unittest")
+    ActiveRecord::Base.lease_connection.execute("CREATE DATABASE activerecord_unittest")
 
-    ActiveRecord::Base.connection.execute("RESTORE #{template_db_name}.* FROM '#{version_backup_path}' WITH into_db = 'activerecord_unittest'")
+    ActiveRecord::Base.lease_connection.execute("RESTORE #{template_db_name}.* FROM '#{version_backup_path}' WITH into_db = 'activerecord_unittest'")
   end
 end

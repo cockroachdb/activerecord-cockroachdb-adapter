@@ -37,14 +37,14 @@ module ActiveRecord
               ActiveRecord.dump_schemas
             end
 
-          conn = ActiveRecord::Base.connection
+          conn = ActiveRecord::Base.lease_connection
           begin
             old_search_path = conn.schema_search_path
             conn.schema_search_path = search_path
             File.open(filename, "w") do |file|
               # NOTE: There is no issue with the crdb_internal schema, it is ignored by SHOW CREATE.
               %w(SCHEMAS TYPES).each do |object_kind|
-                ActiveRecord::Base.connection.execute("SHOW CREATE ALL #{object_kind}").each_row { file.puts _1 }
+                conn.execute("SHOW CREATE ALL #{object_kind}").each_row { file.puts _1 }
               end
 
               ignore_tables = ActiveRecord::SchemaDumper.ignore_tables.to_set

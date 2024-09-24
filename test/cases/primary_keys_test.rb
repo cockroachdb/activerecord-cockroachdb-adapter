@@ -37,7 +37,7 @@ module CockroachDB
     end
 
     setup do
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
       @pk_type = :serial
     end
 
@@ -78,7 +78,7 @@ module CockroachDB
     self.use_transactional_tests = false
 
     def setup
-      @connection = ActiveRecord::Base.connection
+      @connection = ActiveRecord::Base.lease_connection
     end
 
     def teardown

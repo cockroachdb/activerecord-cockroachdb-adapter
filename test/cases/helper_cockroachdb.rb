@@ -17,15 +17,29 @@ ENV['DEBUG_COCKROACHDB_ADAPTER'] = "1"
 # and COCKROACH_SKIP_LOAD_SCHEMA that can
 # skip this step
 require "support/load_schema_helper"
+class NoPGSchemaTestCase < SimpleDelegator
+  def current_adapter?(...)
+    false
+  end
+end
+
 module LoadSchemaHelperExt
   def load_schema
+    # TODO: Remove this const_set mess once https://github.com/rails/rails/commit/d5c2ff8345c9d23b7326edb2bbe72b6e86a63140
+    #   is part of a rails release.
+    old_helper = ActiveRecord::TestCase
+    ActiveRecord.const_set(:TestCase, NoPGSchemaTestCase.new(ActiveRecord::TestCase))
     return if ENV['COCKROACH_LOAD_FROM_TEMPLATE']
     return if ENV['COCKROACH_SKIP_LOAD_SCHEMA']
 
     super
+  ensure
+    ActiveRecord.const_set(:TestCase, old_helper)
   end
 end
 LoadSchemaHelper.prepend(LoadSchemaHelperExt)
+
+require "activerecord-cockroachdb-adapter"
 
 # Load ActiveRecord test helper
 require "cases/helper"
@@ -64,7 +78,7 @@ module TestTimeoutHelper
   def time_it
     t0 = Minitest.clock_time
 
-    timeout_mins = 5
+    timeout_mins = ENV.fetch("TEST_TIMEOUT", 5).to_i
     Timeout.timeout(timeout_mins * 60, Timeout::Error, "Test took over #{timeout_mins} minutes to finish") do
       yield
     end
@@ -106,7 +120,7 @@ module ActiveSupport
     include TestTimeoutHelper
 
     def postgis_version
-      @postgis_version ||= ActiveRecord::Base.connection.select_value('SELECT postgis_lib_version()')
+      @postgis_version ||= ActiveRecord::Base.lease_connection.select_value('SELECT postgis_lib_version()')
     end
 
     def factory
@@ -183,6 +197,7 @@ end
 if ENV['AR_LOG']
   ActiveRecord::Base.logger = Logger.new(STDOUT)
   ActiveRecord::Base.logger.level = Logger::DEBUG
+  ActiveRecord::LogSubscriber::IGNORE_PAYLOAD_NAMES.clear
   ActiveRecord::Base.logger.formatter = proc { |severity, time, progname, msg|
     th = Thread.current[:name]
     th = "THREAD=#{th}" if th
@@ -200,3 +215,10 @@ module NoHeaderExt
 end
 
 ActiveRecord::SchemaDumper.prepend(NoHeaderExt)
+
+# CRDB does not support ALTER COLUMN TYPE inside a transaction
+# NOTE: This would be better in an exclude test, however this base
+#   class is used by a lot of inherited tests. We repeat less here.
+class BaseCompatibilityTest < ActiveRecord::TestCase
+  self.use_transactional_tests = false
+end

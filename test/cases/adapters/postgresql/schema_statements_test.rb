@@ -5,11 +5,11 @@ require 'models/building'
 
 class SchemaStatementsTest < ActiveRecord::PostgreSQLTestCase
   def test_no_crdb_internal_in_schema_names
-    assert_not_includes Building.connection.schema_names, "crdb_internal"
+    assert_not_includes Building.lease_connection.schema_names, "crdb_internal"
   end
 
   def test_initialize_type_map
-    initialized_types = Building.connection.send(:type_map).keys
+    initialized_types = Building.lease_connection.send(:type_map).keys
 
     # PostGIS types must be initialized first, so
     # ActiveRecord::ConnectionAdapters::PostgreSQLAdapter#load_additional_types can use them.

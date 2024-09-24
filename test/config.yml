@@ -3,20 +3,20 @@ connections:
   cockroachdb:
     arunit:
       min_messages: warning
-      host: localhost
+      host: 127.0.0.1
       port: 26257
       user: root
       disable_cockroachdb_telemetry: true
     arunit_without_prepared_statements:
       min_messages: warning
       prepared_statements: false
-      host: localhost
+      host: 127.0.0.1
       port: 26257
       user: root
       disable_cockroachdb_telemetry: true
     arunit2:
       min_messages: warning
-      host: localhost
+      host: 127.0.0.1
       port: 26257
       user: root
       disable_cockroachdb_telemetry: true

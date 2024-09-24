@@ -23,7 +23,7 @@ module ActiveRecord
         end
 
         setup do
-          @connection = ActiveRecord::Base.connection
+          @connection = ActiveRecord::Base.lease_connection
           @connection.create_table "rockets", force: true do |t|
             t.string :name
           end
@@ -74,12 +74,7 @@ module ActiveRecord
           assert_equal 1, foreign_keys.size
 
           fk = foreign_keys.first
-          if current_adapter?(:Mysql2Adapter)
-            # ON DELETE RESTRICT is the default on MySQL
-            assert_nil fk.on_delete
-          else
-            assert_equal :restrict, fk.on_delete
-          end
+          assert_equal :restrict, fk.on_delete
         end
 
         def test_add_on_delete_cascade_foreign_key
@@ -335,9 +330,9 @@ module ActiveRecord
             end
 
             if current_adapter?(:Mysql2Adapter)
-              if ActiveRecord::Base.connection.mariadb?
+              if ActiveRecord::Base.lease_connection.mariadb?
                 assert_match(/Duplicate key on write or update/, error.message)
-              elsif ActiveRecord::Base.connection.database_version < "5.6"
+              elsif ActiveRecord::Base.lease_connection.database_version < "5.6"
                 assert_match(/Can't create table/, error.message)
               else
                 assert_match(/Duplicate foreign key constraint name/, error.message)
@@ -362,8 +357,10 @@ module ActiveRecord
       class CompositeForeignKeyTest < ActiveRecord::TestCase
         include SchemaDumpingHelper
 
+        self.use_transactional_tests = false
+
         setup do
-          @connection = ActiveRecord::Base.connection
+          @connection = ActiveRecord::Base.lease_connection
           @connection.create_table :rockets, primary_key: [:tenant_id, :id], force: true do |t|
             t.integer :tenant_id
             t.integer :id
@@ -375,8 +372,8 @@ module ActiveRecord
         end
 
         teardown do
-          @connection.drop_table :astronauts, if_exists: true rescue nil
-          @connection.drop_table :rockets, if_exists: true rescue nil
+          @connection.drop_table :astronauts, if_exists: true
+          @connection.drop_table :rockets, if_exists: true
         end
 
         # OVERRIDE: CockroachDB does not quote the table name.

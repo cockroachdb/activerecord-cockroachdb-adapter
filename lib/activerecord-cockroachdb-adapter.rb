@@ -25,3 +25,8 @@ if defined?(Rails::Railtie)
     end
   end
 end
+
+require "active_record"
+require "active_record/connection_adapters"
+
+ActiveRecord::ConnectionAdapters.register "cockroachdb", "ActiveRecord::ConnectionAdapters::CockroachDBAdapter", "active_record/connection_adapters/cockroachdb_adapter"

@@ -35,7 +35,7 @@ module CockroachDB
     # Drop and recreate the parrots and treasures tables so they use
     # primary key sequences. After recreating the tables, load their fixtures.
     def before_setup
-      conn = ActiveRecord::Base.connection
+      conn = ActiveRecord::Base.lease_connection
 
       conn.disable_referential_integrity do
         parrots_redefine
@@ -87,7 +87,7 @@ module CockroachDB
         { "name" => "first", "wheels_count" => 2 },
         { "name" => "second", "wheels_count" => 3 }
       ]
-      conn = ActiveRecord::Base.connection
+      conn = ActiveRecord::Base.lease_connection
       assert_nothing_raised do
         conn.insert_fixtures_set({ "aircraft" => fixtures }, ["aircraft"])
       end
@@ -103,27 +103,6 @@ module CockroachDB
       fixtures = ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, "parrots")
       assert Parrot.find_by_name("Curious George"), "George is not in the database"
       assert fixtures.detect { |f| f.name == "parrots" }, "no fixtures named 'parrots' in #{fixtures.map(&:name).inspect}"
-    end
-
-    # This replaces the same test that's been excluded from
-    # FixturesTest. The test is exactly the same, but the tables
-    # under test will have primary key sequences, and the connection is from ActiveRecord::Base.
-    # Normally, the primary keys would use CockroachDB's unique_rowid().
-    def test_yaml_file_with_symbol_columns
-      ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT + "/naked/yml", "trees")
-    end
-
-    # This replaces the same test that's been excluded from
-    # FixturesTest. The test is exactly the same, but the tables
-    # under test will have primary key sequences, and the connection is from ActiveRecord::Base.
-    # Normally, the primary keys would use CockroachDB's unique_rowid().
-    def test_bulk_insert
-      subscriber = InsertQuerySubscriber.new
-      subscription = ActiveSupport::Notifications.subscribe("sql.active_record", subscriber)
-      create_fixtures("bulbs")
-      assert_equal 1, subscriber.events.size, "It takes one INSERT query to insert two fixtures"
-    ensure
-      ActiveSupport::Notifications.unsubscribe(subscription)
     end
 
     # This replaces the same test that's been excluded from
@@ -154,7 +133,7 @@ module CockroachDB
 
       assert_no_difference "Aircraft.count" do
         assert_raises(ActiveRecord::NotNullViolation) do
-          ActiveRecord::Base.connection.insert_fixtures_set(fixtures)
+          ActiveRecord::Base.lease_connection.insert_fixtures_set(fixtures)
         end
       end
     end
@@ -167,7 +146,7 @@ module CockroachDB
       # Reset cache to make finds on the new table work
       ActiveRecord::FixtureSet.reset_cache
 
-      ActiveRecord::Base.connection.create_table :prefix_other_topics_suffix do |t|
+      ActiveRecord::Base.lease_connection.create_table :prefix_other_topics_suffix do |t|
         t.column :title, :string
         t.column :author_name, :string
         t.column :author_email_address, :string
@@ -201,11 +180,11 @@ module CockroachDB
       # class-level configuration helper.
       assert_not_nil topics, "Fixture data inserted, but fixture objects not returned from create"
 
-      first_row = ActiveRecord::Base.connection.select_one("SELECT * FROM prefix_other_topics_suffix WHERE author_name = 'David'")
+      first_row = ActiveRecord::Base.lease_connection.select_one("SELECT * FROM prefix_other_topics_suffix WHERE author_name = 'David'")
       assert_not_nil first_row, "The prefix_other_topics_suffix table appears to be empty despite create_fixtures: the row with author_name = 'David' was not found"
       assert_equal("The First Topic", first_row["title"])
 
-      second_row = ActiveRecord::Base.connection.select_one("SELECT * FROM prefix_other_topics_suffix WHERE author_name = 'Mary'")
+      second_row = ActiveRecord::Base.lease_connection.select_one("SELECT * FROM prefix_other_topics_suffix WHERE author_name = 'Mary'")
       assert_nil(second_row["author_email_address"])
 
       assert_equal :prefix_other_topics_suffix, topics.table_name.to_sym
@@ -218,7 +197,7 @@ module CockroachDB
       ActiveRecord::Base.table_name_prefix = old_prefix
       ActiveRecord::Base.table_name_suffix = old_suffix
 
-      ActiveRecord::Base.connection.drop_table :prefix_other_topics_suffix rescue nil
+      ActiveRecord::Base.lease_connection.drop_table :prefix_other_topics_suffix, if_exists: true
     end
 
     # This replaces the same test that's been excluded from
@@ -226,7 +205,7 @@ module CockroachDB
     # under test will have primary key sequences, and the connection is from ActiveRecord::Base.
     # Normally, the primary keys would use CockroachDB's unique_rowid().
     def test_create_symbol_fixtures
-      fixtures = ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, :collections, collections: Course) { Course.connection }
+      fixtures = ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, :collections, collections: Course) { Course.lease_connection }
 
       assert Course.find_by_name("Collection"), "course is not in the database"
       assert fixtures.detect { |f| f.name == "collections" }, "no fixtures named 'collections' in #{fixtures.map(&:name).inspect}"
@@ -235,13 +214,13 @@ module CockroachDB
     private
 
     def parrots_redefine
-      Parrot.connection.exec_query("DROP TABLE IF EXISTS parrots_pirates")
-      Parrot.connection.exec_query("DROP TABLE IF EXISTS parrots_treasures")
+      Parrot.lease_connection.exec_query("DROP TABLE IF EXISTS parrots_pirates")
+      Parrot.lease_connection.exec_query("DROP TABLE IF EXISTS parrots_treasures")
 
-      Parrot.connection.drop_table :parrots, if_exists: true
+      Parrot.lease_connection.drop_table :parrots, if_exists: true
 
-      Parrot.connection.exec_query("CREATE SEQUENCE IF NOT EXISTS parrots_id_seq")
-      Parrot.connection.exec_query("
+      Parrot.lease_connection.exec_query("CREATE SEQUENCE IF NOT EXISTS parrots_id_seq")
+      Parrot.lease_connection.exec_query("
         CREATE TABLE parrots (
           id INT PRIMARY KEY DEFAULT nextval('parrots_id_seq'),
           breed INT DEFAULT 0,
@@ -259,8 +238,8 @@ module CockroachDB
     end
 
     def parrots_pirates_redefine
-      Parrot.connection.exec_query("DROP TABLE IF EXISTS parrots_pirates")
-      Parrot.connection.exec_query("
+      Parrot.lease_connection.exec_query("DROP TABLE IF EXISTS parrots_pirates")
+      Parrot.lease_connection.exec_query("
           CREATE TABLE parrots_pirates (
             parrot_id INT8 NULL,
             pirate_id INT8 NULL,
@@ -271,10 +250,10 @@ module CockroachDB
     end
 
     def treasures_redefine
-      Treasure.connection.drop_table :treasures, if_exists: true
+      Treasure.lease_connection.drop_table :treasures, if_exists: true
 
-      Treasure.connection.exec_query("CREATE SEQUENCE IF NOT EXISTS treasures_id_seq")
-      Treasure.connection.exec_query("
+      Treasure.lease_connection.exec_query("CREATE SEQUENCE IF NOT EXISTS treasures_id_seq")
+      Treasure.lease_connection.exec_query("
         CREATE TABLE treasures (
           id INT PRIMARY KEY DEFAULT nextval('treasures_id_seq'),
           name VARCHAR NULL,
@@ -287,8 +266,8 @@ module CockroachDB
     end
 
     def parrots_treasures_redefine
-      Parrot.connection.exec_query("DROP TABLE IF EXISTS parrots_treasures")
-      Parrot.connection.exec_query("
+      Parrot.lease_connection.exec_query("DROP TABLE IF EXISTS parrots_treasures")
+      Parrot.lease_connection.exec_query("
           CREATE TABLE parrots_treasures (
             parrot_id INT8 NULL,
             treasure_id INT8 NULL
@@ -305,9 +284,9 @@ module CockroachDB
     # We'll do this in a before_setup so we get ahead of
     # ActiveRecord::TestFixtures#before_setup.
     def before_setup
-      Account.connection.drop_table :accounts, if_exists: true
-      Account.connection.exec_query("CREATE SEQUENCE IF NOT EXISTS  accounts_id_seq")
-      Account.connection.exec_query("
+      Account.lease_connection.drop_table :accounts, if_exists: true
+      Account.lease_connection.exec_query("CREATE SEQUENCE IF NOT EXISTS accounts_id_seq")
+      Account.lease_connection.exec_query("
         CREATE TABLE accounts (
           id BIGINT PRIMARY KEY DEFAULT nextval('accounts_id_seq'),
           created_at timestamp NULL,
@@ -320,9 +299,9 @@ module CockroachDB
         )
       ")
 
-      Company.connection.drop_table :companies, if_exists: true
-      Company.connection.exec_query("CREATE SEQUENCE IF NOT EXISTS companies_nonstd_seq")
-      Company.connection.exec_query("
+      Company.lease_connection.drop_table :companies, if_exists: true
+      Company.lease_connection.exec_query("CREATE SEQUENCE IF NOT EXISTS companies_nonstd_seq")
+      Company.lease_connection.exec_query("
         CREATE TABLE companies (
           id BIGINT PRIMARY KEY DEFAULT nextval('companies_nonstd_seq'),
           type character varying,
@@ -337,9 +316,9 @@ module CockroachDB
         )
       ")
 
-      Course.connection.drop_table :courses, if_exists: true
-      Course.connection.exec_query("CREATE SEQUENCE IF NOT EXISTS courses_id_seq")
-      Course.connection.exec_query("
+      Course.lease_connection.drop_table :courses, if_exists: true
+      Course.lease_connection.exec_query("CREATE SEQUENCE IF NOT EXISTS courses_id_seq")
+      Course.lease_connection.exec_query("
         CREATE TABLE courses (
           id INT PRIMARY KEY DEFAULT nextval('courses_id_seq'),
           name character varying,
@@ -359,9 +338,9 @@ module CockroachDB
 
     # Drop the primary key sequences and bring back the original tables.
     def teardown
-      Account.connection.drop_table :accounts, if_exists: true
-      Account.connection.exec_query("DROP SEQUENCE IF EXISTS accounts_id_seq")
-      Account.connection.create_table :accounts, force: true do |t|
+      Account.lease_connection.drop_table :accounts, if_exists: true
+      Account.lease_connection.exec_query("DROP SEQUENCE IF EXISTS accounts_id_seq")
+      Account.lease_connection.create_table :accounts, force: true do |t|
         t.timestamps null: true
         t.references :firm, index: false
         t.string  :firm_name
@@ -370,9 +349,9 @@ module CockroachDB
         t.integer "a" * max_identifier_length
       end
 
-      Company.connection.drop_table :companies, if_exists: true
-      Company.connection.exec_query("DROP SEQUENCE IF EXISTS companies_nonstd_seq")
-      Company.connection.create_table :companies, force: true do |t|
+      Company.lease_connection.drop_table :companies, if_exists: true
+      Company.lease_connection.exec_query("DROP SEQUENCE IF EXISTS companies_nonstd_seq CASCADE")
+      Company.lease_connection.create_table :companies, force: true do |t|
         t.string :type
         t.references :firm, index: false
         t.string  :firm_name
@@ -388,13 +367,13 @@ module CockroachDB
         t.index [:firm_id, :type], name: "company_partial_index", where: "(rating > 10)"
         t.index [:firm_id], name: "company_nulls_not_distinct", nulls_not_distinct: true
         t.index :name, name: "company_name_index", using: :btree
-        t.index "(CASE WHEN rating > 0 THEN lower(name) END) DESC", name: "company_expression_index" if Company.connection.supports_expression_index?
+        t.index "(CASE WHEN rating > 0 THEN lower(name) END) DESC", name: "company_expression_index" if Company.lease_connection.supports_expression_index?
         t.index [:firm_id, :type], name: "company_include_index", include: [:name, :account_id]
       end
 
-      Course.connection.drop_table :courses, if_exists: true
-      Course.connection.exec_query("DROP SEQUENCE IF EXISTS courses_id_seq")
-      Course.connection.create_table :courses, force: true do |t|
+      Course.lease_connection.drop_table :courses, if_exists: true
+      Course.lease_connection.exec_query("DROP SEQUENCE IF EXISTS courses_id_seq")
+      Course.lease_connection.create_table :courses, force: true do |t|
         t.column :name, :string, null: false
         t.column :college_id, :integer, index: true
       end
@@ -411,7 +390,7 @@ module CockroachDB
       @instances.each do |instance|
         model = instance.class
         model.delete_all
-        model.connection.reset_pk_sequence!(model.table_name, model.primary_key, model.sequence_name)
+        model.lease_connection.reset_pk_sequence!(model.table_name, model.primary_key, model.sequence_name)
 
         instance.save!
         assert_equal 1, instance.id, "Sequence reset for #{model.table_name} failed."
@@ -427,7 +406,7 @@ module CockroachDB
       @instances.each do |instance|
         model = instance.class
         model.delete_all
-        model.connection.reset_pk_sequence!(model.table_name)
+        model.lease_connection.reset_pk_sequence!(model.table_name)
 
         instance.save!
         assert_equal 1, instance.id, "Sequence reset for #{model.table_name} failed."
@@ -455,11 +434,11 @@ module CockroachDB
     private
 
     def max_identifier_length
-      ActiveRecord::Base.connection.index_name_length
+      ActiveRecord::Base.lease_connection.index_name_length
     end
 
     def recreate_parrots
-      conn = ActiveRecord::Base.connection
+      conn = ActiveRecord::Base.lease_connection
       conn.disable_referential_integrity do
         conn.drop_table :parrots_pirates, if_exists: true
         conn.drop_table :parrots_treasures, if_exists: true

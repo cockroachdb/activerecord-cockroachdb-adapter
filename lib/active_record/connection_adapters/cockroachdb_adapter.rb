@@ -46,20 +46,6 @@ require_relative "../relation/query_methods_ext"
 ActiveRecord::ConnectionAdapters::CockroachDB.initial_setup
 
 module ActiveRecord
-  # TODO: once in rails 7.2, remove this and replace with a `#register` call.
-  # See: https://github.com/rails/rails/commit/22a26d7f74ea8f0d5f7c4169531ae38441cfd5e5#diff-2468c670eb10c24bd2823e42708489a336d6f21c6efc7e3c4a574166fa77bb22
-  module ConnectionHandling
-    def cockroachdb_adapter_class
-      ConnectionAdapters::CockroachDBAdapter
-    end
-
-    def cockroachdb_connection(config)
-      cockroachdb_adapter_class.new(config)
-    end
-  end
-end
-
-module ActiveRecord
   module ConnectionAdapters
     module CockroachDBConnectionPool
       def initialize(pool_config)
@@ -151,15 +137,23 @@ module ActiveRecord
       end
 
       def get_database_version
-        major, minor, patch = query_value("SHOW crdb_version").match(/v(\d+).(\d+).(\d+)/)[1..].map(&:to_i)
-        major * 100 * 100 + minor * 100 + patch
+        with_raw_connection do |conn|
+          conn.async_exec("SHOW crdb_version") do |result|
+            major, minor, patch = result
+              .getvalue(0, 0)
+              .match(/v(\d+).(\d+).(\d+)/)
+              .captures
+              .map(&:to_i)
+            major * 100 * 100 + minor * 100 + patch
+          end
+        end
       end
       undef :postgresql_version
       alias :cockroachdb_version :database_version
 
       def supports_datetime_with_precision?
         # https://github.com/cockroachdb/cockroach/pull/111400
-        database_version >= 23_01_13
+        true
       end
 
       def supports_nulls_not_distinct?
@@ -176,7 +170,7 @@ module ActiveRecord
       end
 
       def supports_materialized_views?
-        false
+        true
       end
 
       def supports_index_include?
@@ -215,44 +209,44 @@ module ActiveRecord
       end
 
       def supports_deferrable_constraints?
+        # https://go.crdb.dev/issue-v/31632/v23.1
         false
       end
 
-      # NOTE: This commented bit of code allows to have access to crdb version,
-      # which can be useful for feature detection. However, we currently don't
-      # need, hence we avoid the extra queries.
-      #
-      #   def initialize(connection, logger, conn_params, config)
-      #     super(connection, logger, conn_params, config)
+      def check_version # :nodoc:
+        # https://www.cockroachlabs.com/docs/releases/release-support-policy
+        if database_version < 23_01_12 # < 23.1.12
+          raise "Your version of CockroachDB (#{database_version}) is too old. Active Record supports CockroachDB >= 23.1.12."
+        end
+      end
 
-      #     # crdb_version is the version of the binary running on the node. We
-      #     # really want to use `SHOW CLUSTER SETTING version` to get the cluster
-      #     # version, but that is only available to admins. Instead, we can use
-      #     # crdb_internal.is_at_least_version, but that's only available in 22.1.
-      #     crdb_version_string = query_value("SHOW crdb_version")
-      #     if crdb_version_string.include? "v22.1"
-      #       version_num = query_value(<<~SQL, "VERSION")
-      #         SELECT
-      #           CASE
-      #           WHEN crdb_internal.is_at_least_version('22.2') THEN 2220
-      #           WHEN crdb_internal.is_at_least_version('22.1') THEN 2210
-      #           ELSE 2120
-      #           END;
-      #       SQL
-      #     end
-      #     @crdb_version = version_num.to_i
-      #   end
-
-      def initialize(...)
+      def configure_connection(...)
         super
 
       # This rescue flow appears in new_client, but it is needed here as well
       # since Cockroach will sometimes not raise until a query is made.
+      #
+      # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/337#issuecomment-2328419453
+      #
+      # The error conditions used to differ from the ones in new_client, but
+      # the reasons why are no longer relevant. We keep this in sync with new_client
+      # even though some conditions might never be checked.
+      #
+      # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/229
+      #
+      # We have to rescue `ActiveRecord::StatementInvalid` instead of `::PG::Error`
+      # here as the error has already been casted (in `#with_raw_connection` as
+      # of Rails 7.2.1).
       rescue ActiveRecord::StatementInvalid => error
-        no_db_err_check1 = @connection_parameters && @connection_parameters[:dbname] && error.cause.message.include?(@connection_parameters[:dbname])
-        no_db_err_check2 = @connection_parameters && @connection_parameters[:dbname] && error.cause.message.include?("pg_type")
-        if no_db_err_check1 || no_db_err_check2
-          raise ActiveRecord::NoDatabaseError
+        conn_params = @connection_parameters
+        if conn_params && conn_params[:dbname] == "postgres"
+          raise ActiveRecord::ConnectionNotEstablished, error.message
+        elsif conn_params && conn_params[:dbname] && error.cause.message.include?(conn_params[:dbname])
+          raise ActiveRecord::NoDatabaseError.db_error(conn_params[:dbname])
+        elsif conn_params && conn_params[:user] && error.cause.message.include?(conn_params[:user])
+          raise ActiveRecord::DatabaseConnectionError.username_error(conn_params[:user])
+        elsif conn_params && conn_params[:host] && error.cause.message.include?(conn_params[:host])
+          raise ActiveRecord::DatabaseConnectionError.hostname_error(conn_params[:host])
         else
           raise ActiveRecord::ConnectionNotEstablished, error.message
         end
@@ -518,7 +512,7 @@ module ActiveRecord
         # so this modified query uses AS OF SYSTEM TIME '-10s' to read historical data.
         def add_pg_decoders
           if @config[:use_follower_reads_for_type_introspection]
-            @default_timezone = nil
+            @mapped_default_timezone = nil
             @timestamp_decoder = nil
 
             coders_by_name = {
@@ -533,6 +527,7 @@ module ActiveRecord
               "timestamp" => PG::TextDecoder::TimestampUtc,
               "timestamptz" => PG::TextDecoder::TimestampWithTimeZone,
             }
+            coders_by_name["date"] = PG::TextDecoder::Date if decode_dates
 
             known_coder_types = coders_by_name.keys.map { |n| quote(n) }
             query = <<~SQL % known_coder_types.join(", ")
@@ -540,7 +535,6 @@ module ActiveRecord
               FROM pg_type as t AS OF SYSTEM TIME '-10s'
               WHERE t.typname IN (%s)
             SQL
-
             coders = execute_and_clear(query, "SCHEMA", [], allow_retry: true, materialize_transactions: false) do |result|
               result.filter_map { |row| construct_coder(row, coders_by_name[row["typname"]]) }
             end

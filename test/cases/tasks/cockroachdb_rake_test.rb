@@ -27,7 +27,7 @@ module ActiveRecord
       config["database"] = ARTest.config["connections"]["cockroachdb"]["arunit"]["database"]
 
       begin
-        ActiveRecord::Base.connection.execute(<<~SQL)
+        ActiveRecord::Base.lease_connection.execute(<<~SQL)
           CREATE TYPE IF NOT EXISTS status AS ENUM ('open', 'closed', 'inactive');
         SQL
         assert_called(
@@ -38,7 +38,7 @@ module ActiveRecord
           ActiveRecord::Tasks::DatabaseTasks.structure_dump(config, @filename)
         end
       ensure
-        ActiveRecord::Base.connection.execute(<<~SQL)
+        ActiveRecord::Base.lease_connection.execute(<<~SQL)
           DROP TYPE IF EXISTS status;
         SQL
       end

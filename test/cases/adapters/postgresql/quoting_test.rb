@@ -6,7 +6,7 @@ require "support/schema_dumping_helper"
 module CockroachDB
   class PostgresqlQuotingTest < ActiveRecord::PostgreSQLTestCase
     def setup
-      @conn = ActiveRecord::Base.connection
+      @conn = ActiveRecord::Base.lease_connection
       @raise_int_wider_than_64bit = ActiveRecord.raise_int_wider_than_64bit
     end
 

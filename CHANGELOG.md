@@ -2,6 +2,10 @@
 
 ## Ongoing
 
+## 7.2.0 - 2024-09-24
+
+- Add support for Rails 7.2 ([#337](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/337))
+
 ## 7.1.1 - 2024-05-01
 
 - Enable precision support ([#318](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/318))

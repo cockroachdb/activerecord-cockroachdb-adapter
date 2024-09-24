@@ -55,6 +55,14 @@ module ActiveRecord
           end
         end
 
+        # OVERRIDE: CockroachDB does not support deferrable constraints.
+        #   See: https://go.crdb.dev/issue-v/31632/v23.1
+        def foreign_key_options(from_table, to_table, options)
+          options = super
+          options.delete(:deferrable) unless supports_deferrable_constraints?
+          options
+        end
+
         # OVERRIDE: Added `unique_rowid` to the last line of the second query.
         #   This is a CockroachDB-specific function used for primary keys.
         #   Also make sure we don't consider `NOT VISIBLE` columns.

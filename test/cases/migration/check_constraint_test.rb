@@ -3,7 +3,7 @@
 require "cases/helper"
 require "support/schema_dumping_helper"
 
-if ActiveRecord::Base.connection.supports_check_constraints?
+if ActiveRecord::Base.lease_connection.supports_check_constraints?
   module ActiveRecord
     module CockroachDB
       class Migration
@@ -15,7 +15,7 @@ if ActiveRecord::Base.connection.supports_check_constraints?
           end
 
           setup do
-            @connection = ActiveRecord::Base.connection
+            @connection = ActiveRecord::Base.lease_connection
             @connection.create_table "trades", force: true do |t|
               t.integer :price
               t.integer :quantity
@@ -23,10 +23,10 @@ if ActiveRecord::Base.connection.supports_check_constraints?
           end
 
           teardown do
-            @connection.drop_table "trades", if_exists: true rescue nil
+            @connection.drop_table "trades", if_exists: true
           end
 
-          if ActiveRecord::Base.connection.supports_validate_constraints?
+          if ActiveRecord::Base.lease_connection.supports_validate_constraints?
             # keep
             def test_validate_check_constraint_by_name
               @connection.add_check_constraint :trades, "quantity > 0", name: "quantity_check", validate: false

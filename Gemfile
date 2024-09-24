@@ -50,6 +50,7 @@ group :development, :test do
 
   # Needed for the test suite
   gem "msgpack", ">= 1.7.0"
+  gem "mutex_m", "~> 0.2.0"
 
   gem "rake"
   gem "debug"
@@ -61,8 +62,8 @@ group :development, :test do
   gem "parser"
 
   # Gems used by the ActiveRecord test suite
-  gem "bcrypt", "~> 3.1.18"
-  gem "sqlite3", "~> 1.4.4"
+  gem "bcrypt", "~> 3.1"
+  gem "sqlite3", "~> 1.4"
 
-  gem "minitest", "~> 5.15.0"
+  gem "minitest", "~> 5.15"
 end
