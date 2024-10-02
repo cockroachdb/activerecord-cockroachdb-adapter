@@ -414,11 +414,8 @@ module ActiveRecord
           fields.delete_if do |field|
             # Don't include rowid column if it is hidden and the primary key
             # is not defined (meaning CRDB implicitly created it).
-            if field[0] == CockroachDBAdapter::DEFAULT_PRIMARY_KEY
+            field[0] == CockroachDBAdapter::DEFAULT_PRIMARY_KEY &&
               field[10] && !primary_key(table_name)
-            else
-              false # Keep this entry.
-            end
           end
         end
 

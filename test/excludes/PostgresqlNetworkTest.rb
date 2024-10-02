@@ -36,7 +36,7 @@ CopyCat.copy_methods(self, self, :test_network_types, :test_invalid_network_addr
     case node
     in [:send, [:const, nil, :PostgresqlNetworkAddress], /create|new/, [:hash, *pairs]]
 
-      pairs.each_with_index do |pair, i|
+      pairs.each do |pair|
         if pair in [:pair, [:sym, /(cidr|mac)_address/], *]
           expr = pair.location.expression
           large_expr = expr.resize(expr.size + 1)

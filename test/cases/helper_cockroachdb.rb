@@ -26,7 +26,7 @@ end
 module LoadSchemaHelperExt
   def load_schema
     # TODO: Remove this const_set mess once https://github.com/rails/rails/commit/d5c2ff8345c9d23b7326edb2bbe72b6e86a63140
-    #   is part of a rails release.
+    #   is part of a rails release (likely 8.0.0).
     old_helper = ActiveRecord::TestCase
     ActiveRecord.const_set(:TestCase, NoPGSchemaTestCase.new(ActiveRecord::TestCase))
     return if ENV['COCKROACH_LOAD_FROM_TEMPLATE']
