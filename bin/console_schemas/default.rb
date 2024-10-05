@@ -6,4 +6,6 @@ ActiveRecord::Schema.define do
     t.string :title
     t.text :body
   end
+
+  add_index("posts", ["title"], name: "index_posts_on_title", unique: true)
 end

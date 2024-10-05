@@ -97,4 +97,38 @@ module CockroachDB
       assert_match %r{create_table "int_defaults", id: :bigint, default: nil}, schema
     end
   end
+
+  class PrimaryKeyHiddenColumnTest < ActiveRecord::TestCase
+    class Rocket < ActiveRecord::Base
+    end
+
+    def setup
+      connection = ActiveRecord::Base.lease_connection
+      connection.execute <<-SQL
+        CREATE TABLE rockets(
+          id SERIAL PRIMARY KEY USING HASH WITH (bucket_count=4)
+        )
+      SQL
+    end
+
+    def teardown
+      ActiveRecord::Base.connection.drop_table :rockets
+    end
+
+    def test_to_key_with_hidden_primary_key_part
+      rocket = Rocket.new
+      assert_nil rocket.to_key
+      rocket.save
+      assert_equal rocket.to_key, [rocket.id]
+    end
+
+    def test_read_attribute_with_hidden_primary_key_part
+      rocket = Rocket.create!
+      id = assert_not_deprecated(ActiveRecord.deprecator) do
+        rocket.read_attribute(:id)
+      end
+
+      assert_equal rocket.id, id
+    end
+  end
 end
