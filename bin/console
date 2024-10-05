@@ -12,20 +12,22 @@ require "activerecord-cockroachdb-adapter"
 #       structure_load(Post.connection_db_config, "awesome-file.sql")
 require "active_record/connection_adapters/cockroachdb/database_tasks"
 
+DB_NAME = "ar_crdb_console"
+
 schema_kind = ENV.fetch("SCHEMA_KIND", ENV.fetch("SCHEMA", "default"))
 
-system("cockroach sql --insecure --host=localhost:26257 --execute='drop database if exists ar_crdb_console'",
+system("cockroach sql --insecure --host=localhost:26257 --execute='drop database if exists #{DB_NAME}'",
   exception: true)
-system("cockroach sql --insecure --host=localhost:26257 --execute='create database ar_crdb_console'",
+system("cockroach sql --insecure --host=localhost:26257 --execute='create database #{DB_NAME}'",
   exception: true)
 
 ActiveRecord::Base.establish_connection(
-  #Alternative version:  "cockroachdb://root@localhost:26257/ar_crdb_console"
+  #Alternative version:  "cockroachdb://root@localhost:26257/#{DB_NAME}"
   adapter: "cockroachdb",
   host: "localhost",
   port: 26257,
   user: "root",
-  database: "ar_crdb_console"
+  database: DB_NAME
 )
 
 load "#{__dir__}/console_schemas/#{schema_kind}.rb"
