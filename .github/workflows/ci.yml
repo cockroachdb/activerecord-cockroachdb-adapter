@@ -18,16 +18,16 @@ on:
 
 # This allows a subsequently queued workflow run to interrupt previous runs.
 concurrency:
-  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
   cancel-in-progress: true
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        crdb: [v23.1.5]
-        ruby: [ruby-head]
+        crdb: [v24.1.10]
+        ruby: ["3.4"]
     name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
     steps:
       - name: Set Up Actions
@@ -37,8 +37,8 @@ jobs:
       - name: Set Up Ruby
         uses: ruby/setup-ruby@v1
         with:
-           ruby-version: ${{ matrix.ruby }}
-           bundler-cache: true
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
       - name: Install and Start Cockroachdb
         run: |
           # Download CockroachDB
@@ -75,7 +75,6 @@ jobs:
             ALTER RANGE liveness CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 30;
 
             SET CLUSTER SETTING kv.range_merge.queue_interval = '50ms';
-            SET CLUSTER SETTING kv.raft_log.disable_synchronization_unsafe = 'true';
             SET CLUSTER SETTING jobs.registry.interval.cancel = '180s';
             SET CLUSTER SETTING jobs.registry.interval.gc = '30s';
             SET CLUSTER SETTING kv.range_split.by_load_merge_delay = '5s';

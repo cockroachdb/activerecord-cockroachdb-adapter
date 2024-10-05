@@ -17,6 +17,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "activerecord", "~> 7.0.3"
   spec.add_dependency "pg", "~> 1.2"
   spec.add_dependency "rgeo-activerecord", "~> 7.0.0"
+  # See https://github.com/rails/rails/issues/54263
+  spec.add_dependency 'concurrent-ruby', '1.3.4'
 
   spec.add_development_dependency "benchmark-ips", "~> 2.9.1"
 

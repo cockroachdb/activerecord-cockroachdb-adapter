@@ -32,6 +32,115 @@ module ActiveRecord
           end
         end
 
+        def primary_keys(table_name)
+          return super unless database_version >= 24_02_02
+
+          query_values(<<~SQL, "SCHEMA")
+            SELECT a.attname
+              FROM (
+                     SELECT indrelid, indkey, generate_subscripts(indkey, 1) idx
+                       FROM pg_index
+                      WHERE indrelid = #{quote(quote_table_name(table_name))}::regclass
+                        AND indisprimary
+                   ) i
+              JOIN pg_attribute a
+                ON a.attrelid = i.indrelid
+               AND a.attnum = i.indkey[i.idx]
+               AND NOT a.attishidden
+             ORDER BY i.idx
+          SQL
+        end
+
+        def column_names_from_column_numbers(table_oid, column_numbers)
+          return super unless database_version >= 24_02_02
+
+          Hash[query(<<~SQL, "SCHEMA")].values_at(*column_numbers).compact
+            SELECT a.attnum, a.attname
+            FROM pg_attribute a
+            WHERE a.attrelid = #{table_oid}
+            AND a.attnum IN (#{column_numbers.join(", ")})
+            AND NOT a.attishidden
+          SQL
+        end
+
+        # OVERRIDE: CockroachDB does not support deferrable constraints.
+        #   See: https://go.crdb.dev/issue-v/31632/v23.1
+        def foreign_key_options(from_table, to_table, options)
+          options = super
+          options.delete(:deferrable) unless supports_deferrable_constraints?
+          options
+        end
+
+        # OVERRIDE: Added `unique_rowid` to the last line of the second query.
+        #   This is a CockroachDB-specific function used for primary keys.
+        #   Also make sure we don't consider `NOT VISIBLE` columns.
+        #
+        # Returns a table's primary key and belonging sequence.
+        def pk_and_sequence_for(table) # :nodoc:
+          # First try looking for a sequence with a dependency on the
+          # given table's primary key.
+          result = query(<<~SQL, "SCHEMA")[0]
+            SELECT attr.attname, nsp.nspname, seq.relname
+            FROM pg_class      seq,
+                 pg_attribute  attr,
+                 pg_depend     dep,
+                 pg_constraint cons,
+                 pg_namespace  nsp,
+                 -- TODO: use the pg_catalog.pg_attribute(attishidden) column when
+                 --   it is added instead of joining on crdb_internal.
+                 --   See https://github.com/cockroachdb/cockroach/pull/126397
+                 crdb_internal.table_columns tc
+            WHERE seq.oid           = dep.objid
+              AND seq.relkind       = 'S'
+              AND attr.attrelid     = dep.refobjid
+              AND attr.attnum       = dep.refobjsubid
+              AND attr.attrelid     = cons.conrelid
+              AND attr.attnum       = cons.conkey[1]
+              AND seq.relnamespace  = nsp.oid
+              AND attr.attrelid     = tc.descriptor_id
+              AND attr.attname      = tc.column_name
+              AND tc.hidden         = false
+              AND cons.contype      = 'p'
+              AND dep.classid       = 'pg_class'::regclass
+              AND dep.refobjid      = #{quote(quote_table_name(table))}::regclass
+          SQL
+
+          if result.nil? || result.empty?
+            result = query(<<~SQL, "SCHEMA")[0]
+              SELECT attr.attname, nsp.nspname,
+                CASE
+                  WHEN pg_get_expr(def.adbin, def.adrelid) !~* 'nextval' THEN NULL
+                  WHEN split_part(pg_get_expr(def.adbin, def.adrelid), '''', 2) ~ '.' THEN
+                    substr(split_part(pg_get_expr(def.adbin, def.adrelid), '''', 2),
+                           strpos(split_part(pg_get_expr(def.adbin, def.adrelid), '''', 2), '.')+1)
+                  ELSE split_part(pg_get_expr(def.adbin, def.adrelid), '''', 2)
+                END
+              FROM pg_class       t
+              JOIN pg_attribute   attr ON (t.oid = attrelid)
+              JOIN pg_attrdef     def  ON (adrelid = attrelid AND adnum = attnum)
+              JOIN pg_constraint  cons ON (conrelid = adrelid AND adnum = conkey[1])
+              JOIN pg_namespace   nsp  ON (t.relnamespace = nsp.oid)
+              -- TODO: use the pg_catalog.pg_attribute(attishidden) column when
+              --   it is added instead of joining on crdb_internal.
+              --   See https://github.com/cockroachdb/cockroach/pull/126397
+              JOIN crdb_internal.table_columns tc ON (attr.attrelid = tc.descriptor_id AND attr.attname = tc.column_name)
+              WHERE t.oid = #{quote(quote_table_name(table))}::regclass
+                AND tc.hidden = false
+                AND cons.contype = 'p'
+                AND pg_get_expr(def.adbin, def.adrelid) ~* 'nextval|uuid_generate|gen_random_uuid|unique_rowid'
+            SQL
+          end
+
+          pk = result.shift
+          if result.last
+            [pk, PostgreSQL::Name.new(*result)]
+          else
+            [pk, nil]
+          end
+        rescue
+          nil
+        end
+
         # override
         # Modified version of the postgresql foreign_keys method.
         # Replaces t2.oid::regclass::text with t2.relname since this is

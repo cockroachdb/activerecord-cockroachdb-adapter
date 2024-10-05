@@ -47,6 +47,14 @@ group :development, :test do
   gem "byebug"
   gem "minitest-excludes", "~> 2.0.1"
 
+  # Needed for the test suite
+  gem "msgpack", ">= 1.7.0"
+  gem "mutex_m", "~> 0.2.0"
+  gem "drb"
+  gem "bigdecimal"
+  gem "benchmark"
+  gem "logger"
+
   # Gems used by the ActiveRecord test suite
   gem "bcrypt", "~> 3.1.18"
   gem "mocha", "~> 1.14.0"
