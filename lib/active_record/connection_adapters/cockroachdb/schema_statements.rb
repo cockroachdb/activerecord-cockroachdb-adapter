@@ -108,11 +108,7 @@ module ActiveRecord
                  pg_attribute  attr,
                  pg_depend     dep,
                  pg_constraint cons,
-                 pg_namespace  nsp,
-                 -- TODO: use the pg_catalog.pg_attribute(attishidden) column when
-                 --   it is added instead of joining on crdb_internal.
-                 --   See https://github.com/cockroachdb/cockroach/pull/126397
-                 crdb_internal.table_columns tc
+                 pg_namespace  nsp
             WHERE seq.oid           = dep.objid
               AND seq.relkind       = 'S'
               AND attr.attrelid     = dep.refobjid
@@ -120,9 +116,7 @@ module ActiveRecord
               AND attr.attrelid     = cons.conrelid
               AND attr.attnum       = cons.conkey[1]
               AND seq.relnamespace  = nsp.oid
-              AND attr.attrelid     = tc.descriptor_id
-              AND attr.attname      = tc.column_name
-              AND tc.hidden         = false
+              AND attr.attishidden  = false
               AND cons.contype      = 'p'
               AND dep.classid       = 'pg_class'::regclass
               AND dep.refobjid      = #{quote(quote_table_name(table))}::regclass
