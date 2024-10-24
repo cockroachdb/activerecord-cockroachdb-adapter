@@ -34,6 +34,33 @@ module CockroachDB
       assert_match 't.unique_constraint ["position_3"], name: "test_unique_constraints_position_3"', output
     end
 
+    # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347
+    def test_dump_index_rather_than_unique_constraints
+      ActiveRecord::Base.with_connection do |conn|
+        conn.create_table :payments, force: true do |t|
+          t.text "name"
+          t.integer "value"
+          t.unique_constraint ["name", "value"], name: "as_unique_constraint"
+          t.index "lower(name::STRING) ASC", name: "simple_unique", unique: true
+          t.index "name", name: "unique_with_where", where: "name IS NOT NULL", unique: true
+        end
+      end
+
+      stream = StringIO.new
+      ActiveRecord::Base.connection_pool.with_connection do |conn|
+        dumper = conn.create_schema_dumper({})
+        dumper.send(:table, "payments", stream)
+      end
+      stream.rewind
+      index_lines = stream.each_line.select { _1[/simple_unique|unique_with_where|as_unique_constraint/] }
+      assert_equal 3, index_lines.size
+      index_lines.each do |line|
+        assert_match /t.index/, line
+      end
+    ensure
+      ActiveRecord::Base.with_connection { _1.drop_table :payments, if_exists: true }
+    end
+
     def test_schema_dump_with_timestamptz_datetime_format
       migration, original, $stdout = nil, $stdout, StringIO.new
 
