@@ -222,36 +222,12 @@ module ActiveRecord
           end
         end
 
-        # OVERRIDE: Verify that the related attribute to the unique_constraint is not dropped.
-        #  See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347.
+        # OVERRIDE: UNIQUE CONSTRAINTS will create indexes anyway, so we only consider
+        #   then as indexes.
+        # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347.
+        # See https://www.cockroachlabs.com/docs/stable/unique
         def unique_constraints(table_name)
-          scope = quoted_scope(table_name)
-
-          unique_info = internal_exec_query(<<~SQL, "SCHEMA", allow_retry: true, materialize_transactions: false)
-            SELECT c.conname, c.conrelid, c.conkey, c.condeferrable, c.condeferred
-            FROM pg_constraint c
-            JOIN pg_class t ON c.conrelid = t.oid
-            JOIN pg_namespace n ON n.oid = c.connamespace
-            JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]    -- OVERRIDE
-            WHERE c.contype = 'u'
-              AND t.relname = #{scope[:name]}
-              AND n.nspname = #{scope[:schema]}
-              AND not a.attisdropped                                                     -- OVERRIDE
-          SQL
-
-          unique_info.map do |row|
-            conkey = row["conkey"].delete("{}").split(",").map(&:to_i)
-            columns = column_names_from_column_numbers(row["conrelid"], conkey)
-
-            deferrable = extract_constraint_deferrable(row["condeferrable"], row["condeferred"])
-
-            options = {
-              name: row["conname"],
-              deferrable: deferrable
-            }
-
-            UniqueConstraintDefinition.new(table_name, columns, options)
-          end
+          []
         end
 
         # CockroachDB uses unique_rowid() for primary keys, not sequences. It's

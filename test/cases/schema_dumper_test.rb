@@ -35,11 +35,14 @@ module CockroachDB
     end
 
     # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347
-    def test_dump_index_when_attisdropped_is_true
+    def test_dump_index_rather_than_unique_constraints
       ActiveRecord::Base.with_connection do |conn|
         conn.create_table :payments, force: true do |t|
           t.text "name"
-          t.index "lower(name::STRING) ASC", name: "lower_name_index_on_payments", unique: true
+          t.integer "value"
+          t.unique_constraint ["name", "value"], name: "as_unique_constraint"
+          t.index "lower(name::STRING) ASC", name: "simple_unique", unique: true
+          t.index "name", name: "unique_with_where", where: "name IS NOT NULL", unique: true
         end
       end
 
@@ -49,8 +52,11 @@ module CockroachDB
         dumper.send(:table, "payments", stream)
       end
       stream.rewind
-      index_line = stream.each_line.find { _1[/lower_name_index_on_payments/] }
-      assert_match /t\.index/, index_line
+      index_lines = stream.each_line.select { _1[/simple_unique|unique_with_where|as_unique_constraint/] }
+      assert_equal 3, index_lines.size
+      index_lines.each do |line|
+        assert_match /t.index/, line
+      end
     ensure
       ActiveRecord::Base.with_connection { _1.drop_table :payments, if_exists: true }
     end
