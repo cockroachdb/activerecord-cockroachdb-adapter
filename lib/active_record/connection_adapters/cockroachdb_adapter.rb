@@ -181,6 +181,17 @@ module ActiveRecord
         false
       end
 
+      # OVERRIDE: UNIQUE CONSTRAINTS will create indexes anyway, so we only consider
+      #   then as indexes.
+      # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347.
+      # See https://www.cockroachlabs.com/docs/stable/unique.
+      #
+      # NOTE: support is actually partial, one can still use the `#unique_constraints`
+      #   method to get the unique constraints.
+      def supports_unique_constraints?
+        false
+      end
+
       def supports_expression_index?
         # Expression indexes are partially supported by CockroachDB v21.2,
         # but activerecord requires "ON CONFLICT expression" support.

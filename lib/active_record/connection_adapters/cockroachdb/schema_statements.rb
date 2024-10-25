@@ -222,14 +222,6 @@ module ActiveRecord
           end
         end
 
-        # OVERRIDE: UNIQUE CONSTRAINTS will create indexes anyway, so we only consider
-        #   then as indexes.
-        # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347.
-        # See https://www.cockroachlabs.com/docs/stable/unique
-        def unique_constraints(table_name)
-          []
-        end
-
         # CockroachDB uses unique_rowid() for primary keys, not sequences. It's
         # possible to force a table to use sequences, but since it's not the
         # default behavior we'll always return nil for default_sequence_name.
