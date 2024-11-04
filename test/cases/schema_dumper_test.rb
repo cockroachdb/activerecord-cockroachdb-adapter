@@ -23,24 +23,13 @@ module CockroachDB
       dump_all_table_schema []
     end
 
-    # OVERRIDE: we removed the 'deferrable' part in `assert_match`
-    def test_schema_dumps_unique_constraints
-      output = dump_table_schema("test_unique_constraints")
-      constraint_definitions = output.split(/\n/).grep(/t\.unique_constraint/)
-
-      assert_equal 3, constraint_definitions.size
-      assert_match 't.unique_constraint ["position_1"], name: "test_unique_constraints_position_1"', output
-      assert_match 't.unique_constraint ["position_2"], name: "test_unique_constraints_position_2"', output
-      assert_match 't.unique_constraint ["position_3"], name: "test_unique_constraints_position_3"', output
-    end
-
     # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347
     def test_dump_index_rather_than_unique_constraints
       ActiveRecord::Base.with_connection do |conn|
         conn.create_table :payments, force: true do |t|
           t.text "name"
           t.integer "value"
-          t.unique_constraint ["name", "value"], name: "as_unique_constraint"
+          t.unique_constraint ["name", "value"], name: "as_unique_constraint" # Will be ignored
           t.index "lower(name::STRING) ASC", name: "simple_unique", unique: true
           t.index "name", name: "unique_with_where", where: "name IS NOT NULL", unique: true
         end
@@ -53,7 +42,7 @@ module CockroachDB
       end
       stream.rewind
       index_lines = stream.each_line.select { _1[/simple_unique|unique_with_where|as_unique_constraint/] }
-      assert_equal 3, index_lines.size
+      assert_equal 2, index_lines.size
       index_lines.each do |line|
         assert_match /t.index/, line
       end
