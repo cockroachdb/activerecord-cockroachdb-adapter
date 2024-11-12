@@ -77,7 +77,7 @@ jobs:
           rm -f "$urlfile"
           rm -rf cockroach-data
           # Start CockroachDB.
-          cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-$full_version.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
+          cockroach demo --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-$full_version.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
           # Ensure CockroachDB is stopped on script exit.
           # Wait until CockroachDB has started.
           for i in {0..3}; do
