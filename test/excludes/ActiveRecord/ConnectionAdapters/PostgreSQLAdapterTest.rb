@@ -31,3 +31,5 @@ exclude :test_reports_when_behaviour_report, plpgsql_needed
 exclude :test_warnings_behaviour_can_be_customized_with_a_proc, plpgsql_needed
 exclude :test_allowlist_of_warnings_to_ignore, plpgsql_needed
 exclude :test_allowlist_of_warning_codes_to_ignore, plpgsql_needed
+
+exclude :test_translate_no_connection_exception_to_not_established, "CRDB doesn't implement pg_terminate_backend()"
