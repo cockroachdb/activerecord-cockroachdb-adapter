@@ -404,32 +404,29 @@ module ActiveRecord
           # have [] appended to the end of it.
           re = /\A(?:geometry|geography|interval|numeric)/
 
-          # 0: attname
-          # 1: type
-          # 2: default
-          # 3: attnotnull
-          # 4: atttypid
-          # 5: atttypmod
-          # 6: collname
-          # 7: comment
-          # 8: attidentity
-          # 9: attgenerated
-          # 10: is_hidden
+          f_attname = 0
+          f_type = 1
+          # f_default = 2
+          # f_attnotnull = 3
+          # f_atttypid = 4
+          # f_atttypmod = 5
+          # f_collname = 6
+          f_comment = 7
+          # f_attidentity = 8
+          # f_attgenerated = 9
+          f_is_hidden = 10
           fields.map do |field|
-            dtype = field[1]
-            field[1] = crdb_fields[field[0]][2].downcase if re.match(dtype)
-            field[7] = crdb_fields[field[0]][1]&.gsub!(/^\'|\'?$/, '')
-            field[10] = true if crdb_fields[field[0]][3]
+            dtype = field[f_type]
+            field[f_type] = crdb_fields[field[f_attname]][2].downcase if re.match(dtype)
+            field[f_comment] = crdb_fields[field[f_attname]][1]&.gsub!(/^\'|\'?$/, '')
+            field[f_is_hidden] = true if crdb_fields[field[f_attname]][3]
             field
           end
           fields.delete_if do |field|
             # Don't include rowid column if it is hidden and the primary key
             # is not defined (meaning CRDB implicitly created it).
-            if field[0] == CockroachDBAdapter::DEFAULT_PRIMARY_KEY
-              field[10] && !primary_key(table_name)
-            else
-              false # Keep this entry.
-            end
+            field[f_attname] == CockroachDBAdapter::DEFAULT_PRIMARY_KEY &&
+              field[f_is_hidden] && !primary_key(table_name)
           end
         end
 

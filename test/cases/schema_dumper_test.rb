@@ -44,7 +44,7 @@ module CockroachDB
       index_lines = stream.each_line.select { _1[/simple_unique|unique_with_where|as_unique_constraint/] }
       assert_equal 2, index_lines.size
       index_lines.each do |line|
-        assert_match /t.index/, line
+        assert_match(/t.index/, line)
       end
     ensure
       ActiveRecord::Base.with_connection { _1.drop_table :payments, if_exists: true }
