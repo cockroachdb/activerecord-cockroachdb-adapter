@@ -37,7 +37,7 @@ if ActiveRecord::Base.lease_connection.supports_check_constraints?
             end
           end
 
-          # CRDB_VALIDATE_BUG
+          # ExcludeMessage::VALIDATE_BUG
           # def test_schema_dumping_with_validate_false
           #   @connection.add_check_constraint :trades, "quantity > 0", name: "quantity_check", validate: false
 
