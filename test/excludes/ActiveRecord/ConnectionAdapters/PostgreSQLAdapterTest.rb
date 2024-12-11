@@ -33,3 +33,5 @@ exclude :test_allowlist_of_warnings_to_ignore, plpgsql_needed
 exclude :test_allowlist_of_warning_codes_to_ignore, plpgsql_needed
 
 exclude :test_translate_no_connection_exception_to_not_established, "CRDB doesn't implement pg_terminate_backend()"
+
+exclude :test_disable_extension_without_schema, ExcludeMessage::NO_HSTORE

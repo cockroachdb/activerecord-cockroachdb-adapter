@@ -1,7 +1,11 @@
 require 'bundler'
 Bundler.setup
 
-CRDB_VALIDATE_BUG = "CockcroachDB bug, see https://github.com/cockroachdb/cockroach/blob/dd1e0e0164cb3d5859ea4bb23498863d1eebc0af/pkg/sql/alter_table.go#L458-L467"
+module ExcludeMessage
+  VALIDATE_BUG = "CockcroachDB bug, see https://github.com/cockroachdb/cockroach/blob/dd1e0e0164cb3d5859ea4bb23498863d1eebc0af/pkg/sql/alter_table.go#L458-L467"
+  NO_HSTORE = "Extension \"hstore\" is not yet supported by CRDB. See https://github.com/cockroachdb/cockroach/issues/41284"
+end
+
 require "minitest/excludes"
 require "minitest/github_action_reporter"
 

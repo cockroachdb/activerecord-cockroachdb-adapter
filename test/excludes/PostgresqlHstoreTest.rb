@@ -37,9 +37,9 @@ exclude :test_backslash, "Skipping until we can triage further. See https://gith
 exclude :test_schema_dump_with_shorthand, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_dirty_from_user_equal, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
 exclude :test_hstore_dirty_from_database_equal, "Skipping until we can triage further. See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/48"
-exclude :test_changes_with_store_accessors, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
-exclude :test_various_null, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
-exclude :test_spaces, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
-exclude :test_signs, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
-exclude :test_equal_signs, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
-exclude :test_commas, "Skipping because the test uses hstore. See https://github.com/cockroachdb/cockroach/issues/41284"
+exclude :test_changes_with_store_accessors, ExcludeMessage::NO_HSTORE
+exclude :test_various_null, ExcludeMessage::NO_HSTORE
+exclude :test_spaces, ExcludeMessage::NO_HSTORE
+exclude :test_signs, ExcludeMessage::NO_HSTORE
+exclude :test_equal_signs, ExcludeMessage::NO_HSTORE
+exclude :test_commas, ExcludeMessage::NO_HSTORE

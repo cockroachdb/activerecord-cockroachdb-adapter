@@ -161,6 +161,15 @@ module ActiveRecord
         false
       end
 
+      # Partitioning is quite different from PostgreSQL, so we don't support it.
+      # If you need partitioning, you should default to using raw SQL queries.
+      #
+      # See https://www.postgresql.org/docs/current/ddl-partitioning.html
+      # See https://www.cockroachlabs.com/docs/stable/partitioning
+      def supports_native_partitioning?
+        false
+      end
+
       def supports_ddl_transactions?
         false
       end
