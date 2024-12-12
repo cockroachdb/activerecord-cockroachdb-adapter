@@ -5,8 +5,8 @@
 # with an explanation of why they don't work.
 
 ActiveRecord::Schema.define do
-  ActiveRecord::TestCase.enable_extension!("uuid-ossp", ActiveRecord::Base.lease_connection)
-  ActiveRecord::TestCase.enable_extension!("pgcrypto",  ActiveRecord::Base.lease_connection) if ActiveRecord::Base.lease_connection.supports_pgcrypto_uuid?
+  ActiveRecord::TestCase.enable_extension!("uuid-ossp", connection)
+  ActiveRecord::TestCase.enable_extension!("pgcrypto",  connection) if connection.supports_pgcrypto_uuid?
 
   uuid_default = connection.supports_pgcrypto_uuid? ? {} : { default: "uuid_generate_v4()" }
 
@@ -45,6 +45,7 @@ ActiveRecord::Schema.define do
     t.string :char2, limit: 50, default: "a varchar field"
     t.text :char3, default: "a text field"
     t.bigint :bigint_default, default: -> { "0::bigint" }
+    t.binary :binary_default_function, default: -> { "convert_to('A', 'UTF8')" }
     t.text :multiline_default, default: "--- []
 
 "
@@ -177,11 +178,13 @@ _SQL
     t.integer :position_1
     t.integer :position_2
     t.integer :position_3
+    t.integer :position_4
 
-    # CockroachDB does not support deferrable, hence these three lines have been simplified.
+    # CockroachDB does not support deferrable, hence these four lines have been simplified.
     t.unique_constraint :position_1, name: "test_unique_constraints_position_1"
     t.unique_constraint :position_2, name: "test_unique_constraints_position_2"
     t.unique_constraint :position_3, name: "test_unique_constraints_position_3"
+    t.unique_constraint :position_4, name: "test_unique_constraints_position_4"
   end
 
   if supports_partitioned_indexes?
@@ -199,6 +202,9 @@ _SQL
   end
 
   add_index(:companies, [:firm_id, :type], name: "company_include_index", include: [:name, :account_id])
+
+  # In the original PostgreSQL schema, there would be a table here, populated using triggers.
+  # This is not supported by Cockroachdb so we removed that bit.
 
   create_table :buildings, force: true do |t|
     t.st_point :coordinates, srid: 3857
