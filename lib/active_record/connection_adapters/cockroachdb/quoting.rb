@@ -50,6 +50,14 @@ module ActiveRecord
             super
           end
         end
+
+        def quoted_date(value)
+          # CockroachDB differs from PostgreSQL in its representation of
+          # a `timestamp with timezone`, it does not always include the
+          # timezone offset (e.g. `+00`), so we need to add it here.
+          # This is tested by `BasicsTest#test_default_in_local_time`.
+          super + value.strftime("%z")
+        end
       end
     end
   end
