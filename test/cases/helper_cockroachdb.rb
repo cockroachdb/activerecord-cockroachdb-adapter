@@ -37,6 +37,11 @@ require "activerecord-cockroachdb-adapter"
 # Load ActiveRecord test helper
 require "cases/helper"
 
+require "support/exclude_from_transactional_tests"
+
+# Allow exclusion of tests by name using #exclude_from_transactional_tests(test_name)
+ActiveRecord::TestCase.prepend(ExcludeFromTransactionalTests)
+
 # Load the CockroachDB specific schema. It replaces ActiveRecord's PostgreSQL
 # specific schema.
 def load_cockroachdb_specific_schema
