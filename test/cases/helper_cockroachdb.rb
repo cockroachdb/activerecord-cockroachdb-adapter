@@ -1,7 +1,11 @@
 require 'bundler'
 Bundler.setup
 
-CRDB_VALIDATE_BUG = "CockcroachDB bug, see https://github.com/cockroachdb/cockroach/blob/dd1e0e0164cb3d5859ea4bb23498863d1eebc0af/pkg/sql/alter_table.go#L458-L467"
+module ExcludeMessage
+  VALIDATE_BUG = "CockcroachDB bug, see https://github.com/cockroachdb/cockroach/blob/dd1e0e0164cb3d5859ea4bb23498863d1eebc0af/pkg/sql/alter_table.go#L458-L467"
+  NO_HSTORE = "Extension \"hstore\" is not yet supported by CRDB. See https://github.com/cockroachdb/cockroach/issues/41284"
+end
+
 require "minitest/excludes"
 require "minitest/github_action_reporter"
 
@@ -17,24 +21,13 @@ ENV['DEBUG_COCKROACHDB_ADAPTER'] = "1"
 # and COCKROACH_SKIP_LOAD_SCHEMA that can
 # skip this step
 require "support/load_schema_helper"
-class NoPGSchemaTestCase < SimpleDelegator
-  def current_adapter?(...)
-    false
-  end
-end
 
 module LoadSchemaHelperExt
   def load_schema
-    # TODO: Remove this const_set mess once https://github.com/rails/rails/commit/d5c2ff8345c9d23b7326edb2bbe72b6e86a63140
-    #   is part of a rails release.
-    old_helper = ActiveRecord::TestCase
-    ActiveRecord.const_set(:TestCase, NoPGSchemaTestCase.new(ActiveRecord::TestCase))
     return if ENV['COCKROACH_LOAD_FROM_TEMPLATE']
     return if ENV['COCKROACH_SKIP_LOAD_SCHEMA']
 
     super
-  ensure
-    ActiveRecord.const_set(:TestCase, old_helper)
   end
 end
 LoadSchemaHelper.prepend(LoadSchemaHelperExt)
@@ -43,6 +36,11 @@ require "activerecord-cockroachdb-adapter"
 
 # Load ActiveRecord test helper
 require "cases/helper"
+
+require "support/exclude_from_transactional_tests"
+
+# Allow exclusion of tests by name using #exclude_from_transactional_tests(test_name)
+ActiveRecord::TestCase.prepend(ExcludeFromTransactionalTests)
 
 # Load the CockroachDB specific schema. It replaces ActiveRecord's PostgreSQL
 # specific schema.
