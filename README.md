@@ -8,15 +8,15 @@ of the PostgreSQL adapter that establishes compatibility with [CockroachDB](http
 Add this line to your project's Gemfile:
 
 ```ruby
-gem 'activerecord-cockroachdb-adapter', '~> 7.2.0'
+gem 'activerecord-cockroachdb-adapter', '~> 8.0.0'
 ```
-
-If you're using Rails 7.0, use the `7.0.x` versions of this gem.
 
 If you're using Rails 7.1, use the `7.1.x` versions of this gem.
 
 If you're using Rails 7.2, use the `7.2.x` versions of this gem.
 The minimal CockroachDB version required is 23.1.12 for this version.
+
+If you're using Rails 8.0, use the `8.0.x` versions of this gem.
 
 In `database.yml`, use the following adapter setting:
 

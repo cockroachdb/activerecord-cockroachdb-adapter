@@ -2,6 +2,10 @@
 
 ## Ongoing
 
+## 8.0.0 - 2024-12-19
+
+- Add support for Rails 8.0 ([#356](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/356))
+
 ## 7.2.0 - 2024-09-24
 
 - Add support for Rails 7.2 ([#337](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/337))
