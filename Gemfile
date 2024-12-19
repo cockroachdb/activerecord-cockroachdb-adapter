@@ -63,7 +63,7 @@ group :development, :test do
 
   # Gems used by the ActiveRecord test suite
   gem "bcrypt", "~> 3.1"
-  gem "sqlite3", "~> 1.4"
+  gem "sqlite3", "~> 2.1"
 
   gem "minitest", "~> 5.15"
 end
