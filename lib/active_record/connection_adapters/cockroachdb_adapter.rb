@@ -475,9 +475,7 @@ module ActiveRecord
         # That method will not work for CockroachDB because the error
         # originates from the "runExecBuilder" function, so we need
         # to modify the original to match the CockroachDB behavior.
-        def is_cached_plan_failure?(e)
-          pgerror = e.cause
-
+        def is_cached_plan_failure?(pgerror)
           pgerror.result.result_error_field(PG::PG_DIAG_SQLSTATE) == FEATURE_NOT_SUPPORTED &&
             pgerror.result.result_error_field(PG::PG_DIAG_SOURCE_FUNCTION) == "runExecBuilder"
         rescue
