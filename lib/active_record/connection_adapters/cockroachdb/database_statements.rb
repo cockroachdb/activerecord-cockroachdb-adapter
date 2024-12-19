@@ -24,10 +24,8 @@ module ActiveRecord
           table_deletes = tables_to_delete.map { |table| "DELETE FROM #{quote_table_name(table)}" }
           statements = table_deletes + fixture_inserts
 
-          with_multi_statements do
-            disable_referential_integrity do
-              execute_batch(statements, "Fixtures Load")
-            end
+          disable_referential_integrity do
+            execute_batch(statements, "Fixtures Load")
           end
         end
       end

@@ -57,7 +57,7 @@ module ActiveRecord
       def force_index!(index_name, direction: nil)
         return self unless from_clause_is_a_table_name?
 
-        index_name = sanitize_sql(index_name.to_s)
+        index_name = model.sanitize_sql(index_name.to_s)
         direction = direction.to_s.upcase
         direction = %w[ASC DESC].include?(direction) ? ",#{direction}" : ""
 
@@ -84,7 +84,7 @@ module ActiveRecord
       def index_hint!(hint)
         return self unless from_clause_is_a_table_name?
 
-        hint = sanitize_sql(hint.to_s)
+        hint = model.sanitize_sql(hint.to_s)
         @index_hint = hint.to_s
         self.from_clause = build_from_clause_with_hints
         self
@@ -120,7 +120,7 @@ module ActiveRecord
 
         table_name =
           if from_clause.empty?
-            quoted_table_name
+            model.quoted_table_name
           else
             # Remove previous table hints if any. And spaces.
             from_clause.value.partition("@").first.strip

@@ -12,3 +12,4 @@ exclude :test_legacy_default, "Geometric types are not supported in CockroachDB.
 exclude :test_legacy_schema_dumping, "Geometric types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/21286."
 exclude :test_legacy_roundtrip, "Geometric types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/21286."
 exclude :test_legacy_mutation, "Geometric types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/21286."
+exclude :test_hash_assignment, "Geometric types are not supported in CockroachDB. See https://github.com/cockroachdb/cockroach/issues/21286."

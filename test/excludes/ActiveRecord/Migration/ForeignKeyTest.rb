@@ -18,10 +18,10 @@ exclude :test_validate_foreign_key_by_symbol_column, "This test fails due to the
 exclude :test_validate_foreign_key_by_name, "This test fails due to the transactional nature of the test. Disabling transactions will make the test pass."
 exclude :test_validate_constraint_by_name, "This test fails due to the transactional nature of the test. Disabling transactions will make the test pass."
 exclude :test_schema_dumping, "This test fails due to the transactional nature of the test. Disabling transactions will make the test pass."
-exclude :test_schema_dumping_on_delete_and_on_update_options, CRDB_VALIDATE_BUG
-exclude :test_schema_dumping_with_validate_false, CRDB_VALIDATE_BUG
-exclude :test_schema_dumping_with_validate_true, CRDB_VALIDATE_BUG
-exclude :test_schema_dumping_with_custom_fk_ignore_pattern, CRDB_VALIDATE_BUG
+exclude :test_schema_dumping_on_delete_and_on_update_options, ExcludeMessage::VALIDATE_BUG
+exclude :test_schema_dumping_with_validate_false, ExcludeMessage::VALIDATE_BUG
+exclude :test_schema_dumping_with_validate_true, ExcludeMessage::VALIDATE_BUG
+exclude :test_schema_dumping_with_custom_fk_ignore_pattern, ExcludeMessage::VALIDATE_BUG
 exclude :test_add_foreign_key_is_reversible, "This test fails due to the transactional nature of the test. Disabling transactions will make the test pass."
 exclude :test_foreign_key_constraint_is_not_cached_incorrectly, "This test fails due to the transactional nature of the test. Disabling transactions will make the test pass."
 exclude :test_add_foreign_key_with_prefix, "This test fails due to the transactional nature of the test. Disabling transactions will make the test pass."
