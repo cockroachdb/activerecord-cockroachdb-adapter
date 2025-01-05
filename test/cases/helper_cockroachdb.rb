@@ -192,15 +192,17 @@ if ENV['TRACE_LIB']
   MiniTest::Test.include(TraceLibPlugin)
 end
 
-if ENV['AR_LOG']
-  ActiveRecord::Base.logger = Logger.new(STDOUT)
-  ActiveRecord::Base.logger.level = Logger::DEBUG
-  ActiveRecord::LogSubscriber::IGNORE_PAYLOAD_NAMES.clear
-  ActiveRecord::Base.logger.formatter = proc { |severity, time, progname, msg|
-    th = Thread.current[:name]
-    th = "THREAD=#{th}" if th
-    Logger::Formatter.new.call(severity, time, progname || th, msg)
-  }
+# Log all SQL queries and print total time spent in SQL.
+if ENV["AR_LOG"]
+  require "support/sql_logger"
+  case ENV["AR_LOG"].strip
+  when "stdout" then SQLLogger.stdout_log
+  when "summary" then SQLLogger.summary_log
+  else
+    SQLLogger.stdout_log
+    SQLLogger.summary_log
+  end
+
 end
 
 # Remove the header from the schema dump to clarify tests outputs.
