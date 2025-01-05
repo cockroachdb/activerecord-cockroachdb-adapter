@@ -20,10 +20,16 @@ module ActiveRecord
         end
 
         def disable_referential_integrity
-          foreign_keys = tables.map { |table| foreign_keys(table) }.flatten
+          foreign_keys = all_foreign_keys
 
           foreign_keys.each do |foreign_key|
-            remove_foreign_key(foreign_key.from_table, name: foreign_key.options[:name])
+            # We do not use the `#remove_foreign_key` method here because it
+            # checks for foreign keys existance in the schema cache. This method
+            # is performance critical and we know the foreign key exist.
+            at = create_alter_table foreign_key.from_table
+            at.drop_foreign_key foreign_key.name
+
+            execute schema_creation.accept(at)
           end
 
           yield
@@ -38,21 +44,81 @@ module ActiveRecord
           ActiveRecord::Base.table_name_suffix = ""
 
           begin
+            # Avoid having PG:DuplicateObject error if a test is ran in transaction.
+            # TODO: verify that there is no cache issue related to running this (e.g: fk
+            #   still in cache but not in db)
+            #
+            # We avoid using `foreign_key_exists?` here because it checks the schema cache
+            # for every key. This method is performance critical for the test suite, hence
+            # we use the `#all_foreign_keys` method that only make one query to the database.
+            already_inserted_foreign_keys = all_foreign_keys
             foreign_keys.each do |foreign_key|
-              begin
-                add_foreign_key(foreign_key.from_table, foreign_key.to_table, **foreign_key.options)
-              rescue ActiveRecord::StatementInvalid => error
-                if error.cause.class == PG::DuplicateObject
-                  # This error is safe to ignore because the yielded caller
-                  # already re-added the foreign key constraint.
-                else
-                  raise error
-                end
-              end
+              next if already_inserted_foreign_keys.any? { |fk| fk.from_table == foreign_key.from_table && fk.options[:name] == foreign_key.options[:name] }
+
+              add_foreign_key(foreign_key.from_table, foreign_key.to_table, **foreign_key.options)
             end
           ensure
             ActiveRecord::Base.table_name_prefix = old_prefix
             ActiveRecord::Base.table_name_suffix = old_suffix
+          end
+        end
+
+        private
+
+        # Copy/paste of the `#foreign_keys(table)` method adapted to return every single
+        # foreign key in the database.
+        def all_foreign_keys
+          fk_info = internal_exec_query(<<~SQL, "SCHEMA")
+            SELECT CASE
+              WHEN n1.nspname = current_schema()
+              THEN ''
+              ELSE n1.nspname || '.'
+            END || t1.relname AS from_table,
+            CASE
+              WHEN n2.nspname = current_schema()
+              THEN ''
+              ELSE n2.nspname || '.'
+            END || t2.relname AS to_table,
+            a1.attname AS column, a2.attname AS primary_key, c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid, c.condeferrable AS deferrable, c.condeferred AS deferred,
+            c.conkey, c.confkey, c.conrelid, c.confrelid
+            FROM pg_constraint c
+            JOIN pg_class t1 ON c.conrelid = t1.oid
+            JOIN pg_class t2 ON c.confrelid = t2.oid
+            JOIN pg_attribute a1 ON a1.attnum = c.conkey[1] AND a1.attrelid = t1.oid
+            JOIN pg_attribute a2 ON a2.attnum = c.confkey[1] AND a2.attrelid = t2.oid
+            JOIN pg_namespace t3 ON c.connamespace = t3.oid
+            JOIN pg_namespace n1 ON t1.relnamespace = n1.oid
+            JOIN pg_namespace n2 ON t2.relnamespace = n2.oid
+            WHERE c.contype = 'f'
+            ORDER BY c.conname
+          SQL
+
+          fk_info.map do |row|
+            from_table = PostgreSQL::Utils.unquote_identifier(row["from_table"])
+            to_table = PostgreSQL::Utils.unquote_identifier(row["to_table"])
+            conkey = row["conkey"].scan(/\d+/).map(&:to_i)
+            confkey = row["confkey"].scan(/\d+/).map(&:to_i)
+
+            if conkey.size > 1
+              column = column_names_from_column_numbers(row["conrelid"], conkey)
+              primary_key = column_names_from_column_numbers(row["confrelid"], confkey)
+            else
+              column = PostgreSQL::Utils.unquote_identifier(row["column"])
+              primary_key = row["primary_key"]
+            end
+
+            options = {
+              column: column,
+              name: row["name"],
+              primary_key: primary_key
+            }
+            options[:on_delete] = extract_foreign_key_action(row["on_delete"])
+            options[:on_update] = extract_foreign_key_action(row["on_update"])
+            options[:deferrable] = extract_constraint_deferrable(row["deferrable"], row["deferred"])
+
+            options[:validate] = row["valid"]
+
+            ForeignKeyDefinition.new(from_table, to_table, options)
           end
         end
       end

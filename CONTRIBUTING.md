@@ -1,6 +1,5 @@
 # Getting started
 
-
 ## ActiveRecord adapters and you
 
 There are two repositories for the ActiveRecord adapter. The one you're in
@@ -121,7 +120,6 @@ master branch, with an alpha build of CockroachDB. it would be even
 better to be able to test multiple versions of the adapter, and do so
 against different versions of CockroachDB.
 
-
 ## Adding feature support
 
 As CockroachDB improves, so do the features that can be supported in
@@ -131,15 +129,34 @@ gates should be toggled. Something that would help this process would be
 linking those issues back to this adapter so that part of the feature
 completing includes updating the adapter.
 
-
 ## Execute only tests that run with a connection
 
-I have not investigated if this is already possible, but I would assume
-no.
-
-A possible way to approach this would be to add a shim to cause any
-tests that use it to fail, and grep the tests that pass and then skip
-them.
+- Check for TODO or NOTE tags that are referencing the old or new version of
+  rails.
+  ```bash
+  rg 'TODO|NOTE' --after-context=2
+  ```
+- Check postgresql_specific_schema.rb changelog in rails, and apply the changes
+  you want. Ex:
+  ```bash
+  git diff v7.1.4..v7.2.1 -- $(fd postgresql_specific_schema)
+  ```
+- Verify the written text at the beginning of the test suite, there are likely
+  some changes in excluded tests.
+- Check for some important methods, some will change for sure:
+  - [ ] `def new_column_from_field(`
+  - [ ] `def column_definitions(`
+  - [ ] `def pk_and_sequence_for(`
+  - [ ] `def foreign_keys(` and `def all_foreign_keys(`
+  - [ ] ...
+- Check for setups containing `drop_table` in the test suite.
+  Especially if you have tons of failure, this is likely the cause.
+- In the same way, run `test/cases/fixtures_test.rb` first, and check
+  if this corrupted the test database for other tests.
+- For both of the above, the diff of `schema.rb` can be useful:
+  ```bash
+  git diff v7.1.2..v7.2.1 -- activerecord/test/schema/schema.rb
+  ```
 
 ## Publishing to Rubygems
 
@@ -150,7 +167,6 @@ credentials. I'm not sure if there is anything else other than:
 gem build ...
 gem publish <output file>
 ```
-
 
 # Notes
 
@@ -182,9 +198,7 @@ cleaned up, or skipped until passing.
 The purpose of these was to make the tests grep-able while going through
 all the failures.
 
-
 [cockroachdb/cockroach#20753]: https://github.com/cockroachdb/cockroach/issues/20753#issuecomment-352810425
-
 
 ## Tracked test failures
 
@@ -223,7 +237,6 @@ Grepping for `FIXME(joey)`, `TODO(joey)`, and `NOTE(joey)` will yeild
 most of the touchpoints including test failures and temporary monkey
 patches. Some monkey patches were made directly to Rails, which will
 need to be cleaned up.
-
 
 # Notes for the non-Rubyer
 
