@@ -205,7 +205,7 @@ module CockroachDB
     # under test will have primary key sequences, and the connection is from ActiveRecord::Base.
     # Normally, the primary keys would use CockroachDB's unique_rowid().
     def test_create_symbol_fixtures
-      fixtures = ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, :collections, collections: Course) { Course.lease_connection }
+      fixtures = ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, :collections, collections: Course)
 
       assert Course.find_by_name("Collection"), "course is not in the database"
       assert fixtures.detect { |f| f.name == "collections" }, "no fixtures named 'collections' in #{fixtures.map(&:name).inspect}"
