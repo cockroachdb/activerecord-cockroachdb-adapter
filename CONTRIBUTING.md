@@ -117,7 +117,11 @@ This section intent to help you with a checklist.
 - Check for some important methods, some will change for sure:
   - [x] `def new_column_from_field(`
   - [x] `def column_definitions(`
-  - [x] `def pk_and_sequence_for(`
+  - [x] # `def pk_and_sequence_for(`
+  - [ ] `def new_column_from_field(`
+  - [ ] `def column_definitions(`
+  - [ ] `def pk_and_sequence_for(`
+  - [ ] `def foreign_keys(` and `def all_foreign_keys(`
   - [ ] ...
 - Check for setups containing `drop_table` in the test suite.
   Especially if you have tons of failure, this is likely the cause.
