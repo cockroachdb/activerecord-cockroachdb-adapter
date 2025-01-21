@@ -224,5 +224,6 @@ class BaseCompatibilityTest < ActiveRecord::TestCase
 end
 
 require "stackprof"
-StackProf.start(mode: :wall, interval: 1000)
+FileUtils.mkdir_p("tmp")
+StackProf.start(mode: :wall, interval: 1000, out: "tmp/stackprof.dump", raw: true)
 Minitest.after_run { StackProf.stop; StackProf.results("tmp/stackprof.dump") }

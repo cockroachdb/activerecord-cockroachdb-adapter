@@ -6,7 +6,7 @@ die() { echo "$0: $*" 1>&2 ; false; }
 
 root_dir="$(dirname $(dirname "$0:A"))"
 pid_file="$root_dir/tmp/cockroach.pid"
-log_file="$root_dir/tmp/cockroachdb.log"
+log_file="$root_dir/tmp/cockroach.log"
 
 mkdir -p "$root_dir/tmp"
 [[ -f "$pid_file" ]] && kill -9 $(cat "$pid_file") || true
