@@ -53,6 +53,17 @@ module ActiveRecord
           output = dump_table_schema "rockets"
           assert_match %r{t.uuid "new_col", hidden: true$}, output
         end
+
+        # Since 24.2.2, hash sharded indexes add a hidden column to the table.
+        # This tests ensure that the user can still drop the index even if they
+        # call `#remove_index` with the column name rather than the index name.
+        def test_remove_index_with_a_hidden_column
+          @connection.execute <<-SQL
+            CREATE INDEX hash_idx ON rockets (name) USING HASH WITH (bucket_count=8);
+          SQL
+          @connection.remove_index :rockets, :name
+          assert :ok
+        end
       end
     end
   end
