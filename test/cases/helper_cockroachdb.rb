@@ -223,7 +223,8 @@ class BaseCompatibilityTest < ActiveRecord::TestCase
   self.use_transactional_tests = false
 end
 
-require "stackprof"
 FileUtils.mkdir_p("tmp")
-StackProf.start(mode: :wall, interval: 1000, out: "tmp/stackprof.dump", raw: true)
-Minitest.after_run { StackProf.stop; StackProf.results("tmp/stackprof.dump") }
+
+# require "stackprof"
+# StackProf.start(mode: :wall, interval: 1000, out: "tmp/stackprof.dump", raw: true)
+# Minitest.after_run { StackProf.stop; StackProf.results("tmp/stackprof.dump") }
