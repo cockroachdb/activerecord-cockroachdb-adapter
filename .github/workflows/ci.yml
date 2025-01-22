@@ -40,9 +40,17 @@ jobs:
       fail-fast: false
       matrix:
         # https://www.cockroachlabs.com/docs/releases/release-support-policy
-        crdb: [v23.2, v24.1, v24.3]
+        crdb: [v24.3]
         ruby: ["3.4"]
-    name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
+        conf:
+          [
+            "--max-sql-memory=25% --cache=25%",
+            "--max-sql-memory=25% --cache=25% --store=type=mem,size=20%",
+            "--max-sql-memory=50% --cache=50% --store=type=mem,size=50%",
+            "--max-sql-memory=90% --cache=90% --store=type=mem,size=90%",
+            "--max-sql-memory=25% --cache=25% --store=type=mem,size=70%",
+          ]
+    name: "${{ matrix.conf }}"
     steps:
       - name: Set Up Actions
         uses: actions/checkout@v4
@@ -75,9 +83,8 @@ jobs:
 
           # Start a CockroachDB server and wait for it to become ready.
           rm -f "$urlfile"
-          rm -rf cockroach-data
           # Start CockroachDB.
-          cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-$full_version.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
+          cockroach start-single-node --insecure ${{ matrix.conf }}  --host=localhost --spatial-libs=./cockroach-$full_version.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
           # Ensure CockroachDB is stopped on script exit.
           # Wait until CockroachDB has started.
           for i in {0..3}; do
