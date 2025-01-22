@@ -36,15 +36,16 @@ module ActiveRecord
         def disable_referential_integrity
           foreign_keys = all_foreign_keys
 
-          foreign_keys.each do |foreign_key|
+          statements = foreign_keys.map do |foreign_key|
             # We do not use the `#remove_foreign_key` method here because it
             # checks for foreign keys existance in the schema cache. This method
             # is performance critical and we know the foreign key exist.
             at = create_alter_table foreign_key.from_table
             at.drop_foreign_key foreign_key.name
 
-            execute schema_creation.accept(at)
+            schema_creation.accept(at)
           end
+          execute_batch(statements, "Disable referential integrity -> remove foreign keys")
 
           yield
 
@@ -66,11 +67,16 @@ module ActiveRecord
             # for every key. This method is performance critical for the test suite, hence
             # we use the `#all_foreign_keys` method that only make one query to the database.
             already_inserted_foreign_keys = all_foreign_keys
-            foreign_keys.each do |foreign_key|
+            statements = foreign_keys.map do |foreign_key|
               next if already_inserted_foreign_keys.any? { |fk| fk.from_table == foreign_key.from_table && fk.options[:name] == foreign_key.options[:name] }
 
-              add_foreign_key(foreign_key.from_table, foreign_key.to_table, **foreign_key.options)
+              options = foreign_key_options(foreign_key.from_table, foreign_key.to_table, foreign_key.options)
+              at = create_alter_table foreign_key.from_table
+              at.add_foreign_key foreign_key.to_table, options
+
+              schema_creation.accept(at)
             end
+            execute_batch(statements.compact, "Disable referential integrity -> add foreign keys")
           ensure
             ActiveRecord::Base.table_name_prefix = old_prefix
             ActiveRecord::Base.table_name_suffix = old_suffix
