@@ -10,11 +10,6 @@ module CockroachDB
     include SchemaDumpingHelper
     self.use_transactional_tests = false
 
-    setup do
-      @schema_migration = ActiveRecord::Base.connection_pool.schema_migration
-      @schema_migration.create_table
-    end
-
     # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347
     def test_dump_index_rather_than_unique_constraints
       ActiveRecord::Base.with_connection do |conn|
@@ -207,7 +202,7 @@ module CockroachDB
       $stdout = original
     end
 
-    if ActiveRecord::Base.lease_connection.supports_check_constraints?
+    if ActiveRecord::Base.connection.supports_check_constraints?
       def test_schema_dumps_check_constraints
         constraint_definition = dump_table_schema("products").split(/\n/).grep(/t.check_constraint.*products_price_check/).first.strip
         if current_adapter?(:Mysql2Adapter)

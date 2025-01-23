@@ -103,7 +103,7 @@ module CockroachDB
     end
 
     def setup
-      connection = ActiveRecord::Base.lease_connection
+      connection = ActiveRecord::Base.connection
       connection.execute <<-SQL
         CREATE TABLE rockets(
           id SERIAL PRIMARY KEY USING HASH WITH (bucket_count=4)
