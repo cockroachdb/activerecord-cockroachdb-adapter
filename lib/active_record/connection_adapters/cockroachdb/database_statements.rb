@@ -24,8 +24,14 @@ module ActiveRecord
           table_deletes = tables_to_delete.map { |table| "DELETE FROM #{quote_table_name(table)}" }
           statements = table_deletes + fixture_inserts
 
-          disable_referential_integrity do
-            execute_batch(statements, "Fixtures Load")
+          begin # much faster without disabling referential integrity, worth trying.
+            transaction(requires_new: true) do
+              execute_batch(statements, "Fixtures Load")
+            end
+          rescue
+            disable_referential_integrity do
+              execute_batch(statements, "Fixtures Load")
+            end
           end
         end
       end
