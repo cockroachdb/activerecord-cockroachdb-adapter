@@ -21,9 +21,9 @@ module SQLLogger
       time = detail.values.sum { |(total, _, _)| total } / 1_000
       count = detail.values.sum { |(_, _, count)| count }
       puts "Total time spent in SQL: #{time}s (#{count} queries)"
-      puts "Detail per query kind available in tmp/query_time.json (total time in ms, avg time in ms, query count). Sorted by avg time."
+      puts "Detail per query kind available in #{Dir.pwd}/tmp/query_time.json (total time in ms, avg time in ms, query count). Sorted by avg time."
       File.write(
-        "tmp/query_time.json",
+        Dir.pwd + "/tmp/query_time.json",
         JSON.pretty_generate(detail)
       )
     }

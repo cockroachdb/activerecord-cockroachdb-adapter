@@ -88,4 +88,10 @@ jobs:
           done
           cat ${{ github.workspace }}/setup.sql | cockroach sql --insecure
       - name: Test
-        run: bundle exec rake test TESTOPTS='--profile=5'
+        run: AR_LOG=summary bundle exec rake test TESTOPTS='--stackprof=tmp/stackprof.dump --profile-setup --profile=5 --verbose'
+      - name: Upload test information
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crdb-${{ matrix.crdb }}_ruby-${{ matrix.ruby }}_test_information
+          path: tmp/*
