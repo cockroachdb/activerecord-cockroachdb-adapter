@@ -2,6 +2,8 @@
 
 ## Ongoing
 
+- Fix transaction state on rollback ([#364](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/364))
+
 ## 7.2.0 - 2024-09-24
 
 - Add support for Rails 7.2 ([#337](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/337))
