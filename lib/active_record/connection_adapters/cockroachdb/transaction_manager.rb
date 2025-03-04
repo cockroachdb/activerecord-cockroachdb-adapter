@@ -45,6 +45,27 @@ module ActiveRecord
           within_new_transaction(isolation: isolation, joinable: joinable, attempts: attempts + 1) { yield }
         end
 
+        # OVERRIDE: the `rescue ActiveRecord::StatementInvalid` block is new, see comment.
+        def rollback_transaction(transaction = nil)
+          @connection.lock.synchronize do
+            transaction ||= @stack.last
+            begin
+              transaction.rollback
+            rescue ActiveRecord::StatementInvalid => err
+              # This is important to make Active Record aware the record was not inserted/saved
+              # Otherwise Active Record will assume save was successful and it doesn't retry the transaction
+              # See this thread for more details:
+              # https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/258#issuecomment-2256633329
+              transaction.rollback_records if err.cause.is_a?(PG::NoActiveSqlTransaction)
+
+              raise
+            ensure
+              @stack.pop if @stack.last == transaction
+            end
+            transaction.rollback_records
+          end
+        end
+
         def retryable?(error)
           return true if serialization_error?(error)
           return true if error.is_a? ActiveRecord::SerializationFailure
