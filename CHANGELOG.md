@@ -2,6 +2,10 @@
 
 ## Ongoing
 
+## 8.0.1 - 2025-03-04
+
+- Fixed retry logic after transaction rollback ([#364](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/364))
+
 ## 8.0.0 - 2024-12-19
 
 - Add support for Rails 8.0 ([#356](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/356))
