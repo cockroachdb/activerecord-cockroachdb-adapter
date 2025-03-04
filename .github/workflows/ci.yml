@@ -88,4 +88,7 @@ jobs:
           done
           cat ${{ github.workspace }}/setup.sql | cockroach sql --insecure
       - name: Test
-        run: bundle exec rake test TESTOPTS='--profile=3'
+        run: bundle exec rake test
+        env:
+          TESTOPTS: "--profile=5"
+          RAILS_MINITEST_PLUGIN: "1" # Make sure that we use the minitest plugin for profiling.
