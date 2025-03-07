@@ -134,7 +134,7 @@ module ActiveRecord
             }
             options[:on_delete] = extract_foreign_key_action(row["on_delete"])
             options[:on_update] = extract_foreign_key_action(row["on_update"])
-            options[:deferrable] = extract_foreign_key_deferrable(row["deferrable"], row["deferred"])
+            options[:deferrable] = extract_constraint_deferrable(row["deferrable"], row["deferred"])
 
             options[:validate] = row["valid"]
 
