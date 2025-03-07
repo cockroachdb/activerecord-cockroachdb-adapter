@@ -1,1 +1,3 @@
-exclude :test_unlogged_in_test_environment_when_unlogged_setting_enabled, "Override because UNLOGGED cannot be specified in CockroachDB. Related https://github.com/cockroachdb/cockroach/issues/56827"
+instance_methods.grep(/\Atest_\w+\z/).each do |method_name|
+  exclude method_name, "UNLOGGED has no effect in CockroachDB."
+end
