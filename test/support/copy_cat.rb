@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "parser/current"
+require "parser"
+require "prism"
 
 module CopyCat
   module NoWarnRewrite
@@ -23,13 +24,13 @@ module CopyCat
   def copy_methods(new_klass, old_klass, *methods, debug: false, &block)
     methods.each do |met|
       file, _ = old_klass.instance_method(met).source_location
-      ast = find_method(Parser::CurrentRuby.parse_file(file), met)
+      ast = find_method(Prism::Translation::Parser.parse_file(file), met)
       code =
         if block_given?
           source = ast.location.expression.source
           buffer = Parser::Source::Buffer.new(met, source: source)
           # We need to recompute the ast to have correct locations.
-          ast = Parser::CurrentRuby.parse(source)
+          ast = Prism::Translation::Parser.parse(source)
 
           if debug
             puts "=" * 80
