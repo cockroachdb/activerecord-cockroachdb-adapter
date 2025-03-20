@@ -60,6 +60,7 @@ group :development, :test do
 
   # Gems used for tests meta-programming.
   gem "parser"
+  gem "prism" # Parser is being softly deprecated, but Prism doesn't have rewriting capabilities
 
   # Gems used by the ActiveRecord test suite
   gem "bcrypt", "~> 3.1"
