@@ -55,6 +55,37 @@ module ActiveRecord
           end
         end
 
+        def primary_keys(table_name)
+          return super unless database_version >= 24_02_02
+
+          query_values(<<~SQL, "SCHEMA")
+            SELECT a.attname
+              FROM (
+                     SELECT indrelid, indkey, generate_subscripts(indkey, 1) idx
+                       FROM pg_index
+                      WHERE indrelid = #{quote(quote_table_name(table_name))}::regclass
+                        AND indisprimary
+                   ) i
+              JOIN pg_attribute a
+                ON a.attrelid = i.indrelid
+               AND a.attnum = i.indkey[i.idx]
+               AND NOT a.attishidden
+             ORDER BY i.idx
+          SQL
+        end
+
+        def column_names_from_column_numbers(table_oid, column_numbers)
+          return super unless database_version >= 24_02_02
+
+          Hash[query(<<~SQL, "SCHEMA")].values_at(*column_numbers).compact
+            SELECT a.attnum, a.attname
+            FROM pg_attribute a
+            WHERE a.attrelid = #{table_oid}
+            AND a.attnum IN (#{column_numbers.join(", ")})
+            AND NOT a.attishidden
+          SQL
+        end
+
         # OVERRIDE: CockroachDB does not support deferrable constraints.
         #   See: https://go.crdb.dev/issue-v/31632/v23.1
         def foreign_key_options(from_table, to_table, options)
@@ -263,31 +294,6 @@ module ActiveRecord
             sql = "#{sql}[]"
           end
           sql
-        end
-
-        # This overrides the method from PostegreSQL adapter
-        # Resets the sequence of a table's primary key to the maximum value.
-        def reset_pk_sequence!(table, pk = nil, sequence = nil)
-          unless pk && sequence
-            default_pk, default_sequence = pk_and_sequence_for(table)
-
-            pk ||= default_pk
-            sequence ||= default_sequence
-          end
-
-          if @logger && pk && !sequence
-            @logger.warn "#{table} has primary key #{pk} with no default sequence."
-          end
-
-          if pk && sequence
-            quoted_sequence = quote_table_name(sequence)
-            max_pk = query_value("SELECT MAX(#{quote_column_name pk}) FROM #{quote_table_name(table)}", "SCHEMA")
-            if max_pk.nil?
-              minvalue = query_value("SELECT seqmin FROM pg_sequence WHERE seqrelid = #{quote(quoted_sequence)}::regclass", "SCHEMA")
-            end
-
-            query_value("SELECT setval(#{quote(quoted_sequence)}, #{max_pk ? max_pk : minvalue}, #{max_pk ? true : false})", "SCHEMA")
-          end
         end
 
         # override

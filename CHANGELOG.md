@@ -1,6 +1,8 @@
 # Changelog
 
-## Ongoing
+## 7.2.1 - 2025-03-26
+
+- Fix transaction state on rollback ([#364](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/364))
 
 ## 7.2.0 - 2024-09-24
 
