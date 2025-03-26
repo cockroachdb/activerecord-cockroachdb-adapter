@@ -117,6 +117,8 @@ module ActiveSupport
     extend TestRetryHelper
     include TestTimeoutHelper
 
+    ENV['CI'] && parallelize(workers: :number_of_processors)
+
     def postgis_version
       @postgis_version ||= ActiveRecord::Base.lease_connection.select_value('SELECT postgis_lib_version()')
     end
