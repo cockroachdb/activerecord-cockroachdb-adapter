@@ -53,6 +53,8 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+      - name: Show Rails version
+        run: bundle info rails
       - name: Install and Start Cockroachdb
         run: |
           # Download CockroachDB
