@@ -1,22 +1,20 @@
 default_connection: cockroachdb
 connections:
   cockroachdb:
-    arunit:
+    arunit: &arunit
       min_messages: warning
       host: 127.0.0.1
       port: 26257
       user: root
       disable_cockroachdb_telemetry: true
+      # `autocommit_before_ddl` changed to default true in CockroachDB v25.1.
+      # This does not work with active record's test suite.
+      #
+      # This options keyword is referenced here in libpq:
+      # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-OPTIONS
+      options: "-c autocommit_before_ddl=false"
     arunit_without_prepared_statements:
-      min_messages: warning
+      <<: *arunit
       prepared_statements: false
-      host: 127.0.0.1
-      port: 26257
-      user: root
-      disable_cockroachdb_telemetry: true
     arunit2:
-      min_messages: warning
-      host: 127.0.0.1
-      port: 26257
-      user: root
-      disable_cockroachdb_telemetry: true
+      <<: *arunit
