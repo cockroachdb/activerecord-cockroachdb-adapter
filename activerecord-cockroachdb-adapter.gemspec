@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/cockroachdb/activerecord-cockroachdb-adapter"
 
   spec.add_dependency "activerecord", "~> 7.1.0"
-  spec.add_dependency "pg", "~> 1.2"
+  spec.add_dependency "pg" unless defined?(JRUBY_VERSION)
   spec.add_dependency "rgeo-activerecord", "~> 7.0.0"
 
   spec.add_development_dependency "benchmark-ips", "~> 2.9.1"
