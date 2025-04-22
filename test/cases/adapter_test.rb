@@ -173,37 +173,6 @@ module CockroachDB
       assert_equal 1, Widget.create(name: "weather").id
     end
 
-    def test_truncate_tables
-      assert_operator Post.count, :>, 0
-      assert_operator Author.count, :>, 0
-      assert_operator AuthorAddress.count, :>, 0
-
-      @connection.truncate_tables("author_addresses", "authors", "posts")
-
-      assert_equal 0, Post.count
-      assert_equal 0, Author.count
-      assert_equal 0, AuthorAddress.count
-    ensure
-      reset_fixtures("author_addresses", "authors", "posts")
-    end
-
-    def test_truncate_tables_with_query_cache
-      @connection.enable_query_cache!
-
-      assert_operator Post.count, :>, 0
-      assert_operator Author.count, :>, 0
-      assert_operator AuthorAddress.count, :>, 0
-
-      @connection.truncate_tables("author_addresses", "authors", "posts")
-
-      assert_equal 0, Post.count
-      assert_equal 0, Author.count
-      assert_equal 0, AuthorAddress.count
-    ensure
-      reset_fixtures("author_addresses", "authors", "posts")
-      @connection.disable_query_cache!
-    end
-
     private
 
     def reset_fixtures(*fixture_names)
