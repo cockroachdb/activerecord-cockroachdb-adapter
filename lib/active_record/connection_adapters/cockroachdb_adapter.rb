@@ -492,9 +492,8 @@ module ActiveRecord
           if @config[:use_follower_reads_for_type_introspection]
             initializer = OID::TypeMapInitializer.new(type_map)
             load_types_queries_with_aost(initializer, oids) do |query|
-              execute_and_clear(query, "SCHEMA", [], allow_retry: true, materialize_transactions: false) do |records|
-                initializer.run(records)
-              end
+              records = internal_execute(query, "SCHEMA", [], allow_retry: true, materialize_transactions: false)
+              initializer.run(records)
             end
           else
             super
@@ -550,9 +549,8 @@ module ActiveRecord
               FROM pg_type as t AS OF SYSTEM TIME '-10s'
               WHERE t.typname IN (%s)
             SQL
-            coders = execute_and_clear(query, "SCHEMA", [], allow_retry: true, materialize_transactions: false) do |result|
-              result.filter_map { |row| construct_coder(row, coders_by_name[row["typname"]]) }
-            end
+            result = internal_execute(query, "SCHEMA", [], allow_retry: true, materialize_transactions: false)
+            coders = result.filter_map { |row| construct_coder(row, coders_by_name[row["typname"]]) }
 
             map = PG::TypeMapByOid.new
             coders.each { |coder| map.add_coder(coder) }
