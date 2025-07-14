@@ -2,6 +2,10 @@
 
 ## Ongoing
 
+## 8.0.2 - 2025-07-14
+
+- Fixed the `db:migrate` command by removing usage of `execute_and_clear` function ([#377](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/377))
+
 ## 8.0.1 - 2025-03-04
 
 - Fixed retry logic after transaction rollback ([#364](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/364))
