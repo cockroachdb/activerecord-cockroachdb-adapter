@@ -43,10 +43,14 @@ module CockroachDB
         parrots_pirates_redefine
         parrots_treasures_redefine
       end
+    ensure
+      super
     end
 
     def teardown
       Arel::Table.engine = ActiveRecord::Base
+    ensure
+      super
     end
 
     # This replaces the same test that's been excluded from
