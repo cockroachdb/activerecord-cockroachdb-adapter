@@ -72,9 +72,21 @@ end
 
 require 'timeout'
 
+$c = nil
 module TestTimeoutHelper
   def time_it
     t0 = Minitest.clock_time
+
+
+    c = ActiveRecord::Base.lease_connection.select_all('show constraints from fk_test_has_pk').to_a
+    if $c != c
+      puts
+      puts @NAME
+      puts ?= * @NAME.size
+      pp c
+      puts
+      $c = c
+    end
 
     timeout_mins = ENV.fetch("TEST_TIMEOUT", 5).to_i
     Timeout.timeout(timeout_mins * 60, Timeout::Error, "Test took over #{timeout_mins} minutes to finish") do
