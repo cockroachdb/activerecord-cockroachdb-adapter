@@ -427,7 +427,7 @@ module ActiveRecord
           fields.map do |field|
             dtype = field[f_type]
             field[f_type] = crdb_fields[field[f_attname]][2].downcase if re.match(dtype)
-            field[f_comment] = crdb_fields[field[f_attname]][1]&.gsub!(/^\'|\'?$/, '')
+            field[f_comment] = crdb_fields[field[f_attname]][1]
             field[f_is_hidden] = true if crdb_fields[field[f_attname]][3]
             field
           end
@@ -455,9 +455,8 @@ module ActiveRecord
             WHERE c.table_name = #{quote(table)}#{with_schema}
           SQL
 
-          fields.reduce({}) do |a, e|
-            a[e[0]] = e
-            a
+          fields.to_h do |field|
+            [field.first, field]
           end
         end
 
