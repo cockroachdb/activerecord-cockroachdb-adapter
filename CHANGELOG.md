@@ -2,6 +2,10 @@
 
 ## Ongoing
 
+## 8.0.3 - 2025-08-19
+
+- Fixed the handling of column comments that end in a single quote ([#382](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/382))
+
 ## 8.0.2 - 2025-07-14
 
 - Fixed the `db:migrate` command by removing usage of `execute_and_clear` function ([#377](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/377))
