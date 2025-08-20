@@ -407,7 +407,7 @@ module ActiveRecord
           fields.map do |field|
             dtype = field[1]
             field[1] = crdb_fields[field[0]][2].downcase if re.match(dtype)
-            field[7] = crdb_fields[field[0]][1]&.gsub!(/^\'|\'?$/, '')
+            field[7] = crdb_fields[field[0]][1]
             field[10] = true if crdb_fields[field[0]][3]
             field
           end
@@ -438,9 +438,8 @@ module ActiveRecord
             WHERE c.table_name = #{quote(table)}#{with_schema}
           SQL
 
-          fields.reduce({}) do |a, e|
-            a[e[0]] = e
-            a
+          fields.to_h do |field|
+            [field.first, field]
           end
         end
 
