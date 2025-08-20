@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.2.2 - 2025-08-20
+
+- Fixed the handling of column comments that end in a single quote ([#384](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/384))
+
 ## 7.2.1 - 2025-03-26
 
 - Fix transaction state on rollback ([#364](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/364))
