@@ -15,5 +15,5 @@
 # limitations under the License.
 
 module ActiveRecord
-  COCKROACH_DB_ADAPTER_VERSION = "7.2.1"
+  COCKROACH_DB_ADAPTER_VERSION = "7.2.2"
 end
