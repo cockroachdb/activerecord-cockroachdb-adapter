@@ -189,7 +189,7 @@ if ENV['TRACE_LIB']
       super
     end
   end
-  MiniTest::Test.include(TraceLibPlugin)
+  Minitest::Test.include(TraceLibPlugin)
 end
 
 # Log all SQL queries and print total time spent in SQL.

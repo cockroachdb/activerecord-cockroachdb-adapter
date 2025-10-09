@@ -1,0 +1,62 @@
+name: Flaky Test Detector
+
+# Only run this workflow manually from the Actions tab
+on:
+  workflow_dispatch:
+    inputs:
+      ruby:
+        description: "Ruby version(s) (space separated)"
+        required: true
+        default: "3.4"
+      crdb:
+        description: "CockroachDB version(s) (space separated)"
+        required: true
+        default: "v25.2"
+      max:
+        description: "Maximum number of tests"
+        required: true
+        default: "256" # Maximum number of jobs on GitHub Actions
+
+# This allows a subsequently queued workflow run to interrupt previous runs.
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    name: Prepare Matrix
+    steps:
+      - id: generate-matrix
+        run: |
+          crdb=$(jq --raw-input --compact-output 'split(" ")' <<<"${{ github.event.inputs.crdb }}")
+          ruby=$(jq --raw-input --compact-output 'split(" ")' <<<"${{ github.event.inputs.ruby }}")
+          crdb_len=$(wc -w <<<"${{ github.event.inputs.crdb }}")
+          ruby_len=$(wc -w <<<"${{ github.event.inputs.ruby }}")
+          (( range_count = ${{github.event.inputs.max}} / ( crdb_len * ruby_len ) ))
+          range=$(jq --compact-output "[range($range_count)]" <<<[])
+          echo "crdb=$crdb" >> $GITHUB_OUTPUT
+          echo "ruby=$ruby" >> $GITHUB_OUTPUT
+          echo "numbers=$range" >> $GITHUB_OUTPUT
+    outputs:
+      crdb: ${{ steps.generate-matrix.outputs.crdb }}
+      ruby: ${{ steps.generate-matrix.outputs.ruby }}
+      numbers: ${{ steps.generate-matrix.outputs.numbers }}
+  test:
+    runs-on: ubuntu-latest
+    needs: prepare-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        crdb: ${{ fromJSON(needs.prepare-matrix.outputs.crdb) }}
+        ruby: ${{ fromJSON(needs.prepare-matrix.outputs.ruby) }}
+        number: ${{ fromJSON(needs.prepare-matrix.outputs.numbers) }}
+    name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }} number=${{ matrix.number }})
+    steps:
+      - name: Set Up Actions
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/test-runner
+        with:
+          crdb: ${{ matrix.crdb }}
+          ruby: ${{ matrix.ruby }}
+          TESTOPTS: --fail-fast
