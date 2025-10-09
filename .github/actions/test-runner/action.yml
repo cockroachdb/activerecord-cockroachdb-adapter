@@ -1,0 +1,70 @@
+# Schema: https://json.schemastore.org/github-action.json
+
+name: Test Runner
+description: Prepare and run tests for this repository
+
+inputs:
+  crdb:
+    description: "CockroachDB version"
+    required: true
+  ruby:
+    description: "Ruby version"
+    required: true
+  TESTOPTS:
+    description: "Rails Minitest options"
+    default: "--profile=5"
+runs:
+  using: composite
+  steps:
+    - name: Install GEOS
+      shell: bash
+      run: sudo apt-get install -yqq libgeos-dev
+    - name: Set Up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ inputs.ruby }}
+        bundler-cache: true
+    - name: Show Rails version
+      shell: bash
+      run: bundle info rails
+    - name: Install and Start Cockroachdb
+      shell: bash
+      run: |
+        # Download CockroachDB
+        readonly full_version=$(ruby -rnet/http -ruri -ryaml -e '
+          link = "https://raw.githubusercontent.com/cockroachdb/docs/main/src/current/_data/releases.yml"
+          puts YAML.safe_load(Net::HTTP.get(URI(link))).reverse.find {
+            _1["major_version"] == "${{ inputs.crdb }}" &&
+              _1["release_type"] == "Production" &&
+              !_1["cloud_only"] &&
+              !_1["withdrawn"] &&
+              !_1["release_name"].include?("-") # Pre-release
+          }["release_name"]
+        ')
+
+        echo "Downloading $full_version..."
+        wget -qO- "https://binaries.cockroachdb.com/cockroach-$full_version.linux-amd64.tgz" | tar xvz
+
+        export PATH=./cockroach-$full_version.linux-amd64/:$PATH
+        readonly urlfile=cockroach-url
+
+        # Start a CockroachDB server and wait for it to become ready.
+        rm -f "$urlfile"
+        rm -rf cockroach-data
+        # Start CockroachDB.
+        cockroach start-single-node --max-sql-memory=25% --cache=25% --insecure --host=localhost --spatial-libs=./cockroach-$full_version.linux-amd64/lib --listening-url-file="$urlfile" >/dev/null 2>&1 &
+        # Ensure CockroachDB is stopped on script exit.
+        # Wait until CockroachDB has started.
+        for i in {0..3}; do
+          [[ -f "$urlfile" ]] && break
+          backoff=$((2 ** i))
+          echo "server not yet available; sleeping for $backoff seconds"
+          sleep $backoff
+        done
+        cat ${{ github.workspace }}/setup.sql | cockroach sql --insecure
+    - name: Test
+      shell: bash
+      run: bundle exec rake test
+      env:
+        TESTOPTS: "${{ inputs.TESTOPTS }}" # Fail fast allows us to find easy local reproduction by isolating quickly failing jobs.
+        RAILS_MINITEST_PLUGIN: "1" # Make sure that we use the minitest plugin for profiling.

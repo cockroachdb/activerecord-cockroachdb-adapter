@@ -16,3 +16,4 @@
 /ruby-build/
 /test/db/
 /.ruby-version
+*.sqlite3
