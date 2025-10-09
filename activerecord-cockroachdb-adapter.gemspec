@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.description   = "Allows the use of CockroachDB as a backend for ActiveRecord and Rails apps."
   spec.homepage      = "https://github.com/cockroachdb/activerecord-cockroachdb-adapter"
 
-  spec.add_dependency "activerecord", "~> 8.0.0"
+  spec.add_dependency "activerecord", "~> 8.1.0.a"
   spec.add_dependency "pg", "~> 1.5"
   spec.add_dependency "rgeo-activerecord", "~> 8.0.0"
 
