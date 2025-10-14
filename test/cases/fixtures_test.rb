@@ -288,6 +288,7 @@ module CockroachDB
     # We'll do this in a before_setup so we get ahead of
     # ActiveRecord::TestFixtures#before_setup.
     def before_setup
+      super
       Account.lease_connection.drop_table :accounts, if_exists: true
       Account.lease_connection.exec_query("CREATE SEQUENCE IF NOT EXISTS accounts_id_seq")
       Account.lease_connection.exec_query("
@@ -336,12 +337,14 @@ module CockroachDB
     end
 
     def setup
+      super
       @instances = [Account.new(credit_limit: 50), Company.new(name: "RoR Consulting"), Course.new(name: "Test")]
       ActiveRecord::FixtureSet.reset_cache # make sure tables get reinitialized
     end
 
     # Drop the primary key sequences and bring back the original tables.
     def teardown
+      super
       Account.lease_connection.drop_table :accounts, if_exists: true
       Account.lease_connection.exec_query("DROP SEQUENCE IF EXISTS accounts_id_seq")
       Account.lease_connection.create_table :accounts, force: true do |t|

@@ -70,6 +70,7 @@ module CockroachDB
     fixtures :fk_test_has_pk
 
     def before_setup
+      super
       conn = ActiveRecord::Base.lease_connection
 
       conn.drop_table :fk_test_has_fk, if_exists: true
@@ -87,6 +88,7 @@ module CockroachDB
     end
 
     def setup
+      super
       @connection = ActiveRecord::Base.lease_connection
     end
 
