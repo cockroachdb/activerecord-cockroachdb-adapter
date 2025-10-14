@@ -18,7 +18,6 @@ module ExcludeFromTransactionalTests
   end
 
   def before_setup
-    # binding.irb if self.class.non_transactional_list.include?(@NAME.to_s)
     @old_use_transactional_tests = self.use_transactional_tests
     if @old_use_transactional_tests # stay false if false
       self.use_transactional_tests = !self.class.non_transactional_list.include?(@NAME.to_s)
