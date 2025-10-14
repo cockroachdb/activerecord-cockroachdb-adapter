@@ -7,7 +7,6 @@ module ExcludeMessage
 end
 
 require "minitest/excludes"
-require "minitest/github_action_reporter"
 
 # This gives great visibility on schema dump related tests, but
 # some rails specific messages are then ignored.
@@ -152,21 +151,34 @@ end
 
 ActiveRecord::TestCase.prepend(SetDatetimeInCockroachDBAdapter)
 
-module Minitest
-  module GithubActionReporterExt
-    def gh_link(loc)
-      return super unless loc.include?("/gems/")
+if ENV["GITHUB_ACTIONS"]
+  require "minitest/github_action_reporter"
 
-      path, _, line = loc[%r(/(?:test|spec|lib)/.*)][1..].rpartition(":")
+  module Minitest
+    module GithubActionReporterExt
+      def gh_link(loc)
+        return super unless loc.include?("/gems/")
 
-      rails_version = "v#{ActiveRecord::VERSION::STRING}"
-      "#{ENV["GITHUB_SERVER_URL"]}/rails/rails/blob/#{rails_version}/activerecord/#{path}#L#{line}"
-    rescue
-      warn "Failed to generate link for #{loc}"
-      super
+        path, _, line = loc[%r(/(?:test|spec|lib)/.*)][1..].rpartition(":")
+
+        rails_version = "v#{ActiveRecord::VERSION::STRING}"
+        "#{ENV["GITHUB_SERVER_URL"]}/rails/rails/blob/#{rails_version}/activerecord/#{path}#L#{line}"
+      rescue
+        warn "Failed to generate link for #{loc}"
+        super
+      end
     end
+    GithubActionReporter.prepend(GithubActionReporterExt)
   end
-  GithubActionReporter.prepend(GithubActionReporterExt)
+end
+
+# Using '--fail-fast' may cause the rails plugin to raise Interrupt when recording
+# a test. This would prevent other plugins from recording it. Hence we make sure
+# that rails plugin is loaded last.
+Minitest.load_plugins
+if Minitest.extensions.include?("rails")
+  Minitest.extensions.delete("rails")
+  Minitest.extensions << "rails"
 end
 
 if ENV['TRACE_LIB']

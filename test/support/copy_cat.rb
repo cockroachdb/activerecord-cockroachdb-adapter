@@ -20,7 +20,7 @@ module CopyCat
 
   # Copy methods from The original rails class to our adapter.
   # While copying, we can rewrite the source code of the method using
-  # ast. Use `debug: true` to lead you true that process.
+  # ast. Use `debug: true` to lead you through that process.
   def copy_methods(new_klass, old_klass, *methods, debug: false, &block)
     methods.each do |met|
       file, _ = old_klass.instance_method(met).source_location
