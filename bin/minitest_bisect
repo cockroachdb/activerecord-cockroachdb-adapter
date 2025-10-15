@@ -1,0 +1,19 @@
+#!/usr/bin/env -S bundle exec ruby
+
+require 'rake/file_list'
+require_relative '../test/support/paths_cockroachdb'
+require_relative '../test/support/rake_helpers'
+
+libs = ARTest::CockroachDB.test_load_paths
+test_files = RakeHelpers.test_files
+
+Dir.chdir(File.dirname __dir__) do
+  system(
+    "bundle",
+    "exec",
+  	"minitest_bisect",
+  	"--seed=#{ARGV[0]}",
+  	"-I" + libs.join(":"),
+  	*test_files
+  )
+end

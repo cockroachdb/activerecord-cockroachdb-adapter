@@ -59,7 +59,11 @@ jobs:
       - name: Set Up Actions
         uses: actions/checkout@v4
       - uses: ./.github/actions/test-runner
+        id: test
         with:
           crdb: ${{ matrix.crdb }}
           ruby: ${{ matrix.ruby }}
           TESTOPTS: --fail-fast
+      - name: Bisect failing test
+        if: ${{ failure() && steps.test.conclusion == 'failure' }}
+        run: bin/minitest_bisect ${{ matrix.seed }}
