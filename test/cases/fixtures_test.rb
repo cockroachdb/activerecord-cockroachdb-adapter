@@ -386,6 +386,10 @@ module CockroachDB
       end
 
       recreate_parrots
+
+      Account.reset_column_information
+      Company.reset_column_information
+      Course.reset_column_information
     end
 
     # This replaces the same test that's been excluded from
