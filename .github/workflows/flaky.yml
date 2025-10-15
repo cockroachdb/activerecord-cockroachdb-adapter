@@ -33,15 +33,16 @@ jobs:
           ruby=$(jq --raw-input --compact-output 'split(" ")' <<<"${{ github.event.inputs.ruby }}")
           crdb_len=$(wc -w <<<"${{ github.event.inputs.crdb }}")
           ruby_len=$(wc -w <<<"${{ github.event.inputs.ruby }}")
-          (( range_count = ${{github.event.inputs.max}} / ( crdb_len * ruby_len ) ))
-          range=$(jq --compact-output "[range($range_count)]" <<<[])
+          (( seeds_count = ${{github.event.inputs.max}} / ( crdb_len * ruby_len ) ))
+          seeds=$(shuf --input-range=1-65535 --head-count=$seeds_count | jq --slurp --compact-output)
+          echo $seeds
           echo "crdb=$crdb" >> $GITHUB_OUTPUT
           echo "ruby=$ruby" >> $GITHUB_OUTPUT
-          echo "numbers=$range" >> $GITHUB_OUTPUT
+          echo "seeds=$seeds" >> $GITHUB_OUTPUT
     outputs:
       crdb: ${{ steps.generate-matrix.outputs.crdb }}
       ruby: ${{ steps.generate-matrix.outputs.ruby }}
-      numbers: ${{ steps.generate-matrix.outputs.numbers }}
+      seeds: ${{ steps.generate-matrix.outputs.seeds }}
   test:
     runs-on: ubuntu-latest
     needs: prepare-matrix
@@ -50,8 +51,10 @@ jobs:
       matrix:
         crdb: ${{ fromJSON(needs.prepare-matrix.outputs.crdb) }}
         ruby: ${{ fromJSON(needs.prepare-matrix.outputs.ruby) }}
-        number: ${{ fromJSON(needs.prepare-matrix.outputs.numbers) }}
-    name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }} number=${{ matrix.number }})
+        seed: ${{ fromJSON(needs.prepare-matrix.outputs.seeds) }}
+    name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }} seed=${{ matrix.seed }})
+    env:
+      SEED: ${{ matrix.seed }}
     steps:
       - name: Set Up Actions
         uses: actions/checkout@v4
