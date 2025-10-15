@@ -26,12 +26,12 @@ module RakeHelpers
 
   def all_test_files
     activerecord_test_files =
-      FileList["#{ARTest::CockroachDB.root_activerecord}/test/cases/**/*_test.rb"].
+      ::Rake::FileList["#{ARTest::CockroachDB.root_activerecord}/test/cases/**/*_test.rb"].
       reject { _1.include?("/adapters/") || _1.include?("/encryption/performance") } +
-      FileList["#{ARTest::CockroachDB.root_activerecord}/test/cases/adapters/postgresql/**/*_test.rb"]
+      ::Rake::FileList["#{ARTest::CockroachDB.root_activerecord}/test/cases/adapters/postgresql/**/*_test.rb"]
 
-    cockroachdb_test_files = FileList['test/cases/**/*_test.rb']
+      cockroachdb_test_files = ::Rake::FileList['test/cases/**/*_test.rb']
 
-    FileList[COCKROACHDB_TEST_HELPER] + activerecord_test_files + cockroachdb_test_files
+      ::Rake::FileList[COCKROACHDB_TEST_HELPER] + activerecord_test_files + cockroachdb_test_files
   end
 end
