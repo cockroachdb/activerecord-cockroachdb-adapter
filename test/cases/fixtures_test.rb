@@ -18,6 +18,29 @@ require "models/topic"
 require "models/traffic_light"
 require "models/treasure"
 
+# Hacky tool that searches for table definition code in schema.rb
+# and evals it. Doing this ensure we're always using the latest
+# schema.
+module TableCreator
+  def self.create_table_using_test_schema(table_name, connection)
+    table_name = table_name.to_sym
+    @schema_file ||= SCHEMA_ROOT + "/schema.rb"
+    @ast ||= Prism::Translation::Parser.parse_file(@schema_file)
+    to_search = [@ast]
+    found = nil
+    while !to_search.empty?
+      node = to_search.shift
+      next unless node.is_a?(Parser::AST::Node)
+      if node in [:block, [:send, _, :create_table, [:sym, ^table_name], *], *]
+        break found = node
+      end
+      to_search += node.children
+    end
+    raise "Schema #{table_name.inspect} not found" unless found
+    connection.instance_eval(found.location.expression.source)
+  end
+end
+
 module CockroachDB
   class FixturesTest < ActiveRecord::TestCase
     include ConnectionHelper
@@ -347,43 +370,17 @@ module CockroachDB
       super
       Account.lease_connection.drop_table :accounts, if_exists: true
       Account.lease_connection.exec_query("DROP SEQUENCE IF EXISTS accounts_id_seq")
-      Account.lease_connection.create_table :accounts, force: true do |t|
-        t.timestamps null: true
-        t.references :firm, index: false
-        t.string  :firm_name
-        t.integer :credit_limit
-        t.string :status
-        t.integer "a" * max_identifier_length
-      end
+      TableCreator.create_table_using_test_schema(:accounts, Account.lease_connection)
 
       Company.lease_connection.drop_table :companies, if_exists: true
       Company.lease_connection.exec_query("DROP SEQUENCE IF EXISTS companies_nonstd_seq CASCADE")
-      Company.lease_connection.create_table :companies, force: true do |t|
-        t.string :type
-        t.references :firm, index: false
-        t.string  :firm_name
-        t.string  :name
-        t.bigint :client_of
-        t.bigint :rating, default: 1
-        t.integer :account_id
-        t.string :description, default: ""
-        t.integer :status, default: 0
-        t.index [:name, :rating], order: :desc
-        t.index [:name, :description], length: 10
-        t.index [:firm_id, :type, :rating], name: "company_index", length: { type: 10 }, order: { rating: :desc }
-        t.index [:firm_id, :type], name: "company_partial_index", where: "(rating > 10)"
-        t.index [:firm_id], name: "company_nulls_not_distinct", nulls_not_distinct: true
-        t.index :name, name: "company_name_index", using: :btree
-        t.index "(CASE WHEN rating > 0 THEN lower(name) END) DESC", name: "company_expression_index" if Company.lease_connection.supports_expression_index?
-        t.index [:firm_id, :type], name: "company_include_index", include: [:name, :account_id]
-      end
+      TableCreator.create_table_using_test_schema(:companies, Company.lease_connection)
+      # CockroachDB specific schema addition
+      Company.lease_connection.add_index(:companies, [:firm_id, :type], name: "company_include_index", include: [:name, :account_id])
 
       Course.lease_connection.drop_table :courses, if_exists: true
       Course.lease_connection.exec_query("DROP SEQUENCE IF EXISTS courses_id_seq")
-      Course.lease_connection.create_table :courses, force: true do |t|
-        t.column :name, :string, null: false
-        t.column :college_id, :integer, index: true
-      end
+      TableCreator.create_table_using_test_schema(:courses, Course.lease_connection)
 
       recreate_parrots
 
@@ -455,28 +452,9 @@ module CockroachDB
         conn.drop_table :parrots_treasures, if_exists: true
         conn.drop_table :parrots, if_exists: true
 
-        conn.create_table :parrots, force: :cascade do |t|
-          t.string :name
-          t.integer :breed, default: 0
-          t.string :color
-          t.string :parrot_sti_class
-          t.integer :killer_id
-          t.integer :updated_count, :integer, default: 0
-          t.datetime :created_at
-          t.datetime :created_on
-          t.datetime :updated_at
-          t.datetime :updated_on
-        end
-
-        conn.create_table :parrots_pirates, id: false, force: true do |t|
-          t.references :parrot, foreign_key: true
-          t.references :pirate, foreign_key: true
-        end
-
-        conn.create_table :parrots_treasures, id: false, force: true do |t|
-          t.references :parrot, foreign_key: true
-          t.references :treasure, foreign_key: true
-        end
+        TableCreator.create_table_using_test_schema(:parrots, conn)
+        TableCreator.create_table_using_test_schema(:parrots_pirates, conn)
+        TableCreator.create_table_using_test_schema(:parrots_treasures, conn)
       end
     end
   end
