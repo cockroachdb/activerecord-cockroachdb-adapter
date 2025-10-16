@@ -61,23 +61,16 @@ Only do it if you know the schema was left in a correct state.
 
 ### Run Tests from a Backup
 
-Loading the full test schema every time a test runs can take a while, so for cases where loading the schema sequentially is unimportant, it is possible to use a backup to set up the database. This is significantly faster than the standard method and is provided to run individual tests faster, but should not be used to validate a build.
+Loading the full test schema every time a test runs can take
+a while, so for cases where loading the schema sequentially
+is unimportant, it is possible to use a backup to set up the
+database. This is significantly faster than the standard
+method and is provided to run individual tests faster, but
+should not be used to validate a build.
 
-First create the template database.
-
-```bash
-bundle exec rake db:create_test_template
-```
-
-This will create a template database for the current version (ex. `activerecord_test_template611` for version 6.1.1) and create a `BACKUP` in the `nodelocal://self/activerecord-crdb-adapter/#{activerecord_version}` directory.
-
-To load from the template, use the `COCKROACH_LOAD_FROM_TEMPLATE` flag.
-
-```bash
-COCKROACH_LOAD_FROM_TEMPLATE=1 TEST_FILES="test/cases/adapters/postgresql/ddl_test.rb" bundle exec rake test
-```
-
-And the `activerecord_unittest` database will use the `RESTORE` command to load the schema from the template database.
+To do so, just set the env variable `COCKROACH_LOAD_FROM_TEMPLATE`.
+First run will generate and cache a template, latter runs will use
+it.
 
 # Improvements
 
