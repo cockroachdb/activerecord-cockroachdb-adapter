@@ -53,8 +53,6 @@ jobs:
         ruby: ${{ fromJSON(needs.prepare-matrix.outputs.ruby) }}
         seed: ${{ fromJSON(needs.prepare-matrix.outputs.seeds) }}
     name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }} seed=${{ matrix.seed }})
-    env:
-      SEED: ${{ matrix.seed }}
     steps:
       - name: Set Up Actions
         uses: actions/checkout@v4
@@ -64,6 +62,52 @@ jobs:
           crdb: ${{ matrix.crdb }}
           ruby: ${{ matrix.ruby }}
           TESTOPTS: --fail-fast
-      - name: Bisect failing test
+        env:
+          JSON_REPORTER: "report.json"
+          SEED: ${{ matrix.seed }}
+      - name: Upload Report
         if: ${{ failure() && steps.test.conclusion == 'failure' }}
-        run: bin/minitest_bisect ${{ matrix.seed }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.crdb }}-${{ matrix.ruby }}-${{ matrix.seed }}
+          path: report.json
+  collect:
+    if: failure()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Reports
+        uses: actions/download-artifact@v4
+        with:
+          path: reports
+      - name: Aggregate Reports
+        run: |
+          cat <<EOF >> $GITHUB_STEP_SUMMARY
+          # Failing Tests
+
+          <table>
+          <thead>
+            <tr>
+              <th>Seed</th>
+              <th>Time</th>
+              <th>Failure</th>
+            </tr>
+          </thead>
+          <tbody>
+          EOF
+
+          jq --slurp --raw-output '
+            sort_by(.total_time)[]
+            | {seed, time: .total_time | strftime("%H:%M:%S"), failure: .failed_tests[0].NAME }
+            | "<tr><td>\(.seed)</td><td>\(.time)</td><td>\(.failure)</td></tr>"
+          ' reports/*/report.json >> $GITHUB_STEP_SUMMARY
+
+
+          cat <<EOF >> $GITHUB_STEP_SUMMARY
+          </tbody>
+          </table>
+          EOF
+          echo >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          jq --slurp --compact-output '.' reports/*/report.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
