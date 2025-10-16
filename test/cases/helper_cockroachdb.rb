@@ -169,24 +169,33 @@ end
 
 ActiveRecord::TestCase.prepend(SetDatetimeInCockroachDBAdapter)
 
-if ENV["GITHUB_ACTIONS"]
-  require "minitest/github_action_reporter"
-
+if ENV["JSON_REPORTER"]
+  puts "Generating JSON report: #{ENV["JSON_REPORTER"]}"
   module Minitest
-    module GithubActionReporterExt
-      def gh_link(loc)
-        return super unless loc.include?("/gems/")
-
-        path, _, line = loc[%r(/(?:test|spec|lib)/.*)][1..].rpartition(":")
-
-        rails_version = "v#{ActiveRecord::VERSION::STRING}"
-        "#{ENV["GITHUB_SERVER_URL"]}/rails/rails/blob/#{rails_version}/activerecord/#{path}#L#{line}"
-      rescue
-        warn "Failed to generate link for #{loc}"
+    class JSONReporter < StatisticsReporter
+      def report
         super
+        io.write(
+          {
+            seed: Minitest.seed,
+            assertions: assertions,
+            count: count,
+            failed_tests: results,
+            total_time: total_time,
+            failures: failures,
+            errors: errors,
+            warnings: warnings,
+            skips: skips,
+          }.to_json
+        )
       end
     end
-    GithubActionReporter.prepend(GithubActionReporterExt)
+
+    def self.plugin_json_reporter_init(*)
+      reporter << JSONReporter.new(File.open(ENV["JSON_REPORTER"], "w"))
+    end
+
+    self.extensions << "json_reporter"
   end
 end
 

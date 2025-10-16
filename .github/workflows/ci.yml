@@ -26,13 +26,51 @@ jobs:
     name: Test Results
     needs: [test]
     steps:
-      - run: |
+      - name: Check Success
+        run: |
           result="${{ needs.test.result }}"
+
           if [[ $result == "success" || $result == "skipped" ]]; then
+            echo "All tests passed :taco:" >>$GITHUB_STEP_SUMMARY
             exit 0
           else
             exit 1
           fi
+      - name: Download Reports
+        if: failure()
+        uses: actions/download-artifact@v4
+        with:
+          path: reports
+      - name: Aggregate Reports
+        if: failure()
+        run: |
+          cat <<EOF >>$GITHUB_STEP_SUMMARY
+          # Failing Tests
+
+          <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Test</th>
+            </tr>
+          </thead>
+          <tbody>
+          EOF
+
+          jq --slurp --raw-output '
+            map(.failed_tests|map("\(.klass)#\(.NAME)")) | flatten | unique | sort | to_entries[]
+            | "<tr><td><strong>\(.key)</strong></td><td>\(.value)</td></tr>"
+          ' reports/*/report.json >>$GITHUB_STEP_SUMMARY
+
+          cat <<EOF >>$GITHUB_STEP_SUMMARY
+          </tbody>
+          </table>
+          EOF
+
+          echo >>$GITHUB_STEP_SUMMARY
+          echo '```json' >>$GITHUB_STEP_SUMMARY
+          jq --slurp --compact-output '.' reports/*/report.json >>$GITHUB_STEP_SUMMARY
+          echo '```' >>$GITHUB_STEP_SUMMARY
 
   test:
     runs-on: ubuntu-latest
@@ -42,11 +80,20 @@ jobs:
         # https://www.cockroachlabs.com/docs/releases/release-support-policy
         crdb: [v24.3, v25.1, v25.2, v25.3]
         ruby: ["3.4"]
-    name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }}
+    name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
     steps:
       - name: Set Up Actions
         uses: actions/checkout@v4
       - uses: ./.github/actions/test-runner
+        id: test
         with:
           crdb: ${{ matrix.crdb }}
           ruby: ${{ matrix.ruby }}
+        env:
+          JSON_REPORTER: "report.json"
+      - name: Upload Report
+        if: ${{ failure() && steps.test.conclusion == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.crdb }}-${{ matrix.ruby }}
+          path: report.json

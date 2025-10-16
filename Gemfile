@@ -56,7 +56,6 @@ group :development, :test do
   gem "debug"
   gem "minitest-bisect", github: "BuonOmo/minitest-bisect", branch: "main"
   gem "minitest-excludes", "~> 2.0.1"
-  gem "minitest-github_action_reporter", github: "BuonOmo/minitest-github_action_reporter", require: "minitest/github_action_reporter_plugin"
   gem "ostruct", "~> 0.6"
 
   # Gems used for tests meta-programming.
