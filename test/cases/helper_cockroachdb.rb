@@ -22,11 +22,57 @@ ENV['DEBUG_COCKROACHDB_ADAPTER'] = "1"
 require "support/load_schema_helper"
 
 module LoadSchemaHelperExt
-  def load_schema
-    return if ENV['COCKROACH_LOAD_FROM_TEMPLATE']
-    return if ENV['COCKROACH_SKIP_LOAD_SCHEMA']
+  # Load the CockroachDB specific schema. It replaces ActiveRecord's PostgreSQL
+  # specific schema.
+  def load_cockroachdb_specific_schema
+    # silence verbose schema loading
+    shh do
+      load "schema/cockroachdb_specific_schema.rb"
 
+      ActiveRecord::FixtureSet.reset_cache
+    end
+  end
+
+  def load_schema
+    return if ENV['COCKROACH_SKIP_LOAD_SCHEMA']
+    return load_from_template { super } if ENV['COCKROACH_LOAD_FROM_TEMPLATE']
+
+    print "Loading schema..."
+    t0 = Time.now
     super
+    load_cockroachdb_specific_schema
+    puts format(" %.2fs", Time.now - t0)
+    return
+  end
+
+  private def load_from_template(&)
+    require 'support/template_creator'
+
+    if TemplateCreator.template_exists?
+      print "Loading schema from template..."
+    else
+      print "Generating and caching template schema..."
+    end
+
+    t0 = Time.now
+
+    TemplateCreator.load_from_template do
+      yield
+      load_cockroachdb_specific_schema
+    end
+
+    puts format(" %.2fs", Time.now - t0)
+
+    # reconnect to activerecord_unittest
+    shh { ARTest.connect }
+  end
+
+  private def shh
+    original_stdout = $stdout
+    $stdout = StringIO.new
+    yield
+  ensure
+    $stdout = original_stdout
   end
 end
 LoadSchemaHelper.prepend(LoadSchemaHelperExt)
@@ -40,34 +86,6 @@ require "support/exclude_from_transactional_tests"
 
 # Allow exclusion of tests by name using #exclude_from_transactional_tests(test_name)
 ActiveRecord::TestCase.prepend(ExcludeFromTransactionalTests)
-
-# Load the CockroachDB specific schema. It replaces ActiveRecord's PostgreSQL
-# specific schema.
-def load_cockroachdb_specific_schema
-  # silence verbose schema loading
-  original_stdout = $stdout
-  $stdout = StringIO.new
-
-  load "schema/cockroachdb_specific_schema.rb"
-
-  ActiveRecord::FixtureSet.reset_cache
-ensure
-  $stdout = original_stdout
-end
-
-if ENV['COCKROACH_LOAD_FROM_TEMPLATE'].nil? && ENV['COCKROACH_SKIP_LOAD_SCHEMA'].nil?
-  load_cockroachdb_specific_schema
-elsif ENV['COCKROACH_LOAD_FROM_TEMPLATE']
-  require 'support/template_creator'
-
-  p "loading schema from template"
-
-  # load from template
-  TemplateCreator.restore_from_template
-
-  # reconnect to activerecord_unittest
-  ARTest.connect
-end
 
 require 'timeout'
 

@@ -1,88 +1,114 @@
 # frozen_string_literal: true
 
-require 'active_record'
+require "activerecord-cockroachdb-adapter"
 require_relative 'paths_cockroachdb'
+require 'support/config' # ARTest.config
+require 'support/connection' # ARTest.connect
 
 module TemplateCreator
-  # extend self
+  class DefaultDB < ActiveRecord::Base
+    establish_connection(
+      adapter: 'cockroachdb',
+      database: 'defaultdb',
+      port: 26257,
+      user: 'root',
+      host: 'localhost'
+    )
+  end
 
-  DEFAULT_CONNECTION_HASH = {
-    adapter: 'cockroachdb',
-    database: 'defaultdb',
-    port: 26257,
-    user: 'root',
-    host: 'localhost'
-  }.freeze
-
-  BACKUP_DIR = "nodelocal://self/activerecord-crdb-adapter"
+  # Database created once the backup is finished to make sure we have a
+  # clean backup to work with. See #template_exists?
+  EXISTS = "exists"
+  BACKUP_DIR = "userfile://defaultdb.public/activerecord-crdb-adapter"
 
   module_function
 
-  def ar_version
-    ActiveRecord.version.version.gsub('.','')
+  def template_version
+    ar_version = ActiveRecord.version.version.gsub('.','_')
+    main_schema_digest = Digest::MD5.file(SCHEMA_ROOT + "/schema.rb").hexdigest
+    crdb_schema_digest = Digest::MD5.file("#{__dir__}/../schema/cockroachdb_specific_schema.rb").hexdigest
+    "#{ar_version}_#{main_schema_digest}_#{crdb_schema_digest}"
   end
 
   def version_backup_path
-    BACKUP_DIR + "/#{ar_version}"
+    BACKUP_DIR + "/#{template_version}"
   end
 
-  def template_db_name
-    "activerecord_unittest_template#{ar_version}"
+  def template_db_name(db_name)
+    "#{db_name}__template__#{template_version}"
   end
 
-  def connect(connection_hash=nil)
-    connection_hash = DEFAULT_CONNECTION_HASH if connection_hash.nil?
-    ActiveRecord::Base.establish_connection(connection_hash)
+  def template_exists?
+    template_db_exists?(EXISTS)
   end
 
-  def template_db_exists?
-    ActiveRecord::Base.lease_connection.select_value("SELECT 1 FROM pg_database WHERE datname='#{template_db_name}'") == 1
+  def databases
+    @databases ||=ARTest.config.dig("connections", "cockroachdb").map { |_, value| value["database"] }.uniq
   end
 
-  def drop_template_db
-    ActiveRecord::Base.lease_connection.execute("DROP DATABASE #{template_db_name}")
+  def with_template_db_names
+    old_crdb = ARTest.config["connections"]["cockroachdb"]
+    new_crdb = old_crdb.transform_values { _1.merge("database" => template_db_name(_1["database"])) }
+    ARTest.config["connections"]["cockroachdb"] = new_crdb
+    yield
+  ensure
+    ARTest.config["connections"]["cockroachdb"] = old_crdb
   end
 
-  def create_template_db
-    ActiveRecord::Base.lease_connection.execute("CREATE DATABASE #{template_db_name}")
+  def template_db_exists?(db_name)
+    DefaultDB.lease_connection.select_value("SELECT 1 FROM pg_database WHERE datname='#{template_db_name(db_name)}'") == 1
   end
 
-  def load_schema
-    p 'loading schema'
-    load ARTest::CockroachDB.root_activerecord_test + '/schema/schema.rb'
-    load 'test/schema/cockroachdb_specific_schema.rb'
+  def drop_template_db(db_name)
+    DefaultDB.lease_connection.execute("DROP DATABASE #{template_db_name(db_name)} CASCADE")
   end
 
-  def create_test_template
-    connect
-    raise "#{template_db_name} already exists. If you do not have a backup created, please drop the database and run again." if template_db_exists?
-
-    create_template_db
-
-    # switch connection to template db
-    conn = DEFAULT_CONNECTION_HASH.dup
-    conn['database'] = template_db_name
-    connect(conn)
-
-    load_schema
-
-    # create BACKUP to restore from
-    ActiveRecord::Base.lease_connection.execute("BACKUP DATABASE #{template_db_name} TO '#{version_backup_path}'")
+  def create_template_db(db_name)
+    DefaultDB.lease_connection.execute("CREATE DATABASE #{template_db_name(db_name)}")
   end
 
-  def restore_from_template
-    connect
-    raise "The TemplateDB does not exist. Run 'rake db:create_test_template' first." unless template_db_exists?
-
-    begin
-      ActiveRecord::Base.lease_connection.execute("DROP DATABASE activerecord_unittest")
-    rescue ActiveRecord::StatementInvalid => e
-      unless e.cause.class == PG::InvalidCatalogName
-        raise e
-      end
+  def create_test_template(&block)
+    databases.each do |db_name|
+      drop_template_db(db_name) if template_db_exists?(db_name)
+      create_template_db(db_name)
     end
-    ActiveRecord::Base.lease_connection.execute("CREATE DATABASE activerecord_unittest")
 
-    ActiveRecord::Base.lease_connection.execute("RESTORE #{template_db_name}.* FROM '#{version_backup_path}' WITH into_db = 'activerecord_unittest'")
+    with_template_db_names do
+      shh { ARTest.connect }
+      block.call
+    end
+
+    DefaultDB.lease_connection.execute(<<~SQL)
+    BACKUP DATABASE #{databases.map { |db| template_db_name(db) }.join(', ')}
+    INTO '#{version_backup_path}'
+    SQL
+    create_template_db(EXISTS)
+  end
+
+  def load_from_template(&block)
+    create_test_template(&block) unless template_exists?
+    databases.each do |db_name|
+      begin
+        DefaultDB.lease_connection.execute("DROP DATABASE #{db_name}")
+      rescue ActiveRecord::StatementInvalid => e
+        unless e.cause.class == PG::InvalidCatalogName
+          raise e
+        end
+      end
+      DefaultDB.lease_connection.execute("CREATE DATABASE #{db_name}")
+      DefaultDB.lease_connection.execute(<<~SQL)
+      RESTORE #{template_db_name(db_name)}.*
+      FROM LATEST IN '#{version_backup_path}'
+      WITH into_db = '#{db_name}'
+      SQL
+    end
+  end
+
+  private def shh
+    original_stdout = $stdout
+    $stdout = StringIO.new
+    yield
+  ensure
+    $stdout = original_stdout
   end
 end
