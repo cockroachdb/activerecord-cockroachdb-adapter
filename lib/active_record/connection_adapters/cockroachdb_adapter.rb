@@ -299,7 +299,7 @@ module ActiveRecord
             st_polygon
           ).each do |geo_type|
             m.register_type(geo_type) do |oid, _, sql_type|
-              CockroachDB::OID::Spatial.new(oid, sql_type)
+              CockroachDB::OID::Spatial.new(oid, sql_type).freeze
             end
           end
 

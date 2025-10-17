@@ -185,12 +185,6 @@ class PostGISTest < ActiveRecord::PostgreSQLTestCase
     # necessary to reset the @spatial_factory variable on spatial
     # OIDs, otherwise the results of early tests will be memoized
     # since the table is not dropped and recreated between test cases.
-    ObjectSpace.each_object(spatial_oid) do |oid|
-      oid.instance_variable_set(:@spatial_factory, nil)
-    end
-  end
-
-  def spatial_oid
-    ActiveRecord::ConnectionAdapters::CockroachDB::OID::Spatial
+    klass.lease_connection.send(:reload_type_map)
   end
 end
