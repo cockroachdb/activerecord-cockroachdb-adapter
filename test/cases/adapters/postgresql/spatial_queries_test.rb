@@ -6,8 +6,6 @@ require 'models/building'
 class SpatialQueriesTest < ActiveSupport::TestCase
   def setup
     Building.delete_all
-    spatial_factory_store.clear
-    spatial_factory_store.default = nil
   end
 
   def test_query_point

@@ -6,8 +6,12 @@ require "models/building"
 class PostGISTest < ActiveRecord::PostgreSQLTestCase
   def setup
     @connection = ActiveRecord::Base.lease_connection
+  end
+
+  def teardown
     spatial_factory_store.default = nil
     spatial_factory_store.clear
+    reset_memoized_spatial_factories
   end
 
   def test_postgis_available
@@ -104,9 +108,6 @@ class PostGISTest < ActiveRecord::PostgreSQLTestCase
   end
 
   def test_spatial_factory_attrs_parsing
-    klass.reset_column_information
-    reset_memoized_spatial_factories
-
     factory = RGeo::Cartesian.preferred_factory(srid: 3857)
     spatial_factory_store.register(factory, { srid: 3857,
                                               sql_type: "geometry",
@@ -121,13 +122,9 @@ class PostGISTest < ActiveRecord::PostgreSQLTestCase
     object.save!
     object.reload
     assert_equal(factory, object.boundary.factory)
-
-    spatial_factory_store.clear
   end
 
   def test_spatial_factory_retrieval
-    reset_memoized_spatial_factories
-
     geo_factory = RGeo::Geographic.spherical_factory(srid: 4326)
     spatial_factory_store.register(geo_factory, geo_type: "point", sql_type: "geography")
 
@@ -141,8 +138,6 @@ class PostGISTest < ActiveRecord::PostgreSQLTestCase
     object.save!
     object.reload
     refute_equal geo_factory, object.shape.factory
-
-    spatial_factory_store.clear
   end
 
   def test_point_to_json
@@ -185,12 +180,7 @@ class PostGISTest < ActiveRecord::PostgreSQLTestCase
     # necessary to reset the @spatial_factory variable on spatial
     # OIDs, otherwise the results of early tests will be memoized
     # since the table is not dropped and recreated between test cases.
-    ObjectSpace.each_object(spatial_oid) do |oid|
-      oid.instance_variable_set(:@spatial_factory, nil)
-    end
-  end
-
-  def spatial_oid
-    ActiveRecord::ConnectionAdapters::CockroachDB::OID::Spatial
+    klass.lease_connection.send(:reload_type_map)
+    klass.reset_column_information
   end
 end
