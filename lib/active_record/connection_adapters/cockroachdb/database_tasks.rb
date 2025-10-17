@@ -74,7 +74,7 @@ module ActiveRecord
               "https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/new"
           end
 
-          run_cmd("cockroach", ["sql", "--set", "errexit=false", "--file", filename], "loading")
+          run_cmd("cockroach", "sql", "--set", "errexit=false", "--file", filename)
         end
 
         private
