@@ -28,6 +28,10 @@ module ActiveRecord
           def initialize(oid, sql_type)
             @sql_type = sql_type
             @geo_type, @srid, @has_z, @has_m = self.class.parse_sql_type(sql_type)
+            @spatial_factory =
+              RGeo::ActiveRecord::SpatialFactoryStore.instance.factory(
+                factory_attrs
+              )
           end
 
           # sql_type: geometry, geometry(Point), geometry(Point,4326), ...
@@ -57,13 +61,6 @@ module ActiveRecord
               geo_type = sql_type
             end
             [geo_type, srid, has_z, has_m]
-          end
-
-          def spatial_factory
-            @spatial_factory ||=
-              RGeo::ActiveRecord::SpatialFactoryStore.instance.factory(
-                factory_attrs
-              )
           end
 
           def geographic?
@@ -108,14 +105,14 @@ module ActiveRecord
           end
 
           def binary_string?(string)
-            string[0] == "\x00" || string[0] == "\x01" || string[0, 4] =~ /[0-9a-fA-F]{4}/
+            string[0] == "\x00" || string[0] == "\x01" || string[0, 4].match?(/[0-9a-fA-F]{4}/)
           end
 
           def wkt_parser(string)
             if binary_string?(string)
-              RGeo::WKRep::WKBParser.new(spatial_factory, support_ewkb: true, default_srid: @srid)
+              RGeo::WKRep::WKBParser.new(@spatial_factory, support_ewkb: true, default_srid: @srid)
             else
-              RGeo::WKRep::WKTParser.new(spatial_factory, support_ewkt: true, default_srid: @srid)
+              RGeo::WKRep::WKTParser.new(@spatial_factory, support_ewkt: true, default_srid: @srid)
             end
           end
 
