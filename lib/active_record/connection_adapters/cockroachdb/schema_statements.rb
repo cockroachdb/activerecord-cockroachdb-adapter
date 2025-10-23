@@ -297,23 +297,6 @@ module ActiveRecord
         end
 
         # override
-        def native_database_types
-          # Add spatial types
-          super.merge(
-            geography:           { name: "geography" },
-            geometry:            { name: "geometry" },
-            geometry_collection: { name: "geometry_collection" },
-            line_string:         { name: "line_string" },
-            multi_line_string:   { name: "multi_line_string" },
-            multi_point:         { name: "multi_point" },
-            multi_polygon:       { name: "multi_polygon" },
-            spatial:             { name: "geometry" },
-            st_point:            { name: "st_point" },
-            st_polygon:          { name: "st_polygon" }
-          )
-        end
-
-        # override
         def create_table_definition(*args, **kwargs)
           CockroachDB::TableDefinition.new(self, *args, **kwargs)
         end
