@@ -111,6 +111,23 @@ module ActiveRecord
         SPATIAL_COLUMN_OPTIONS[key]
       end
 
+      def self.native_database_types
+        return @native_database_types if defined?(@native_database_types)
+        # Add spatial types
+        @native_database_types = super.merge(
+          geography:           { name: "geography" },
+          geometry:            { name: "geometry" },
+          geometry_collection: { name: "geometry_collection" },
+          line_string:         { name: "line_string" },
+          multi_line_string:   { name: "multi_line_string" },
+          multi_point:         { name: "multi_point" },
+          multi_polygon:       { name: "multi_polygon" },
+          spatial:             { name: "geometry" },
+          st_point:            { name: "st_point" },
+          st_polygon:          { name: "st_polygon" }
+        )
+      end
+
       def postgis_lib_version
         @postgis_lib_version ||= select_value("SELECT PostGIS_Lib_Version()")
       end
