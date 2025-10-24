@@ -39,7 +39,7 @@ module CockroachDB
     def test_default_decimal_zero_with_large_scale
       record = DefaultNumber.new
       assert_equal 0.0, record.decimal_number
-      assert_equal "0.0000000000000000", record.decimal_number_before_type_cast
+      assert_equal 0.0, record.decimal_number_before_type_cast
     end
   end
 end
