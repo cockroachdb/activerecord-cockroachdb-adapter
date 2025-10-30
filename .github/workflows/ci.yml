@@ -58,7 +58,7 @@ jobs:
           EOF
 
           jq --slurp --raw-output '
-            map(.failed_tests|map("\(.klass)#\(.NAME)")) | flatten | unique | sort | to_entries[]
+            map(.failed_tests|map("\(.klass)#\(.NAME)")) | flatten | unique | sort[0:100] | to_entries[]
             | "<tr><td><strong>\(.key)</strong></td><td>\(.value)</td></tr>"
           ' reports/*/report.json >>$GITHUB_STEP_SUMMARY
 
@@ -66,6 +66,9 @@ jobs:
           </tbody>
           </table>
           EOF
+
+          # Do not print json if too large.
+          [[ "$(du -s reports | cut -f1)" -gt 124 ]] && exit 0
 
           echo >>$GITHUB_STEP_SUMMARY
           echo '```json' >>$GITHUB_STEP_SUMMARY
