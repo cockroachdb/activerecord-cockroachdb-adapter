@@ -72,7 +72,7 @@ jobs:
           name: report-${{ matrix.crdb }}-${{ matrix.ruby }}-${{ matrix.seed }}
           path: report.json
   collect:
-    if: failure()
+    if: failure() || cancelled()
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -97,7 +97,7 @@ jobs:
           EOF
 
           jq --slurp --raw-output '
-            sort_by(.total_time)[]
+            sort_by(.total_time)[0:100][]
             | {seed, time: .total_time | strftime("%H:%M:%S"), failure: .failed_tests[0].NAME }
             | "<tr><td>\(.seed)</td><td>\(.time)</td><td>\(.failure)</td></tr>"
           ' reports/*/report.json >> $GITHUB_STEP_SUMMARY
@@ -107,6 +107,10 @@ jobs:
           </tbody>
           </table>
           EOF
+
+          # Do not print json if too large.
+          [[ "$(du -s reports | cut -f1)" -gt 124 ]] && exit 0
+
           echo >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
           jq --slurp --compact-output '.' reports/*/report.json >> $GITHUB_STEP_SUMMARY

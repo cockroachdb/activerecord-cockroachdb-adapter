@@ -180,7 +180,7 @@ if ENV["JSON_REPORTER"]
             seed: Minitest.seed,
             assertions: assertions,
             count: count,
-            failed_tests: results,
+            failed_tests: results.reject(&:skipped?),
             total_time: total_time,
             failures: failures,
             errors: errors,
