@@ -395,18 +395,10 @@ module ActiveRecord
           nil
         end
 
-        # override
-        # This method makes a query to gather information about columns
-        # in a table. It returns an array of arrays (one for each col) and
-        # passes each to the SchemaStatements#new_column_from_field method
-        # as the field parameter. This data is then used to format the column
-        # objects for the model and sent to the OID for data casting.
-        #
-        # Sometimes there are differences between how data is formatted
-        # in Postgres and CockroachDB, so additional queries for certain types
-        # may be necessary to properly form the column definition.
-        #
-        # @see: https://github.com/rails/rails/blob/8695b028261bdd244e254993255c6641bdbc17a5/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L829
+        # OVERRIDE(v8.1.1):
+        #   - comment is retrieved differently than PG for performance
+        #   - gather detailed information about spatial columns. See
+        #     `#crdb_column_definitions`
         def column_definitions(table_name)
           fields = query(<<~SQL, "SCHEMA")
               SELECT a.attname, format_type(a.atttypid, a.atttypmod),
@@ -414,7 +406,7 @@ module ActiveRecord
                      c.collname, NULL AS comment,
                      attidentity,
                      attgenerated,
-                     NULL as is_hidden
+                     a.attishidden
                 FROM pg_attribute a
                 LEFT JOIN pg_attrdef d ON a.attrelid = d.adrelid AND a.attnum = d.adnum
                 LEFT JOIN pg_type t ON a.atttypid = t.oid
@@ -445,7 +437,6 @@ module ActiveRecord
             dtype = field[f_type]
             field[f_type] = crdb_fields[field[f_attname]][2].downcase if re.match(dtype)
             field[f_comment] = crdb_fields[field[f_attname]][1]
-            field[f_is_hidden] = true if crdb_fields[field[f_attname]][3]
             field
           end
           fields.delete_if do |field|
@@ -461,13 +452,24 @@ module ActiveRecord
         # column_definitions. This will include limit,
         # precision, and scale information in the type.
         # Ex. geometry -> geometry(point, 4326)
+        #
+        # The performance difference to fetch comments is very
+        # significant. On a M1 Mac, CockroachDB v25.2.2 and
+        # data from the test suite, it is 20x times faster.
+        #
+        #     SELECT col_description(a.attrelid, a.attnum)
+        #     FROM pg_attribute a; -- 1.052s
+        #
+        #     SELECT c.column_comment
+        #     FROM information_schema.columns c; -- 50ms
+        #
         def crdb_column_definitions(table_name)
           table_name = PostgreSQL::Utils.extract_schema_qualified_name(table_name)
           table = table_name.identifier
           with_schema = " AND c.table_schema = #{quote(table_name.schema)}" if table_name.schema
           fields = \
           query(<<~SQL, "SCHEMA")
-            SELECT c.column_name, c.column_comment, c.crdb_sql_type, c.is_hidden::BOOLEAN
+            SELECT c.column_name, c.column_comment, c.crdb_sql_type
             FROM information_schema.columns c
             WHERE c.table_name = #{quote(table)}#{with_schema}
           SQL
