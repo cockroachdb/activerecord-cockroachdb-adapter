@@ -85,8 +85,8 @@ module ActiveRecord
 
         private
 
-        # Copy/paste of the `#foreign_keys(table)` method adapted to return every single
-        # foreign key in the database.
+        # NOTE: Copy/paste of the `#foreign_keys(table)` method adapted
+        #   to return every single foreign key in the database.
         def all_foreign_keys
           fk_info = internal_exec_query(<<~SQL, "SCHEMA")
             SELECT CASE
@@ -99,14 +99,30 @@ module ActiveRecord
               THEN ''
               ELSE n2.nspname || '.'
             END || t2.relname AS to_table,
-            a1.attname AS column, a2.attname AS primary_key, c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid, c.condeferrable AS deferrable, c.condeferred AS deferred,
-            c.conkey, c.confkey, c.conrelid, c.confrelid
+            c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid, c.condeferrable AS deferrable, c.condeferred AS deferred, c.conrelid, c.confrelid,
+              (
+                SELECT array_agg(a.attname ORDER BY idx)
+                FROM (
+                  SELECT idx, c.conkey[idx] AS conkey_elem
+                  FROM generate_subscripts(c.conkey, 1) AS idx
+                ) indexed_conkeys
+                JOIN pg_attribute a ON a.attrelid = t1.oid
+                AND a.attnum = indexed_conkeys.conkey_elem
+                AND NOT a.attishidden
+              ) AS conkey_names,
+              (
+                SELECT array_agg(a.attname ORDER BY idx)
+                FROM (
+                  SELECT idx, c.confkey[idx] AS confkey_elem
+                  FROM generate_subscripts(c.confkey, 1) AS idx
+                ) indexed_confkeys
+                JOIN pg_attribute a ON a.attrelid = t2.oid
+                AND a.attnum = indexed_confkeys.confkey_elem
+                AND NOT a.attishidden
+              ) AS confkey_names
             FROM pg_constraint c
             JOIN pg_class t1 ON c.conrelid = t1.oid
             JOIN pg_class t2 ON c.confrelid = t2.oid
-            JOIN pg_attribute a1 ON a1.attnum = c.conkey[1] AND a1.attrelid = t1.oid
-            JOIN pg_attribute a2 ON a2.attnum = c.confkey[1] AND a2.attrelid = t2.oid
-            JOIN pg_namespace t3 ON c.connamespace = t3.oid
             JOIN pg_namespace n1 ON t1.relnamespace = n1.oid
             JOIN pg_namespace n2 ON t2.relnamespace = n2.oid
             WHERE c.contype = 'f'
@@ -116,22 +132,16 @@ module ActiveRecord
           fk_info.map do |row|
             from_table = PostgreSQL::Utils.unquote_identifier(row["from_table"])
             to_table = PostgreSQL::Utils.unquote_identifier(row["to_table"])
-            conkey = row["conkey"].scan(/\d+/).map(&:to_i)
-            confkey = row["confkey"].scan(/\d+/).map(&:to_i)
 
-            if conkey.size > 1
-              column = column_names_from_column_numbers(row["conrelid"], conkey)
-              primary_key = column_names_from_column_numbers(row["confrelid"], confkey)
-            else
-              column = PostgreSQL::Utils.unquote_identifier(row["column"])
-              primary_key = row["primary_key"]
-            end
+            column = decode_string_array(row["conkey_names"])
+            primary_key = decode_string_array(row["confkey_names"])
 
             options = {
-              column: column,
+              column: column.size == 1 ? column.first : column,
               name: row["name"],
-              primary_key: primary_key
+              primary_key: primary_key.size == 1 ? primary_key.first : primary_key
             }
+
             options[:on_delete] = extract_foreign_key_action(row["on_delete"])
             options[:on_update] = extract_foreign_key_action(row["on_update"])
             options[:deferrable] = extract_constraint_deferrable(row["deferrable"], row["deferred"])
