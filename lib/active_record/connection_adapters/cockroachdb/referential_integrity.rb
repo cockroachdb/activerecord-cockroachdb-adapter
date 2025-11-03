@@ -36,6 +36,29 @@ module ActiveRecord
         def disable_referential_integrity
           foreign_keys = all_foreign_keys
 
+          remove_foreign_keys(foreign_keys)
+
+          # Prefixes and suffixes are added in add_foreign_key
+          # in AR7+ so we need to temporarily disable them here,
+          # otherwise prefixes/suffixes will be erroneously added.
+          old_prefix = ActiveRecord::Base.table_name_prefix
+          old_suffix = ActiveRecord::Base.table_name_suffix
+
+          begin
+            yield
+          ensure
+            ActiveRecord::Base.table_name_prefix = ""
+            ActiveRecord::Base.table_name_suffix = ""
+            add_foreign_keys(foreign_keys) # Never raises.
+
+            ActiveRecord::Base.table_name_prefix = old_prefix if defined?(old_prefix)
+            ActiveRecord::Base.table_name_suffix = old_suffix if defined?(old_suffix)
+          end
+        end
+
+        private
+
+        def remove_foreign_keys(foreign_keys)
           statements = foreign_keys.map do |foreign_key|
             # We do not use the `#remove_foreign_key` method here because it
             # checks for foreign keys existance in the schema cache. This method
@@ -46,44 +69,27 @@ module ActiveRecord
             schema_creation.accept(at)
           end
           execute_batch(statements, "Disable referential integrity -> remove foreign keys")
-
-          yield
-
-          # Prefixes and suffixes are added in add_foreign_key
-          # in AR7+ so we need to temporarily disable them here,
-          # otherwise prefixes/suffixes will be erroneously added.
-          old_prefix = ActiveRecord::Base.table_name_prefix
-          old_suffix = ActiveRecord::Base.table_name_suffix
-
-          ActiveRecord::Base.table_name_prefix = ""
-          ActiveRecord::Base.table_name_suffix = ""
-
-          begin
-            # Avoid having PG:DuplicateObject error if a test is ran in transaction.
-            # TODO: verify that there is no cache issue related to running this (e.g: fk
-            #   still in cache but not in db)
-            #
-            # We avoid using `foreign_key_exists?` here because it checks the schema cache
-            # for every key. This method is performance critical for the test suite, hence
-            # we use the `#all_foreign_keys` method that only make one query to the database.
-            already_inserted_foreign_keys = all_foreign_keys
-            statements = foreign_keys.map do |foreign_key|
-              next if already_inserted_foreign_keys.any? { |fk| fk.from_table == foreign_key.from_table && fk.options[:name] == foreign_key.options[:name] }
-
-              options = foreign_key_options(foreign_key.from_table, foreign_key.to_table, foreign_key.options)
-              at = create_alter_table foreign_key.from_table
-              at.add_foreign_key foreign_key.to_table, options
-
-              schema_creation.accept(at)
-            end
-            execute_batch(statements.compact, "Disable referential integrity -> add foreign keys")
-          ensure
-            ActiveRecord::Base.table_name_prefix = old_prefix
-            ActiveRecord::Base.table_name_suffix = old_suffix
-          end
         end
 
-        private
+        # NOTE: This method should never raise, otherwise we risk polluting table name
+        #   prefixes and suffixes. The good thing is: if this happens, tests will crash
+        #   hard, no way we miss it.
+        def add_foreign_keys(foreign_keys)
+          # We avoid using `foreign_key_exists?` here because it checks the schema cache
+          # for every key. This method is performance critical for the test suite, hence
+          # we use the `#all_foreign_keys` method that only make one query to the database.
+          already_inserted_foreign_keys = all_foreign_keys
+          statements = foreign_keys.map do |foreign_key|
+            next if already_inserted_foreign_keys.any? { |fk| fk.from_table == foreign_key.from_table && fk.options[:name] == foreign_key.options[:name] }
+
+            options = foreign_key_options(foreign_key.from_table, foreign_key.to_table, foreign_key.options)
+            at = create_alter_table foreign_key.from_table
+            at.add_foreign_key foreign_key.to_table, options
+
+            schema_creation.accept(at)
+          end
+          execute_batch(statements.compact, "Disable referential integrity -> add foreign keys")
+        end
 
         # NOTE: Copy/paste of the `#foreign_keys(table)` method adapted
         #   to return every single foreign key in the database.
