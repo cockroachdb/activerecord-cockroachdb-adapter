@@ -30,7 +30,6 @@ require "active_record/connection_adapters/cockroachdb/table_definition"
 require "active_record/connection_adapters/cockroachdb/quoting"
 require "active_record/connection_adapters/cockroachdb/type"
 require "active_record/connection_adapters/cockroachdb/column"
-require "active_record/connection_adapters/cockroachdb/spatial_column_info"
 require "active_record/connection_adapters/cockroachdb/setup"
 require "active_record/connection_adapters/cockroachdb/oid/spatial"
 require "active_record/connection_adapters/cockroachdb/oid/interval"
@@ -143,10 +142,6 @@ module ActiveRecord
           proj4text_column: "proj4text",
           srtext_column:    "srtext",
         }
-      end
-
-      def debugging?
-        !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
       end
 
       def max_transaction_retries

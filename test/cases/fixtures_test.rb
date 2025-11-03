@@ -126,16 +126,6 @@ module CockroachDB
     # FixturesTest. The test is exactly the same, but the tables
     # under test will have primary key sequences, and the connection is from ActiveRecord::Base.
     # Normally, the primary keys would use CockroachDB's unique_rowid().
-    def test_create_fixtures
-      fixtures = ActiveRecord::FixtureSet.create_fixtures(FIXTURES_ROOT, "parrots")
-      assert Parrot.find_by_name("Curious George"), "George is not in the database"
-      assert fixtures.detect { |f| f.name == "parrots" }, "no fixtures named 'parrots' in #{fixtures.map(&:name).inspect}"
-    end
-
-    # This replaces the same test that's been excluded from
-    # FixturesTest. The test is exactly the same, but the tables
-    # under test will have primary key sequences, and the connection is from ActiveRecord::Base.
-    # Normally, the primary keys would use CockroachDB's unique_rowid().
     def test_multiple_clean_fixtures
       fixtures_array = nil
       assert_nothing_raised { fixtures_array = create_fixtures(*FIXTURES) }

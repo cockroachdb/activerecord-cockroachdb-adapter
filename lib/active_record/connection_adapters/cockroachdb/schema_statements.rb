@@ -112,16 +112,6 @@ module ActiveRecord
           super - ["crdb_internal"]
         end
 
-        def add_index(table_name, column_name, **options)
-          super
-        rescue ActiveRecord::StatementInvalid => error
-          if debugging? && error.cause.class == PG::FeatureNotSupported
-            warn "#{error}\n\nThis error will be ignored and the index will not be created.\n\n"
-          else
-            raise error
-          end
-        end
-
         # ActiveRecord allows for tables to exist without primary keys.
         # Databases like PostgreSQL support this behavior, but CockroachDB does
         # not. If a table is created without a primary key, CockroachDB will add
@@ -344,7 +334,6 @@ module ActiveRecord
         end
 
         # OVERRIDE(v8.1.1):
-        #   - Add spatial information
         #   - Add hidden information
         def new_column_from_field(table_name, field, _definition)
           column_name, type, default, notnull, oid, fmod, collation, comment, identity, attgenerated, hidden = field
@@ -361,9 +350,6 @@ module ActiveRecord
             serial = sequence_name_from_parts(table_name, column_name, match[:suffix]) == match[:sequence_name]
           end
 
-          # {:dimension=>2, :has_m=>false, :has_z=>false, :name=>"latlon", :srid=>0, :type=>"GEOMETRY"}
-          spatial = spatial_column_info(table_name).get(column_name, type_metadata.sql_type)
-
           CockroachDB::Column.new(
             column_name,
             get_oid_type(oid.to_i, fmod.to_i, column_name, type),
@@ -375,7 +361,6 @@ module ActiveRecord
             comment: comment.presence,
             serial: serial,
             identity: identity.presence,
-            spatial: spatial,
             generated: attgenerated,
             hidden: hidden
           )
@@ -415,12 +400,6 @@ module ActiveRecord
         # override
         def create_table_definition(*args, **kwargs)
           CockroachDB::TableDefinition.new(self, *args, **kwargs)
-        end
-
-        # memoize hash of column infos for tables
-        def spatial_column_info(table_name)
-          @spatial_column_info ||= {}
-          @spatial_column_info[table_name.to_sym] ||= SpatialColumnInfo.new(self, table_name.to_s)
         end
 
         def create_schema_dumper(options)
