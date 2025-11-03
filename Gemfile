@@ -52,6 +52,7 @@ group :development, :test do
   gem "msgpack", ">= 1.7.0"
   gem "mutex_m", "~> 0.2.0"
 
+  gem "tracer"
   gem "rake"
   gem "debug"
   gem "minitest-bisect", github: "BuonOmo/minitest-bisect", branch: "main"

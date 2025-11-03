@@ -19,7 +19,7 @@ fi
 
 cockroach start-single-node \
 	--insecure --store=type=mem,size=0.25 --advertise-addr=localhost \
-	--spatial-libs="$(geos-config --includes)" \
+	--spatial-libs="$(geos-config --prefix)/lib" \
 	--pid-file "$pid_file" \
 	&> "$log_file" &
 
