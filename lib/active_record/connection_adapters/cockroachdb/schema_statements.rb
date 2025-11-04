@@ -112,16 +112,6 @@ module ActiveRecord
           super - ["crdb_internal"]
         end
 
-        def add_index(table_name, column_name, **options)
-          super
-        rescue ActiveRecord::StatementInvalid => error
-          if debugging? && error.cause.class == PG::FeatureNotSupported
-            warn "#{error}\n\nThis error will be ignored and the index will not be created.\n\n"
-          else
-            raise error
-          end
-        end
-
         # ActiveRecord allows for tables to exist without primary keys.
         # Databases like PostgreSQL support this behavior, but CockroachDB does
         # not. If a table is created without a primary key, CockroachDB will add

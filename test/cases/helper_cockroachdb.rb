@@ -12,9 +12,6 @@ require "minitest/excludes"
 # some rails specific messages are then ignored.
 Minitest::Test.make_my_diffs_pretty! if ENV['VERBOSE']
 
-# Turn on debugging for the test environment
-ENV['DEBUG_COCKROACHDB_ADAPTER'] = "1"
-
 # Override the load_schema_helper for the
 # two ENV variables COCKROACH_LOAD_FROM_TEMPLATE
 # and COCKROACH_SKIP_LOAD_SCHEMA that can

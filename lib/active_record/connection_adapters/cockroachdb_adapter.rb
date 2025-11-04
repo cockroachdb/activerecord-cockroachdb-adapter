@@ -145,10 +145,6 @@ module ActiveRecord
         }
       end
 
-      def debugging?
-        !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
-      end
-
       def max_transaction_retries
         @max_transaction_retries ||= @config.fetch(:max_transaction_retries, 3)
       end
