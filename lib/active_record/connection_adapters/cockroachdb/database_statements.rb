@@ -34,7 +34,6 @@ module ActiveRecord
           # our statements by calling `#execute` instead of `#execute_batch`.
           #
           # [1]: https://github.com/rails/rails/pull/52428
-
           begin # much faster without disabling referential integrity, worth trying.
             transaction(requires_new: true) do
               execute(statements, "Fixtures Load")
