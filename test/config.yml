@@ -12,7 +12,10 @@ connections:
       #
       # This options keyword is referenced here in libpq:
       # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-OPTIONS
-      options: "-c autocommit_before_ddl=false"
+      #
+      # NOTE: with command lines or a URI, one could use `-c autocommit_before_ddl=false`
+      variables:
+        autocommit_before_ddl: false
     arunit_without_prepared_statements:
       <<: *arunit
       prepared_statements: false

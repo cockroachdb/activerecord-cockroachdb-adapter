@@ -17,3 +17,34 @@ CopyCat.copy_methods(self, self,
     insert_after(node.loc.expression, "_and_actually_way_longer_because_cockroach_is_in_the_128_game")
   end
 end
+
+# CockroachDB does not support DDL transactions. Hence the migration is
+# not rolled back and the already removed index is not restored.
+#
+# From:
+#     if current_adapter?(:PostgreSQLAdapter, :SQLite3Adapter)
+#       assert_equal 2, foreign_keys.size
+#     else
+#       assert_equal 1, foreign_keys.size
+#     end
+# To:
+#     assert_equal 1, foreign_keys.size
+CopyCat.copy_methods(self, self, :test_remove_foreign_key_on_8_0) do
+  def on_if(node)
+    return unless node in
+      [:if,
+        [:send, nil, :current_adapter?,
+          [:sym, :PostgreSQLAdapter],
+          [:sym, :SQLite3Adapter]],
+        [:send, nil, :assert_equal,
+          [:int, 2],
+            [:send,
+              [:lvar, :foreign_keys], :size]],
+        [:send, nil, :assert_equal,
+          [:int, 1],
+            [:send,
+              [:lvar, :foreign_keys], :size]] => else_block]
+
+    replace(node.loc.expression, else_block.location.expression.source)
+  end
+end

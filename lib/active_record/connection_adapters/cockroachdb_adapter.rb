@@ -111,6 +111,23 @@ module ActiveRecord
         SPATIAL_COLUMN_OPTIONS[key]
       end
 
+      def self.native_database_types
+        return @native_database_types if defined?(@native_database_types)
+        # Add spatial types
+        @native_database_types = super.merge(
+          geography:           { name: "geography" },
+          geometry:            { name: "geometry" },
+          geometry_collection: { name: "geometry_collection" },
+          line_string:         { name: "line_string" },
+          multi_line_string:   { name: "multi_line_string" },
+          multi_point:         { name: "multi_point" },
+          multi_polygon:       { name: "multi_polygon" },
+          spatial:             { name: "geometry" },
+          st_point:            { name: "st_point" },
+          st_polygon:          { name: "st_polygon" }
+        )
+      end
+
       def postgis_lib_version
         @postgis_lib_version ||= select_value("SELECT PostGIS_Lib_Version()")
       end
@@ -126,10 +143,6 @@ module ActiveRecord
           proj4text_column: "proj4text",
           srtext_column:    "srtext",
         }
-      end
-
-      def debugging?
-        !!ENV["DEBUG_COCKROACHDB_ADAPTER"]
       end
 
       def max_transaction_retries
@@ -299,7 +312,7 @@ module ActiveRecord
             st_polygon
           ).each do |geo_type|
             m.register_type(geo_type) do |oid, _, sql_type|
-              CockroachDB::OID::Spatial.new(oid, sql_type)
+              CockroachDB::OID::Spatial.new(oid, sql_type).freeze
             end
           end
 
@@ -378,18 +391,10 @@ module ActiveRecord
           nil
         end
 
-        # override
-        # This method makes a query to gather information about columns
-        # in a table. It returns an array of arrays (one for each col) and
-        # passes each to the SchemaStatements#new_column_from_field method
-        # as the field parameter. This data is then used to format the column
-        # objects for the model and sent to the OID for data casting.
-        #
-        # Sometimes there are differences between how data is formatted
-        # in Postgres and CockroachDB, so additional queries for certain types
-        # may be necessary to properly form the column definition.
-        #
-        # @see: https://github.com/rails/rails/blob/8695b028261bdd244e254993255c6641bdbc17a5/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L829
+        # OVERRIDE(v8.1.1):
+        #   - comment is retrieved differently than PG for performance
+        #   - gather detailed information about spatial columns. See
+        #     `#crdb_column_definitions`
         def column_definitions(table_name)
           fields = query(<<~SQL, "SCHEMA")
               SELECT a.attname, format_type(a.atttypid, a.atttypmod),
@@ -397,7 +402,7 @@ module ActiveRecord
                      c.collname, NULL AS comment,
                      attidentity,
                      attgenerated,
-                     NULL as is_hidden
+                     a.attishidden
                 FROM pg_attribute a
                 LEFT JOIN pg_attrdef d ON a.attrelid = d.adrelid AND a.attnum = d.adnum
                 LEFT JOIN pg_type t ON a.atttypid = t.oid
@@ -428,7 +433,6 @@ module ActiveRecord
             dtype = field[f_type]
             field[f_type] = crdb_fields[field[f_attname]][2].downcase if re.match(dtype)
             field[f_comment] = crdb_fields[field[f_attname]][1]
-            field[f_is_hidden] = true if crdb_fields[field[f_attname]][3]
             field
           end
           fields.delete_if do |field|
@@ -450,7 +454,7 @@ module ActiveRecord
           with_schema = " AND c.table_schema = #{quote(table_name.schema)}" if table_name.schema
           fields = \
           query(<<~SQL, "SCHEMA")
-            SELECT c.column_name, c.column_comment, c.crdb_sql_type, c.is_hidden::BOOLEAN
+            SELECT c.column_name, c.column_comment, c.crdb_sql_type
             FROM information_schema.columns c
             WHERE c.table_name = #{quote(table)}#{with_schema}
           SQL

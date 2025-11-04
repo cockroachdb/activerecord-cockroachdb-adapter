@@ -24,11 +24,11 @@ exclude :test_pk_and_sequence_for_with_collision_pg_class_oid, "We cannot DELETE
 
 # NOTE: The expression `do $$ BEGIN RAISE WARNING 'foo'; END; $$` works with PG, not CRDB.
 plpgsql_needed = "PL-PGSQL differs in CockroachDB. Not tested yet. See #339"
-exclude :test_ignores_warnings_when_behaviour_ignore, plpgsql_needed
-exclude :test_logs_warnings_when_behaviour_log, plpgsql_needed
-exclude :test_raises_warnings_when_behaviour_raise, plpgsql_needed
-exclude :test_reports_when_behaviour_report, plpgsql_needed
-exclude :test_warnings_behaviour_can_be_customized_with_a_proc, plpgsql_needed
+exclude :test_ignores_warnings_when_behavior_ignore, plpgsql_needed
+exclude :test_logs_warnings_when_behavior_log, plpgsql_needed
+exclude :test_raises_warnings_when_behavior_raise, plpgsql_needed
+exclude :test_reports_when_behavior_report, plpgsql_needed
+exclude :test_warnings_behavior_can_be_customized_with_a_proc, plpgsql_needed
 exclude :test_allowlist_of_warnings_to_ignore, plpgsql_needed
 exclude :test_allowlist_of_warning_codes_to_ignore, plpgsql_needed
 

@@ -34,8 +34,47 @@ module ActiveRecord
         end
 
         def disable_referential_integrity
-          foreign_keys = all_foreign_keys
+          if transaction_open? && query_value("SHOW autocommit_before_ddl") == "off"
+            begin
+              yield
+            rescue ActiveRecord::InvalidForeignKey => e
+              warn <<-WARNING
+WARNING: Rails was not able to disable referential integrity.
 
+This is due to CockroachDB's need of committing transactions
+before a schema change occurs. To bypass this, you can set
+`autocommit_before_ddl: "on"` in your database configuration.
+WARNING
+              raise e
+            end
+          else
+            foreign_keys = all_foreign_keys
+
+            remove_foreign_keys(foreign_keys)
+
+            # Prefixes and suffixes are added in add_foreign_key
+            # in AR7+ so we need to temporarily disable them here,
+            # otherwise prefixes/suffixes will be erroneously added.
+            old_prefix = ActiveRecord::Base.table_name_prefix
+            old_suffix = ActiveRecord::Base.table_name_suffix
+
+            begin
+              yield
+            ensure
+              ActiveRecord::Base.table_name_prefix = ""
+              ActiveRecord::Base.table_name_suffix = ""
+
+              add_foreign_keys(foreign_keys) # Never raises.
+
+              ActiveRecord::Base.table_name_prefix = old_prefix if defined?(old_prefix)
+              ActiveRecord::Base.table_name_suffix = old_suffix if defined?(old_suffix)
+            end
+          end
+        end
+
+        private
+
+        def remove_foreign_keys(foreign_keys)
           statements = foreign_keys.map do |foreign_key|
             # We do not use the `#remove_foreign_key` method here because it
             # checks for foreign keys existance in the schema cache. This method
@@ -46,47 +85,30 @@ module ActiveRecord
             schema_creation.accept(at)
           end
           execute_batch(statements, "Disable referential integrity -> remove foreign keys")
-
-          yield
-
-          # Prefixes and suffixes are added in add_foreign_key
-          # in AR7+ so we need to temporarily disable them here,
-          # otherwise prefixes/suffixes will be erroneously added.
-          old_prefix = ActiveRecord::Base.table_name_prefix
-          old_suffix = ActiveRecord::Base.table_name_suffix
-
-          ActiveRecord::Base.table_name_prefix = ""
-          ActiveRecord::Base.table_name_suffix = ""
-
-          begin
-            # Avoid having PG:DuplicateObject error if a test is ran in transaction.
-            # TODO: verify that there is no cache issue related to running this (e.g: fk
-            #   still in cache but not in db)
-            #
-            # We avoid using `foreign_key_exists?` here because it checks the schema cache
-            # for every key. This method is performance critical for the test suite, hence
-            # we use the `#all_foreign_keys` method that only make one query to the database.
-            already_inserted_foreign_keys = all_foreign_keys
-            statements = foreign_keys.map do |foreign_key|
-              next if already_inserted_foreign_keys.any? { |fk| fk.from_table == foreign_key.from_table && fk.options[:name] == foreign_key.options[:name] }
-
-              options = foreign_key_options(foreign_key.from_table, foreign_key.to_table, foreign_key.options)
-              at = create_alter_table foreign_key.from_table
-              at.add_foreign_key foreign_key.to_table, options
-
-              schema_creation.accept(at)
-            end
-            execute_batch(statements.compact, "Disable referential integrity -> add foreign keys")
-          ensure
-            ActiveRecord::Base.table_name_prefix = old_prefix
-            ActiveRecord::Base.table_name_suffix = old_suffix
-          end
         end
 
-        private
+        # NOTE: This method should never raise, otherwise we risk polluting table name
+        #   prefixes and suffixes. The good thing is: if this happens, tests will crash
+        #   hard, no way we miss it.
+        def add_foreign_keys(foreign_keys)
+          # We avoid using `foreign_key_exists?` here because it checks the schema cache
+          # for every key. This method is performance critical for the test suite, hence
+          # we use the `#all_foreign_keys` method that only make one query to the database.
+          already_inserted_foreign_keys = all_foreign_keys
+          statements = foreign_keys.map do |foreign_key|
+            next if already_inserted_foreign_keys.any? { |fk| fk.from_table == foreign_key.from_table && fk.options[:name] == foreign_key.options[:name] }
 
-        # Copy/paste of the `#foreign_keys(table)` method adapted to return every single
-        # foreign key in the database.
+            options = foreign_key_options(foreign_key.from_table, foreign_key.to_table, foreign_key.options)
+            at = create_alter_table foreign_key.from_table
+            at.add_foreign_key foreign_key.to_table, options
+
+            schema_creation.accept(at)
+          end
+          execute_batch(statements.compact, "Disable referential integrity -> add foreign keys")
+        end
+
+        # NOTE: Copy/paste of the `#foreign_keys(table)` method adapted
+        #   to return every single foreign key in the database.
         def all_foreign_keys
           fk_info = internal_exec_query(<<~SQL, "SCHEMA")
             SELECT CASE
@@ -99,14 +121,30 @@ module ActiveRecord
               THEN ''
               ELSE n2.nspname || '.'
             END || t2.relname AS to_table,
-            a1.attname AS column, a2.attname AS primary_key, c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid, c.condeferrable AS deferrable, c.condeferred AS deferred,
-            c.conkey, c.confkey, c.conrelid, c.confrelid
+            c.conname AS name, c.confupdtype AS on_update, c.confdeltype AS on_delete, c.convalidated AS valid, c.condeferrable AS deferrable, c.condeferred AS deferred, c.conrelid, c.confrelid,
+              (
+                SELECT array_agg(a.attname ORDER BY idx)
+                FROM (
+                  SELECT idx, c.conkey[idx] AS conkey_elem
+                  FROM generate_subscripts(c.conkey, 1) AS idx
+                ) indexed_conkeys
+                JOIN pg_attribute a ON a.attrelid = t1.oid
+                AND a.attnum = indexed_conkeys.conkey_elem
+                AND NOT a.attishidden
+              ) AS conkey_names,
+              (
+                SELECT array_agg(a.attname ORDER BY idx)
+                FROM (
+                  SELECT idx, c.confkey[idx] AS confkey_elem
+                  FROM generate_subscripts(c.confkey, 1) AS idx
+                ) indexed_confkeys
+                JOIN pg_attribute a ON a.attrelid = t2.oid
+                AND a.attnum = indexed_confkeys.confkey_elem
+                AND NOT a.attishidden
+              ) AS confkey_names
             FROM pg_constraint c
             JOIN pg_class t1 ON c.conrelid = t1.oid
             JOIN pg_class t2 ON c.confrelid = t2.oid
-            JOIN pg_attribute a1 ON a1.attnum = c.conkey[1] AND a1.attrelid = t1.oid
-            JOIN pg_attribute a2 ON a2.attnum = c.confkey[1] AND a2.attrelid = t2.oid
-            JOIN pg_namespace t3 ON c.connamespace = t3.oid
             JOIN pg_namespace n1 ON t1.relnamespace = n1.oid
             JOIN pg_namespace n2 ON t2.relnamespace = n2.oid
             WHERE c.contype = 'f'
@@ -116,22 +154,16 @@ module ActiveRecord
           fk_info.map do |row|
             from_table = PostgreSQL::Utils.unquote_identifier(row["from_table"])
             to_table = PostgreSQL::Utils.unquote_identifier(row["to_table"])
-            conkey = row["conkey"].scan(/\d+/).map(&:to_i)
-            confkey = row["confkey"].scan(/\d+/).map(&:to_i)
 
-            if conkey.size > 1
-              column = column_names_from_column_numbers(row["conrelid"], conkey)
-              primary_key = column_names_from_column_numbers(row["confrelid"], confkey)
-            else
-              column = PostgreSQL::Utils.unquote_identifier(row["column"])
-              primary_key = row["primary_key"]
-            end
+            column = decode_string_array(row["conkey_names"])
+            primary_key = decode_string_array(row["confkey_names"])
 
             options = {
-              column: column,
+              column: column.size == 1 ? column.first : column,
               name: row["name"],
-              primary_key: primary_key
+              primary_key: primary_key.size == 1 ? primary_key.first : primary_key
             }
+
             options[:on_delete] = extract_foreign_key_action(row["on_delete"])
             options[:on_update] = extract_foreign_key_action(row["on_update"])
             options[:deferrable] = extract_constraint_deferrable(row["deferrable"], row["deferred"])
