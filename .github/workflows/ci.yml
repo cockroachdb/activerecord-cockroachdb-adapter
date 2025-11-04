@@ -50,16 +50,34 @@ jobs:
           <table>
           <thead>
             <tr>
-              <th></th>
+              <th>#</th>
               <th>Test</th>
+              <th>Failure</th>
             </tr>
           </thead>
           <tbody>
           EOF
 
           jq --slurp --raw-output '
-            map(.failed_tests|map("\(.klass)#\(.NAME)")) | flatten | unique | sort[0:100] | to_entries[]
-            | "<tr><td><strong>\(.key)</strong></td><td>\(.value)</td></tr>"
+            map(.failed_tests) | flatten | map({
+              klass,
+              NAME,
+              failure: .failures[0],
+              source_url: (
+                .source_location | if (.[0] | contains("/gems/")) then
+                  (.[0] | capture("rails-(?<sha>.*?)/(?<path>.*)")) *
+                  {line: .[1], server: "https://github.com", repo: "rails/rails"}
+                else
+                  (.[0] | capture("activerecord-cockroachdb-adapter/(?<path>test/.*)") *
+                  {line: .[1], sha: $ENV.GITHUB_SHA, repo: $ENV.GITHUB_REPOSITORY, server: $ENV.GITHUB_SERVER_URL}
+                end | "\(.server)/\(.repo)/blob/\(.sha)/\(.path)#L\(.line)"
+              )
+            }) | group_by(.) | map(.[0] * { count: length }) | sort[0:100][]
+            | "<tr>"
+            +   "<td><strong>\(.count)</strong></td>"
+            +   "<td><a href=\"\(.source_url)\">\(.klass)#\(.NAME)</a></td>"
+            +   "<td><pre>\(.failure)</pre></td>"
+            + "</tr>"
           ' reports/*/report.json >>$GITHUB_STEP_SUMMARY
 
           cat <<EOF >>$GITHUB_STEP_SUMMARY
