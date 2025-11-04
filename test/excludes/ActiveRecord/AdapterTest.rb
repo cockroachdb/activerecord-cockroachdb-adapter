@@ -1,3 +1,4 @@
 exclude :test_indexes, "Rails transactional tests are being used while making schema changes. See https://www.cockroachlabs.com/docs/stable/online-schema-changes.html#limited-support-for-schema-changes-within-transactions."
 exclude :test_remove_index_when_name_and_wrong_column_name_specified, "Rails transactional tests are being used while making schema changes. See https://www.cockroachlabs.com/docs/stable/online-schema-changes.html#limited-support-for-schema-changes-within-transactions."
 exclude :test_remove_index_when_name_and_wrong_column_name_specified_positional_argument, "Rails transactional tests are being used while making schema changes. See https://www.cockroachlabs.com/docs/stable/online-schema-changes.html#limited-support-for-schema-changes-within-transactions."
+exclude :test_type_map_is_ractor_shareable, "Not yet, see https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/389"
