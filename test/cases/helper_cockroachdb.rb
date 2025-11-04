@@ -112,13 +112,9 @@ module TestRetryHelper
       res = Minitest.run_one_method(klass, method_name)
       final_res ||= res
 
-      retryable = false
-      if res.error?
-        res.failures.each do |f|
-          retryable = true if f.message.include?("ActiveRecord::InvalidForeignKey")
-        end
-      end
+      retryable = res.error? && res.failures.any? { _1.message.include?("ActiveRecord::InvalidForeignKey") }
       (final_res = res) && break unless retryable
+
     end
 
     # report message from first failure or from success
