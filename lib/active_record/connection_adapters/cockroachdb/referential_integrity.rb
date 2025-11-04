@@ -34,25 +34,41 @@ module ActiveRecord
         end
 
         def disable_referential_integrity
-          foreign_keys = all_foreign_keys
+          if transaction_open? && query_value("SHOW autocommit_before_ddl") == "off"
+            begin
+              yield
+            rescue ActiveRecord::InvalidForeignKey => e
+              warn <<-WARNING
+WARNING: Rails was not able to disable referential integrity.
 
-          remove_foreign_keys(foreign_keys)
+This is due to CockroachDB's need of committing transactions
+before a schema change occurs. To bypass this, you can set
+`autocommit_before_ddl: "on"` in your database configuration.
+WARNING
+              raise e
+            end
+          else
+            foreign_keys = all_foreign_keys
 
-          # Prefixes and suffixes are added in add_foreign_key
-          # in AR7+ so we need to temporarily disable them here,
-          # otherwise prefixes/suffixes will be erroneously added.
-          old_prefix = ActiveRecord::Base.table_name_prefix
-          old_suffix = ActiveRecord::Base.table_name_suffix
+            remove_foreign_keys(foreign_keys)
 
-          begin
-            yield
-          ensure
-            ActiveRecord::Base.table_name_prefix = ""
-            ActiveRecord::Base.table_name_suffix = ""
-            add_foreign_keys(foreign_keys) # Never raises.
+            # Prefixes and suffixes are added in add_foreign_key
+            # in AR7+ so we need to temporarily disable them here,
+            # otherwise prefixes/suffixes will be erroneously added.
+            old_prefix = ActiveRecord::Base.table_name_prefix
+            old_suffix = ActiveRecord::Base.table_name_suffix
 
-            ActiveRecord::Base.table_name_prefix = old_prefix if defined?(old_prefix)
-            ActiveRecord::Base.table_name_suffix = old_suffix if defined?(old_suffix)
+            begin
+              yield
+            ensure
+              ActiveRecord::Base.table_name_prefix = ""
+              ActiveRecord::Base.table_name_suffix = ""
+
+              add_foreign_keys(foreign_keys) # Never raises.
+
+              ActiveRecord::Base.table_name_prefix = old_prefix if defined?(old_prefix)
+              ActiveRecord::Base.table_name_suffix = old_suffix if defined?(old_suffix)
+            end
           end
         end
 
