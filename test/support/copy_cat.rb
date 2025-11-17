@@ -25,6 +25,9 @@ module CopyCat
   # Once debug is set, you can check the closest node you want to edit
   # and then create a method `on_<node_type>` to handle it.
   def copy_methods(new_klass, old_klass, *methods, debug: false, &block)
+    if debug and not block_given?
+      puts "You need to provide a block to debug."
+    end
     methods.each do |met|
       file, _ = old_klass.instance_method(met).source_location
       ast = find_method(Prism::Translation::Parser.parse_file(file), met)
