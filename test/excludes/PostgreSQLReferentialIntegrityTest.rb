@@ -1,5 +1,5 @@
 exclude :test_should_reraise_invalid_foreign_key_exception_and_show_warning,
-    "CockroachDB has a different limitation as there is no" \
+    "CockroachDB has a different limitation as there is no " \
     "'DISABLE TRIGGER' statement."
 
 break_tx = "CockroachDB will always alter transactions when " \
