@@ -33,6 +33,7 @@ module ActiveRecord
                 factory_attrs
               )
           end
+          protected attr_reader :sql_type, :spatial_factory
 
           # sql_type: geometry, geometry(Point), geometry(Point,4326), ...
           #
@@ -87,6 +88,19 @@ module ActiveRecord
 
             RGeo::WKRep::WKBGenerator.new(hex_format: true, type_format: :ewkb, emit_ewkb_srid: true)
                                      .generate(geo_value)
+          end
+
+          # TODO: add tests (see #390)
+          def ==(other)
+            super &&
+              @sql_type == other.sql_type
+              @spatial_factory == other.spatial_factory
+          end
+          alias eql? ==
+
+          # TODO: add tests (see #390)
+          def hash
+            super ^ [@sql_type, @spatial_factory].hash
           end
 
           private

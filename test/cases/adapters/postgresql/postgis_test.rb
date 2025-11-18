@@ -104,7 +104,6 @@ class PostGISTest < ActiveRecord::PostgreSQLTestCase
     object.save!
     object.reload
     assert_equal boundary.to_s, object.boundary.to_s
-    spatial_factory_store.clear
   end
 
   def test_spatial_factory_attrs_parsing
