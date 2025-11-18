@@ -44,6 +44,7 @@ jobs:
       ruby: ${{ steps.generate-matrix.outputs.ruby }}
       seeds: ${{ steps.generate-matrix.outputs.seeds }}
   test:
+    timeout-minutes: 9
     runs-on: ubuntu-latest
     needs: prepare-matrix
     strategy:
@@ -98,8 +99,8 @@ jobs:
 
           jq --slurp --raw-output '
             sort_by(.total_time)[0:100][]
-            | {seed, time: .total_time | strftime("%H:%M:%S"), failure: .failed_tests[0].NAME }
-            | "<tr><td>\(.seed)</td><td>\(.time)</td><td>\(.failure)</td></tr>"
+            | {seed, time: .total_time | strftime("%H:%M:%S"), klass: .failed_tests[0].klass, test: .failed_tests[0].NAME }
+            | "<tr><td>\(.seed)</td><td>\(.time)</td><td>\(.klass)#\(.test)</td></tr>"
           ' reports/*/report.json >> $GITHUB_STEP_SUMMARY
 
 
