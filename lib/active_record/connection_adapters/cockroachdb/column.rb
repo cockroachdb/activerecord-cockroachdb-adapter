@@ -42,8 +42,7 @@ module ActiveRecord
             # @geometric_type = geo_type_from_sql_type(sql_type)
             build_from_sql_type(sql_type_metadata.sql_type)
           end
-          super(name, cast_type, default, sql_type_metadata, null, default_function,
-            collation: collation, comment: comment, serial: serial, generated: generated, identity: identity)
+
           if spatial? && @srid
             @limit = { srid: @srid, type: to_type_name(geometric_type) }
             @limit[:has_z] = true if @has_z
@@ -56,18 +55,16 @@ module ActiveRecord
                     :geometric_type,
                     :has_m,
                     :has_z,
-                    :srid
+                    :srid,
+                    :hidden
 
         alias geographic? geographic
         alias has_z? has_z
         alias has_m? has_m
+        alias hidden? hidden
 
         def limit
           spatial? ? @limit : super
-        end
-
-        def hidden?
-          @hidden
         end
 
         def spatial?
@@ -76,6 +73,58 @@ module ActiveRecord
 
         def serial?
           default_function == 'unique_rowid()'
+        end
+
+        # TODO: add tests (see #390)
+        def init_with(coder)
+          @geographic = coder["geographic"]
+          @geometric_type = coder["geometric_type"]
+          @has_m = coder["has_m"]
+          @has_z = coder["has_z"]
+          @srid = coder["srid"]
+          @hidden = coder["hidden"]
+          @limit = coder["limit"]
+          super
+        end
+
+        # TODO: add tests (see #390)
+        def encode_with(coder)
+          coder["geographic"] = @geographic
+          coder["geometric_type"] = @geometric_type
+          coder["has_m"] = @has_m
+          coder["has_z"] = @has_z
+          coder["srid"] = @srid
+          coder["hidden"] = @hidden
+          coder["limit"] = @limit
+          super
+        end
+
+        # TODO: add tests (see #390)
+        def ==(other)
+          other.is_a?(Column) &&
+            super &&
+            other.geographic == geographic &&
+            other.geometric_type == geometric_type &&
+            other.has_m == has_m &&
+            other.has_z == has_z &&
+            other.srid == srid &&
+            other.hidden == hidden &&
+            other.limit == limit
+
+        end
+        alias :eql? :==
+
+        # TODO: add tests (see #390)
+        def hash
+          Column.hash ^
+            super.hash ^
+            geographic.hash ^
+            geometric_type.hash ^
+            has_m.hash ^
+            has_z.hash ^
+            srid.hash ^
+            hidden.hash ^
+            limit.hash
         end
 
         private
