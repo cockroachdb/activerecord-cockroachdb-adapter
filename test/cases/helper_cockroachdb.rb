@@ -99,32 +99,8 @@ module TestTimeoutHelper
   end
 end
 
-# Retry tests that fail due to foreign keys not always being removed synchronously
-# in disable_referential_integrity, which causes foreign key errors during
-# fixutre creation.
-#
-# Can be removed once cockroachdb/cockroach#71496 is resolved.
-module TestRetryHelper
-  def run_one_method(klass, method_name, reporter)
-    reporter.prerecord(klass, method_name)
-    final_res = nil
-    2.times do
-      res = Minitest.run_one_method(klass, method_name)
-      final_res ||= res
-
-      retryable = res.error? && res.failures.any? { _1.message.include?("ActiveRecord::InvalidForeignKey") }
-      (final_res = res) && break unless retryable
-
-    end
-
-    # report message from first failure or from success
-    reporter.record(final_res)
-  end
-end
-
 module ActiveSupport
   class TestCase
-    extend TestRetryHelper
     include TestTimeoutHelper
 
     def postgis_version
