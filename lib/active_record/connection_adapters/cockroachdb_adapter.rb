@@ -245,6 +245,10 @@ module ActiveRecord
         false
       end
 
+      def supports_close_prepared?
+        true
+      end
+
       def check_version # :nodoc:
         # https://www.cockroachlabs.com/docs/releases/release-support-policy
         if database_version < 23_01_12 # < 23.1.12
