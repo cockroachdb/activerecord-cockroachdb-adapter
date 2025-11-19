@@ -27,14 +27,21 @@ module ActiveRecord
           #   "geometry(Geography,4326)"
           def initialize(oid, sql_type)
             super()
-            @sql_type = sql_type
-            @geo_type, @srid, @has_z, @has_m = self.class.parse_sql_type(sql_type)
-            @spatial_factory =
-              RGeo::ActiveRecord::SpatialFactoryStore.instance.factory(
-                factory_attrs
-              )
+            @sql_type = sql_type.freeze
+            @factory_attrs = self.class
+              .parse_sql_type(sql_type)
+              .then { |geo_type, srid, has_z, has_m|
+                {
+                  geo_type: geo_type.underscore.freeze,
+                  srid: srid.freeze,
+                  has_z: has_z.freeze,
+                  has_m: has_m.freeze,
+                  sql_type: type.to_s.freeze
+                }
+              }
+              .freeze
           end
-          protected attr_reader :sql_type, :spatial_factory
+          protected attr_reader :sql_type, :factory_attrs
 
           # sql_type: geometry, geometry(Point), geometry(Point,4326), ...
           #
@@ -66,7 +73,7 @@ module ActiveRecord
           end
 
           def geographic?
-            @sql_type =~ /geography/
+            @sql_type.start_with?("geography")
           end
 
           def spatial?
@@ -94,14 +101,14 @@ module ActiveRecord
           # TODO: add tests (see #390)
           def ==(other)
             super &&
-              @sql_type == other.sql_type
-              @spatial_factory == other.spatial_factory
+              @sql_type == other.sql_type &&
+              @factory_attrs == other.factory_attrs
           end
           alias eql? ==
 
           # TODO: add tests (see #390)
           def hash
-            super ^ [@sql_type, @spatial_factory].hash
+            super ^ [@sql_type, @factory_attrs].hash
           end
 
           private
@@ -125,20 +132,16 @@ module ActiveRecord
 
           def wkt_parser(string)
             if binary_string?(string)
-              RGeo::WKRep::WKBParser.new(@spatial_factory, support_ewkb: true, default_srid: @srid)
+              RGeo::WKRep::WKBParser.new(spatial_factory, support_ewkb: true, default_srid: @srid)
             else
-              RGeo::WKRep::WKTParser.new(@spatial_factory, support_ewkt: true, default_srid: @srid)
+              RGeo::WKRep::WKTParser.new(spatial_factory, support_ewkt: true, default_srid: @srid)
             end
           end
 
-          def factory_attrs
-            {
-              geo_type: @geo_type.underscore,
-              has_m: @has_m,
-              has_z: @has_z,
-              srid: @srid,
-              sql_type: type.to_s
-            }
+          def spatial_factory
+            RGeo::ActiveRecord::SpatialFactoryStore.instance.factory(
+              factory_attrs
+            )
           end
         end
       end
