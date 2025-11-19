@@ -26,6 +26,7 @@ module ActiveRecord
           #   "geometry(Polygon,4326) NOT NULL"
           #   "geometry(Geography,4326)"
           def initialize(oid, sql_type)
+            super()
             @sql_type = sql_type
             @geo_type, @srid, @has_z, @has_m = self.class.parse_sql_type(sql_type)
             @spatial_factory =
