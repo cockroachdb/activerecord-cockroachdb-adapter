@@ -18,13 +18,18 @@ module CockroachDB
       end
     end
 
-    def test_concurrent_insert_with_processes
-      conn = ActiveRecord::Base.lease_connection
-      conn.create_table :avengers, force: true do |t|
+    def setup
+      @conn = ActiveRecord::Base.lease_connection
+      @conn.create_table :avengers, force: true do |t|
         t.string :name
       end
-      ActiveRecord::Base.reset_column_information
+    end
 
+    def teardown
+      @conn.drop_table :avengers, if_exists: true
+    end
+
+    def test_concurrent_insert_with_processes # corrupting #1
       avengers = %w[Hulk Thor Loki]
       Avenger.cyclic_barrier = Concurrent::CyclicBarrier.new(avengers.size - 1)
       Thread.current[:name] = "Main" # For debug logs.
@@ -41,8 +46,6 @@ module CockroachDB
       assert_equal avengers.size, Avenger.count
     ensure
       Thread.current[:name] = nil
-      conn = ActiveRecord::Base.lease_connection
-      conn.drop_table :avengers, if_exists: true
     end
   end
 end
