@@ -28,6 +28,7 @@ jobs:
     name: Prepare Matrix
     steps:
       - id: generate-matrix
+        name: Generate Test Matrix
         run: |
           crdb=$(jq --raw-input --compact-output 'split(" ")' <<<"${{ github.event.inputs.crdb }}")
           ruby=$(jq --raw-input --compact-output 'split(" ")' <<<"${{ github.event.inputs.ruby }}")
@@ -35,7 +36,6 @@ jobs:
           ruby_len=$(wc -w <<<"${{ github.event.inputs.ruby }}")
           (( seeds_count = ${{github.event.inputs.max}} / ( crdb_len * ruby_len ) ))
           seeds=$(shuf --input-range=1-65535 --head-count=$seeds_count | jq --slurp --compact-output)
-          echo $seeds
           echo "crdb=$crdb" >> $GITHUB_OUTPUT
           echo "ruby=$ruby" >> $GITHUB_OUTPUT
           echo "seeds=$seeds" >> $GITHUB_OUTPUT
@@ -64,7 +64,7 @@ jobs:
           ruby: ${{ matrix.ruby }}
           TESTOPTS: --fail-fast
         env:
-          JSON_REPORTER: "report.json"
+          JSON_REPORTER: 'report.json'
           SEED: ${{ matrix.seed }}
       - name: Upload Report
         if: ${{ failure() && steps.test.conclusion == 'failure' }}
