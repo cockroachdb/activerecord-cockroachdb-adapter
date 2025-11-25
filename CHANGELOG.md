@@ -2,6 +2,9 @@
 
 ## Ongoing
 
+## 8.1.0 - 2025-11-25
+- Add support for Rails 8.1 ([#386](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/386))
+
 ## 8.0.3 - 2025-08-19
 
 - Fixed the handling of column comments that end in a single quote ([#382](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/382))
