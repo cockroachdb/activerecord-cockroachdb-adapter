@@ -20,7 +20,7 @@ module RailsTag
     def gemspec_requirement
       File
         .foreach(File.expand_path("activerecord-cockroachdb-adapter.gemspec", __dir__), chomp: true)
-        .find { _1[/add_dependency\s.activerecord.,\s.(.*)./] }
+        .find { _1[/add_dependency\s.activerecord.,\s["'](.*?)["']/] }
 
       Gem::Requirement.new(Regexp.last_match(1))
     end
@@ -46,7 +46,7 @@ group :development, :test do
   # We need to load the gem from git to have access to activerecord's test files.
   # You can use `path: "some/local/rails"` if you want to test the gem against
   # a specific rails codebase.
-  gem "rails", github: "rails/rails", tag: RailsTag.call
+  gem "rails", github: "rails/rails", ref: ENV.fetch("RAILS_TAG", RailsTag.call)
 
   # Needed for the test suite
   gem "msgpack", ">= 1.7.0"
