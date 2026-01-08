@@ -169,6 +169,20 @@ class PostGISTest < ActiveRecord::PostgreSQLTestCase
     assert_equal wkt, rec.m_poly.to_s
   end
 
+  def test_spatial_column_matching_enum
+    SpatialModel.lease_connection.create_enum(:point_type, ["point", "line_string", "polygon"])
+    SpatialModel.lease_connection.create_table(:spatial_models, force: true) do |t|
+      t.enum "point_type", enum_type: :point_type
+      t.column "latlon", :st_point, srid: 3785, geographic: true
+    end
+    SpatialModel.reset_column_information
+    _id, enum, geo = SpatialModel.columns
+    refute_predicate enum, :geographic?
+    refute_predicate enum, :spatial?
+    assert_predicate geo, :geographic?
+    assert_predicate geo, :spatial?
+  end
+
   private
 
   def klass

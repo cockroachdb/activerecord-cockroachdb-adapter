@@ -27,8 +27,11 @@ module ActiveRecord
           super(name, cast_type, default, sql_type_metadata, null, default_function,
             collation: collation, comment: comment, serial: serial, generated: generated, identity: identity)
 
-          @geographic = sql_type_metadata.sql_type.match?(/geography\(/i)
           @hidden = hidden
+
+          return unless spatial?
+
+          @geographic = sql_type_metadata.sql_type.match?(/geography\(/i)
 
           if @geographic
             # Geographic type information is embedded in the SQL type
