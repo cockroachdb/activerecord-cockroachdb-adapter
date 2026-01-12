@@ -208,6 +208,11 @@ module ActiveRecord
         false
       end
 
+      def supports_restart_db_transaction?
+        # Restart -> PG's ROLLBACK AND CHAIN
+        false
+      end
+
       def supports_deferrable_constraints?
         # https://go.crdb.dev/issue-v/31632/v23.1
         false
