@@ -202,6 +202,12 @@ module ActiveRecord
         false
       end
 
+      def supports_restart_db_transaction?
+        # In PostgreSQL, this would call 'ROLLBACK AND CHAIN'
+        # which is not available with CRDB.
+        false
+      end
+
       # OVERRIDE: UNIQUE CONSTRAINTS will create indexes anyway, so we only consider
       #   then as indexes.
       # See https://github.com/cockroachdb/activerecord-cockroachdb-adapter/issues/347.
