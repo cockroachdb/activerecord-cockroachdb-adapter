@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.2.3 - 2026-01-30
+
+- Disallow usage of ROLLBACK AND CHAIN syntax, which is not yet supported in CockroachDB ([#397](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/397))
+
 ## 7.2.2 - 2025-08-20
 
 - Fixed the handling of column comments that end in a single quote ([#384](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/384))
