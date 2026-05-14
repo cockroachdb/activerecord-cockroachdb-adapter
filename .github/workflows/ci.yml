@@ -18,6 +18,9 @@ concurrency:
   group: "${{ github.workflow }} @ ${{ github.ref }}"
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   # Since the name of the matrix job depends on the version, we define another job with a more stable name.
   test_results:
