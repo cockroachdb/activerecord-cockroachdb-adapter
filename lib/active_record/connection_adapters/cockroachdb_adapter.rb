@@ -485,22 +485,22 @@ module ActiveRecord
         end
 
         # override
-        # This method is used to determine if a
-        # FEATURE_NOT_SUPPORTED error from the PG gem should
-        # be an ActiveRecord::PreparedStatementCacheExpired
-        # error.
+        # Classifies a FEATURE_NOT_SUPPORTED error from the PG gem as an
+        # ActiveRecord::PreparedStatementCacheExpired.
         #
-        # ActiveRecord handles this by checking that the sql state matches the
-        # FEATURE_NOT_SUPPORTED code and that the source function
-        # is "RevalidateCachedQuery" since that is the only function
-        # in postgres that will create this error.
-        #
-        # That method will not work for CockroachDB because the error
-        # originates from the "runExecBuilder" function, so we need
-        # to modify the original to match the CockroachDB behavior.
+        # Upstream matches PG_DIAG_SOURCE_FUNCTION == "RevalidateCachedQuery",
+        # the one PostgreSQL C function that raises this error. CockroachDB's
+        # raising function is an internal detail that has already moved
+        # (runExecBuilder before cockroachdb/cockroach#164406, execBind after),
+        # so match the message instead. The message is not formally guaranteed,
+        # but it has been unchanged in PostgreSQL since 8.3 and drivers such as
+        # pgx assert the exact string. Upstream avoids message matching because
+        # PostgreSQL localizes messages via lc_messages (rails/rails@d507ae2a74);
+        # CockroachDB does not localize, so that concern does not apply.
+        CACHED_PLAN_HEURISTIC = "cached plan must not change result type"
         def is_cached_plan_failure?(pgerror)
           pgerror.result.result_error_field(PG::PG_DIAG_SQLSTATE) == FEATURE_NOT_SUPPORTED &&
-            pgerror.result.result_error_field(PG::PG_DIAG_SOURCE_FUNCTION) == "runExecBuilder"
+            pgerror.result.result_error_field(PG::PG_DIAG_MESSAGE_PRIMARY).include?(CACHED_PLAN_HEURISTIC)
         rescue
           false
         end
