@@ -265,6 +265,26 @@ module ActiveRecord
       def configure_connection(...)
         super
 
+        # Starting in CockroachDB v26.x, tables are created with the
+        # `schema_locked` storage parameter enabled by default (controlled by the
+        # `sql.create_table_with_schema_locked.enabled` cluster setting). While it
+        # improves changefeed performance, it blocks the transactional DDL that
+        # Active Record migrations and the test suite rely on: CockroachDB can
+        # only auto-unlock a locked table for single-statement implicit
+        # transactions, not for DDL run inside a transaction. Opt out at the
+        # session level so Active Record keeps working out of the box; users who
+        # want the changefeed benefit can still lock individual tables or set
+        # `create_table_with_schema_locked: true` in their connection variables.
+        #
+        # The session variable was introduced in CockroachDB v25.3, and we let an
+        # explicit `:variables` entry take precedence over this default.
+        #
+        # See https://www.cockroachlabs.com/docs/stable/schema-locked
+        variables = @config.fetch(:variables, {}).stringify_keys
+        if database_version >= 25_03_00 && !variables.key?("create_table_with_schema_locked")
+          internal_execute("SET create_table_with_schema_locked = false", "SCHEMA")
+        end
+
       # This rescue flow appears in new_client, but it is needed here as well
       # since Cockroach will sometimes not raise until a query is made.
       #
