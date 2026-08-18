@@ -84,7 +84,9 @@ WARNING
 
             schema_creation.accept(at)
           end
-          execute_batch(statements, "Disable referential integrity -> remove foreign keys")
+          with_schema_unlocked(foreign_keys.map(&:from_table)) do
+            execute_batch(statements, "Disable referential integrity -> remove foreign keys")
+          end
         end
 
         # NOTE: This method should never raise, otherwise we risk polluting table name
@@ -95,16 +97,66 @@ WARNING
           # for every key. This method is performance critical for the test suite, hence
           # we use the `#all_foreign_keys` method that only make one query to the database.
           already_inserted_foreign_keys = all_foreign_keys
-          statements = foreign_keys.map do |foreign_key|
-            next if already_inserted_foreign_keys.any? { |fk| fk.from_table == foreign_key.from_table && fk.options[:name] == foreign_key.options[:name] }
-
+          foreign_keys_to_add = foreign_keys.reject do |foreign_key|
+            already_inserted_foreign_keys.any? { |fk| fk.from_table == foreign_key.from_table && fk.options[:name] == foreign_key.options[:name] }
+          end
+          statements = foreign_keys_to_add.map do |foreign_key|
             options = foreign_key_options(foreign_key.from_table, foreign_key.to_table, foreign_key.options)
             at = create_alter_table foreign_key.from_table
             at.add_foreign_key foreign_key.to_table, options
 
             schema_creation.accept(at)
           end
-          execute_batch(statements.compact, "Disable referential integrity -> add foreign keys")
+          with_schema_unlocked(foreign_keys_to_add.map(&:from_table)) do
+            execute_batch(statements, "Disable referential integrity -> add foreign keys")
+          end
+        end
+
+        # Starting in CockroachDB v26.x, tables are created with the
+        # `schema_locked` storage parameter enabled by default (it improves
+        # changefeed performance). CockroachDB transparently unlocks a table to
+        # run a single-statement DDL, but it cannot do so for the multi-statement
+        # batches used to drop and re-add foreign keys above: it raises instead
+        # of unlocking automatically. So we unlock the affected tables ourselves,
+        # run the batch, then restore their locked state.
+        #
+        # See https://www.cockroachlabs.com/docs/stable/schema-locked
+        def with_schema_unlocked(tables)
+          locked = schema_locked_tables(tables.uniq)
+          return yield if locked.empty?
+
+          set_schema_locked(locked, false)
+          begin
+            yield
+          ensure
+            set_schema_locked(locked, true)
+          end
+        end
+
+        # Returns the subset of +tables+ whose `schema_locked` storage parameter
+        # is currently enabled. CockroachDB exposes storage parameters through
+        # `pg_class.reloptions`. On versions (or configurations) that do not lock
+        # tables this returns an empty array, so callers stay on the fast path.
+        def schema_locked_tables(tables)
+          return [] if tables.empty?
+
+          locked = query_values(<<~SQL, "SCHEMA")
+            SELECT (CASE WHEN n.nspname = current_schema() THEN '' ELSE n.nspname || '.' END) || c.relname
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE c.relkind = 'r' AND 'schema_locked=true' = ANY (c.reloptions)
+          SQL
+          tables & locked
+        end
+
+        # Toggles the `schema_locked` storage parameter for the given tables.
+        # CockroachDB only allows changing `schema_locked` in a single-statement
+        # implicit transaction, so unlike the foreign key statements above these
+        # cannot be batched together.
+        def set_schema_locked(tables, value)
+          tables.each do |table|
+            execute("ALTER TABLE #{quote_table_name(table)} SET (schema_locked = #{value})", "Toggle schema_locked")
+          end
         end
 
         # NOTE: Copy/paste of the `#foreign_keys(table)` method adapted
