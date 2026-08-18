@@ -84,7 +84,7 @@ WARNING
 
             schema_creation.accept(at)
           end
-          with_schema_unlocked(foreign_keys.map(&:from_table)) do
+          with_schema_unlocked(foreign_keys.flat_map { |fk| [fk.from_table, fk.to_table] }) do
             execute_batch(statements, "Disable referential integrity -> remove foreign keys")
           end
         end
@@ -107,7 +107,7 @@ WARNING
 
             schema_creation.accept(at)
           end
-          with_schema_unlocked(foreign_keys_to_add.map(&:from_table)) do
+          with_schema_unlocked(foreign_keys_to_add.flat_map { |fk| [fk.from_table, fk.to_table] }) do
             execute_batch(statements, "Disable referential integrity -> add foreign keys")
           end
         end
@@ -118,7 +118,9 @@ WARNING
         # run a single-statement DDL, but it cannot do so for the multi-statement
         # batches used to drop and re-add foreign keys above: it raises instead
         # of unlocking automatically. So we unlock the affected tables ourselves,
-        # run the batch, then restore their locked state.
+        # run the batch, then restore their locked state. Adding a foreign key
+        # also writes a back-reference into the referenced table, so callers must
+        # pass both the referencing and referenced tables.
         #
         # See https://www.cockroachlabs.com/docs/stable/schema-locked
         def with_schema_unlocked(tables)
