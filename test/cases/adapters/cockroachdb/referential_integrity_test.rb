@@ -48,4 +48,44 @@ class CockroachDBReferentialIntegrityTest < ActiveRecord::PostgreSQLTestCase
     end
     assert_predicate warning, :blank?, "expected no warnings but got:\n#{warning}"
   end
+
+  # `#disable_referential_integrity` drops and re-adds every foreign key using
+  # batched DDL. CockroachDB cannot auto-unlock a `schema_locked` table for a
+  # multi-statement batch, so the adapter must unlock the affected tables (both
+  # the referencing and referenced ones) around the batch and restore their
+  # locked state. This must run outside a transaction: the batched DDL only
+  # takes the unlocking path when no transaction is open, and toggling
+  # `schema_locked` is only allowed in single-statement implicit transactions.
+  exclude_from_transactional_tests :test_disable_referential_integrity_unlocks_schema_locked_tables
+  def test_disable_referential_integrity_unlocks_schema_locked_tables
+    skip "schema_locked requires CockroachDB v25.3+" if @connection.database_version < 25_03_00
+
+    # `authors.author_address_id` references `author_addresses`, so this covers
+    # both the referencing and referenced sides of a foreign key.
+    begin
+      @connection.execute("ALTER TABLE authors SET (schema_locked = true)")
+      @connection.execute("ALTER TABLE author_addresses SET (schema_locked = true)")
+      assert schema_locked?(:authors), "precondition: authors should be schema_locked"
+      assert schema_locked?(:author_addresses), "precondition: author_addresses should be schema_locked"
+
+      assert_nothing_raised do
+        @connection.disable_referential_integrity { }
+      end
+
+      assert schema_locked?(:authors), "authors should be re-locked afterwards"
+      assert schema_locked?(:author_addresses), "author_addresses should be re-locked afterwards"
+    ensure
+      @connection.execute("ALTER TABLE authors SET (schema_locked = false)")
+      @connection.execute("ALTER TABLE author_addresses SET (schema_locked = false)")
+    end
+  end
+
+  private
+
+  def schema_locked?(table)
+    reloptions = @connection.query_value(<<~SQL)
+      SELECT array_to_string(reloptions, ',') FROM pg_class WHERE relname = #{@connection.quote(table.to_s)}
+    SQL
+    reloptions.to_s.include?("schema_locked=true")
+  end
 end
