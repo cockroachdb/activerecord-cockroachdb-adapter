@@ -2,6 +2,13 @@
 
 ## Ongoing
 
+## 8.1.1 - 2026-08-18
+
+- Disabled `schema_locked` by default on connect for CockroachDB v25.3+ and unlocked tables around batched foreign key changes ([#404](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/404))
+- Improved error classification by detecting cached plan failures from the error message instead of the source function ([#403](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/403))
+- Stopped advertising support for restarting database transactions ([#398](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/398))
+- Fixed enum columns being misdetected as spatial columns ([#396](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/396))
+
 ## 8.1.0 - 2025-11-25
 - Add support for Rails 8.1 ([#386](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/386))
 
