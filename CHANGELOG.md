@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.2.4 - 2026-08-19
+
+- Detect cached plan failures by error message instead of source function, so recovery keeps working after CockroachDB moved where the error is raised ([#403](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/403))
+
 ## 7.2.3 - 2026-01-30
 
 - Disallow usage of ROLLBACK AND CHAIN syntax, which is not yet supported in CockroachDB ([#397](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/397))
