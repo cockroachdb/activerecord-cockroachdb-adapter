@@ -32,14 +32,19 @@ runs:
       run: |
         # Download CockroachDB
         readonly full_version=$(ruby -rnet/http -ruri -ryaml -e '
-          link = "https://raw.githubusercontent.com/cockroachdb/docs/main/src/current/_data/releases.yml"
-          puts YAML.safe_load(Net::HTTP.get(URI(link))).reverse.find {
-            _1["major_version"] == "${{ inputs.crdb }}" &&
-              _1["release_type"] == "Production" &&
-              !_1["cloud_only"] &&
+          link = "https://binaries.cockroachdb.com/releases/v1/releases.yaml"
+          response = Net::HTTP.get_response(URI(link))
+          raise "failed to fetch #{link}: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+
+          catalog = YAML.safe_load(response.body)
+          raise "unexpected schema_version #{catalog["schema_version"]}" unless catalog["schema_version"] == 1
+
+          puts catalog["releases"].reverse.find {
+            _1["series"] == "${{ inputs.crdb }}" &&
+              _1["kind"] == "production" &&
               !_1["withdrawn"] &&
-              !_1["release_name"].include?("-") # Pre-release
-          }["release_name"]
+              !_1["version"].include?("-") # Pre-release
+          }["version"]
         ')
 
         echo "Downloading $full_version..."
