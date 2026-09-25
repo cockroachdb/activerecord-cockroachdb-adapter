@@ -12,3 +12,7 @@ exclude :test_does_not_break_nested_transactions, break_tx
 exclude :test_only_catch_active_record_errors_others_bubble_up,
     "Reimplemented in test/cases/adapters/cockroachdb/referential_integrity_test.rb" \
     " to use a different trigger for the error."
+
+exclude :test_all_foreign_keys_valid_having_foreign_keys_with_partitioned_table,
+    "CockroachDB does not support PostgreSQL's declarative partitioning " \
+    "(CREATE TABLE ... PARTITION OF)."

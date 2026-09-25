@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "cases/helper_cockroachdb"
-require "support/connection_helper" # for #reset_connection
+require "support/connection_helper" # for #reset_pool
 require "support/copy_cat"
 
 class CockroachDBReferentialIntegrityTest < ActiveRecord::PostgreSQLTestCase
@@ -18,8 +18,10 @@ class CockroachDBReferentialIntegrityTest < ActiveRecord::PostgreSQLTestCase
     @connection = ActiveRecord::Base.lease_connection
   end
 
+  # A new pool, not just a reset connection: the connection extended with
+  # ProgrammerMistake must not be reused by the next test.
   def teardown
-    reset_connection
+    reset_pool
   end
 
   exclude_from_transactional_tests :test_only_catch_active_record_errors_others_bubble_up
