@@ -2,6 +2,10 @@
 
 ## Ongoing
 
+## 8.1.2 - 2026-09-25
+
+- Verified compatibility with Rails 8.1.4 ([#407](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/407))
+
 ## 8.1.1 - 2026-08-18
 
 - Disabled `schema_locked` by default on connect for CockroachDB v25.3+ and unlocked tables around batched foreign key changes ([#404](https://github.com/cockroachdb/activerecord-cockroachdb-adapter/pull/404))
