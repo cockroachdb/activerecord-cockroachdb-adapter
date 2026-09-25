@@ -32,6 +32,13 @@ exclude :test_warnings_behavior_can_be_customized_with_a_proc, plpgsql_needed
 exclude :test_allowlist_of_warnings_to_ignore, plpgsql_needed
 exclude :test_allowlist_of_warning_codes_to_ignore, plpgsql_needed
 
+if ActiveRecord::Base.with_connection(&:database_version) < 25_01_00
+  do_needed = "DO blocks are supported from CockroachDB v25.1."
+  exclude :test_clears_warnings_after_handling_non_execute_query, do_needed
+  exclude :test_clears_warnings_after_non_execute_warning_action_raises, do_needed
+  exclude :test_handles_warnings_after_non_execute_query_raises, do_needed
+end
+
 exclude :test_translate_no_connection_exception_to_not_established, "CRDB doesn't implement pg_terminate_backend()"
 
 exclude :test_disable_extension_without_schema, ExcludeMessage::NO_HSTORE
