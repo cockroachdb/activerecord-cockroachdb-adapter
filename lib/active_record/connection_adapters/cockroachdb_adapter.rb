@@ -425,7 +425,7 @@ module ActiveRecord
         #   - gather detailed information about spatial columns. See
         #     `#crdb_column_definitions`
         def column_definitions(table_name)
-          fields = query(<<~SQL, "SCHEMA")
+          fields = query_rows(<<~SQL, "SCHEMA")
               SELECT a.attname, format_type(a.atttypid, a.atttypmod),
                      pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod,
                      c.collname, NULL AS comment,
@@ -493,7 +493,7 @@ module ActiveRecord
           table = table_name.identifier
           with_schema = " AND c.table_schema = #{quote(table_name.schema)}" if table_name.schema
           fields = \
-          query(<<~SQL, "SCHEMA")
+          query_rows(<<~SQL, "SCHEMA")
             SELECT c.column_name, c.column_comment, c.crdb_sql_type
             FROM information_schema.columns c
             WHERE c.table_name = #{quote(table)}#{with_schema}

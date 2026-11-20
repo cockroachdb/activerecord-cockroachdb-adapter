@@ -24,10 +24,12 @@ module ActiveRecord
         #   - prepend Utils with PostgreSQL::
         #   - handle hidden attributes
         # Returns an array of indexes for the given table.
+        #
+        # TODO: Rails edge changed this behaviour to a `#fetch_indexes` method.
         def indexes(table_name) # :nodoc:
           scope = quoted_scope(table_name)
 
-          result = query(<<~SQL, "SCHEMA")
+          result = query_rows(<<~SQL, "SCHEMA")
             SELECT distinct i.relname, d.indisunique, d.indkey, pg_get_indexdef(d.indexrelid),
                             pg_catalog.obj_description(i.oid, 'pg_class') AS comment, d.indisvalid,
                             ARRAY(
@@ -161,7 +163,8 @@ module ActiveRecord
         def pk_and_sequence_for(table) # :nodoc:
           # First try looking for a sequence with a dependency on the
           # given table's primary key.
-          result = query(<<~SQL, "SCHEMA")[0]
+          # NOTE: rails edge is replacing query with query_all (see https://github.com/rails/rails/pull/56129)
+          result = query_rows(<<~SQL, "SCHEMA")[0]
             SELECT attr.attname, nsp.nspname, seq.relname
             FROM pg_class      seq,
                  pg_attribute  attr,
@@ -182,7 +185,7 @@ module ActiveRecord
           SQL
 
           if result.nil? || result.empty?
-            result = query(<<~SQL, "SCHEMA")[0]
+            result = query_rows(<<~SQL, "SCHEMA")[0]
               SELECT attr.attname, nsp.nspname,
                 CASE
                   WHEN pg_get_expr(def.adbin, def.adrelid) !~* 'nextval' THEN NULL
