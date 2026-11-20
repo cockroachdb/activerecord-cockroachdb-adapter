@@ -163,7 +163,6 @@ module ActiveRecord
         def pk_and_sequence_for(table) # :nodoc:
           # First try looking for a sequence with a dependency on the
           # given table's primary key.
-          # NOTE: rails edge is replacing query with query_all (see https://github.com/rails/rails/pull/56129)
           result = query_rows(<<~SQL, "SCHEMA")[0]
             SELECT attr.attname, nsp.nspname, seq.relname
             FROM pg_class      seq,
@@ -226,7 +225,7 @@ module ActiveRecord
         #   the `#all_foreign_keys` method as well.
         def foreign_keys(table_name)
           scope = quoted_scope(table_name)
-          fk_info = internal_exec_query(<<~SQL, "SCHEMA", allow_retry: true, materialize_transactions: false)
+          fk_info = query_all(<<~SQL, "SCHEMA", allow_retry: true, materialize_transactions: false)
             SELECT CASE
               WHEN n2.nspname = current_schema()
               THEN ''
@@ -297,10 +296,11 @@ module ActiveRecord
         #
         # Returns an array of unique constraints for the given table.
         # The unique constraints are represented as UniqueConstraintDefinition objects.
+        # TODO: change to the new _fetch_ behaviour
         def unique_constraints(table_name)
           scope = quoted_scope(table_name)
 
-          unique_info = internal_exec_query(<<~SQL, "SCHEMA", allow_retry: true, materialize_transactions: false)
+          unique_info = query_all(<<~SQL, "SCHEMA", allow_retry: true, materialize_transactions: false)
             SELECT c.conname, c.conrelid, c.condeferrable, c.condeferred, pg_get_constraintdef(c.oid) AS constraintdef,
             (
               SELECT array_agg(a.attname ORDER BY idx)

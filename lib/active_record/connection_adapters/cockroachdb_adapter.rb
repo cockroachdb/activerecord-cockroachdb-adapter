@@ -323,7 +323,8 @@ module ActiveRecord
         query = <<~SQL
           CREATE TYPE IF NOT EXISTS #{quote_table_name(name)} AS ENUM (#{sql_values});
         SQL
-        internal_exec_query(query).tap { reload_type_map }
+        query_command(query)
+        reload_type_map
       end
 
       class << self
