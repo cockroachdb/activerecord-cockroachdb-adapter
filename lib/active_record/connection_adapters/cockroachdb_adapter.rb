@@ -35,7 +35,6 @@ require "active_record/connection_adapters/cockroachdb/oid/spatial"
 require "active_record/connection_adapters/cockroachdb/oid/interval"
 require "active_record/connection_adapters/cockroachdb/oid/date_time"
 require "active_record/connection_adapters/cockroachdb/arel_tosql"
-require_relative "../migration/cockroachdb/compatibility"
 require_relative "../../version"
 
 require_relative "../relation/query_methods_ext"
@@ -324,7 +323,8 @@ module ActiveRecord
         query = <<~SQL
           CREATE TYPE IF NOT EXISTS #{quote_table_name(name)} AS ENUM (#{sql_values});
         SQL
-        internal_exec_query(query).tap { reload_type_map }
+        query_command(query)
+        reload_type_map
       end
 
       class << self
@@ -425,7 +425,7 @@ module ActiveRecord
         #   - gather detailed information about spatial columns. See
         #     `#crdb_column_definitions`
         def column_definitions(table_name)
-          fields = query(<<~SQL, "SCHEMA")
+          fields = query_rows(<<~SQL, "SCHEMA")
               SELECT a.attname, format_type(a.atttypid, a.atttypmod),
                      pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod,
                      c.collname, NULL AS comment,
@@ -493,7 +493,7 @@ module ActiveRecord
           table = table_name.identifier
           with_schema = " AND c.table_schema = #{quote(table_name.schema)}" if table_name.schema
           fields = \
-          query(<<~SQL, "SCHEMA")
+          query_rows(<<~SQL, "SCHEMA")
             SELECT c.column_name, c.column_comment, c.crdb_sql_type
             FROM information_schema.columns c
             WHERE c.table_name = #{quote(table)}#{with_schema}

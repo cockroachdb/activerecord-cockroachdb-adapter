@@ -161,10 +161,10 @@ WARNING
           end
         end
 
-        # NOTE: Copy/paste of the `#foreign_keys(table)` method adapted
-        #   to return every single foreign key in the database.
+        # TODO: `#fetch_foreign_keys` changed significantly in rails 8.2, we
+        #   should adapt.
         def all_foreign_keys
-          fk_info = internal_exec_query(<<~SQL, "SCHEMA")
+          fk_info = query_all(<<~SQL, "SCHEMA")
             SELECT CASE
               WHEN n1.nspname = current_schema()
               THEN ''

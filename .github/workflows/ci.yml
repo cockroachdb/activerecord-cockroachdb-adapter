@@ -100,7 +100,7 @@ jobs:
       matrix:
         # https://www.cockroachlabs.com/docs/releases/release-support-policy
         crdb: [v24.3, v25.2, v25.4, v26.2]
-        ruby: ["3.4"]
+        ruby: ["4.0"]
     name: Test (crdb=${{ matrix.crdb }} ruby=${{ matrix.ruby }})
     steps:
       - name: Set Up Actions

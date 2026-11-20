@@ -8,6 +8,8 @@ gemspec
 module RailsTag
   class << self
     def call
+      # TODO: clean that up before merging (and once rails 8.2 is released)
+      return "main"
       req = gemspec_requirement
       "v" + all_activerecord_versions.find { req.satisfied_by?(_1) }.version
     rescue => e
