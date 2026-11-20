@@ -18,7 +18,7 @@ module ActiveRecord # :nodoc:
   module ConnectionAdapters # :nodoc:
     module CockroachDB  # :nodoc:
       def self.initial_setup
-        ignore_tables |= %w[
+        cockroach_tables = %w[
           geography_columns
           geometry_columns
           layer
@@ -29,9 +29,9 @@ module ActiveRecord # :nodoc:
         ]
 
         if ActiveRecord.respond_to?(:schema_ignored_tables)
-           ActiveRecord.schema_ignored_tables |= ignore_tables
+           ActiveRecord.schema_ignored_tables |= cockroach_tables
          else
-           SchemaDumper.ignore_tables |= ignore_tables
+           SchemaDumper.ignore_tables |= cockroach_tables
          end
       end
     end
